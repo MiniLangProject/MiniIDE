@@ -328,17 +328,6 @@ If the compiler checkout is not present in the expected location, configure the
 compiler path or place the compiler repository next to MiniIDE as described
 above.
 
-## Development Notes
-
-- Keep generated files out of Git. `build/`, nested `build/` folders, `.mlo`
-  objects, logs, and executables are ignored.
-- Do not commit `MiniLangCompilerML/`; it is an external dependency.
-- Do not commit `.miniide.cfg`; use `.miniide.cfg.example` for shared defaults.
-- Prefer focused tests for parser/renderer/project-loader regressions and the
-  full UI smoke test for command wiring and Win32 behavior.
-- The test runner intentionally validates that background builds do not shell
-  out through `cmd.exe`.
-
 ## License
 
 MiniIDE is licensed under the Apache License, Version 2.0. See `LICENSE`.
