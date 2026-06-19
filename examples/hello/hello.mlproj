@@ -1,0 +1,5 @@
+name=Hello
+entry=hello.ml
+output=build\hello.exe
+importPath=.
+importPath=..\..\MiniLangCompilerML

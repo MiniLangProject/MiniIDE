@@ -1,0 +1,10 @@
+name=MiniLangProject
+type=console
+entry=src\main.ml
+output=build\MiniLangProject.exe
+testEntry=tests\main_test.ml
+runArgs=
+workingDir=.
+importPath=src
+importPath=lib
+importPath=..\..\MiniLangCompilerML

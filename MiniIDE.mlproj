@@ -1,0 +1,9 @@
+name=MiniIDE
+type=console
+entry=src\main.ml
+output=build\MiniIDE_dev.exe
+testEntry=tests\main_test.ml
+runArgs=
+workingDir=.
+importPath=src
+importPath=MiniLangCompilerML

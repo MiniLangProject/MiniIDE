@@ -1,0 +1,12 @@
+# Copy this file to .miniide.cfg and adjust the compiler path for your machine.
+compiler=C:\path\to\mlc_win64.exe
+profile=debug
+keepGoing=true
+maxErrors=80
+subsystem=windows
+extraArgs=
+
+# Optional profile-specific overrides:
+# debug.maxErrors=160
+# release.keepGoing=false
+# release.extraArgs=

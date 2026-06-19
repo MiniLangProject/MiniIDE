@@ -1,0 +1,14 @@
+build/
+**/build/
+
+MiniLangCompilerML/
+.miniide.cfg
+
+*.exe
+*.pdb
+*.obj
+*.mlo
+*.log
+
+*.user
+*.tmp
