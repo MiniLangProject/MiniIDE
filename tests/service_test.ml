@@ -324,6 +324,8 @@ function main(args)
   related_tests = service.related_test_items(snapshot, project.path_join(p.root, "src\\main.ml"), 20)
   if _assert_true("related tests include importing test file", _has_test_item(related_tests, project.path_join(p.root, "tests\\main_test.ml"), "file", "related")) == false then ok = false end if
   if _assert_true("related tests include importing test function", _has_test_item(related_tests, "test_model_lifecycle", "function", "related")) == false then ok = false end if
+  related_file = service.related_test_file(snapshot, project.path_join(p.root, "src\\main.ml"))
+  if _assert_true("related test file picks importing test file", related_file == project.path_join(p.root, "tests\\main_test.ml")) == false then ok = false end if
 
   invalid_apply = service.apply_rename(snapshot, "modelValue", "bad-name", 20)
   if _assert_true("apply rename rejects invalid new name", typeof(invalid_apply) == "struct" and invalid_apply.ok == false) == false then ok = false end if

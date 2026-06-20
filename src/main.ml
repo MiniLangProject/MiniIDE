@@ -221,6 +221,7 @@ const ID_NAV_CODE_INSPECTIONS = 1060
 const ID_NAV_RELATED_TESTS = 1061
 const ID_EDIT_RENAME_SYMBOL = 1062
 const ID_FILE_TEST_CURRENT = 1063
+const ID_FILE_TEST_RELATED = 1064
 const ID_EDIT_COMPLETE = 1033
 const ID_EDIT_FORMAT = 1034
 const ID_HELP_WELCOME = 1035
@@ -1239,6 +1240,7 @@ function _create_menus()
   win.AppendMenuWId(file_menu, win.MF_STRING, ID_FILE_STOP, "St&op")
   win.AppendMenuWId(file_menu, win.MF_STRING, ID_FILE_TEST, "Run &Tests\tF7")
   win.AppendMenuWId(file_menu, win.MF_STRING, ID_FILE_TEST_CURRENT, "Run Current Test &File\tCtrl+F7")
+  win.AppendMenuWId(file_menu, win.MF_STRING, ID_FILE_TEST_RELATED, "Run &Related Test File\tCtrl+Shift+F7")
   win.AppendMenuWId(file_menu, win.MF_SEPARATOR, 0, "")
   win.AppendMenuWId(file_menu, win.MF_STRING, ID_FILE_EXIT, "E&xit")
 
@@ -1736,12 +1738,14 @@ function _start_test_compile_job(st)
   return _set_log(st, log)
 end function
 
-// Start compiling the current test file.
-function _start_current_test_compile_job(st, test_file)
+// Start compiling a specific test file.
+function _start_test_file_compile_job(st, test_file, mode, label)
   // Keep process setup and state capture together for reliable polling.
+  if typeof(mode) != "string" or mode == "" then mode = "test-current-compile" end if
+  if typeof(label) != "string" or label == "" then label = "Run Current Test File" end if
   job = build.start_test_file_compile_with_options(st.project, test_file, st.compiler_path, st.build_keep_going, st.build_max_errors, "console", st.build_extra_args)
   st.build_job = job
-  st.build_mode = "test-current-compile"
+  st.build_mode = mode
   st.build_running = build.job_started(job)
   st.build_last_poll_ms = 0
   if st.build_running == false then
@@ -1749,9 +1753,19 @@ function _start_current_test_compile_job(st, test_file)
     st.build_last_log = log
     return _set_log(st, log)
   end if
-  log = "Run Current Test File: " + _project_relative_path(st, test_file) + "\r\n\r\n" + _format_build_log(st, "", true, build.STILL_ACTIVE)
+  log = label + ": " + _project_relative_path(st, test_file) + "\r\n\r\n" + _format_build_log(st, "", true, build.STILL_ACTIVE)
   st.build_last_log = log
   return _set_log(st, log)
+end function
+
+// Start compiling the current test file.
+function _start_current_test_compile_job(st, test_file)
+  return _start_test_file_compile_job(st, test_file, "test-current-compile", "Run Current Test File")
+end function
+
+// Start compiling a related test file.
+function _start_related_test_compile_job(st, test_file)
+  return _start_test_file_compile_job(st, test_file, "test-related-compile", "Run Related Test File")
 end function
 
 // Start test run job.
@@ -1828,6 +1842,21 @@ function _run_current_test_file(st)
   return _start_current_test_compile_job(st, st.current_file)
 end function
 
+// Run the first test file related to the currently open source file.
+function _run_related_test_file(st)
+  if st.build_running then
+    return _set_log(st, st.build_last_log + "\r\n\r\nA background process is already running.")
+  end if
+  if typeof(st.current_file) != "string" or st.current_file == "" then return _set_log(st, "Run Related Test File: no file is open.") end if
+  snapshot = lang_service.analyze_project(st.project)
+  test_file = lang_service.related_test_file(snapshot, st.current_file)
+  if typeof(test_file) != "string" or test_file == "" then return _set_log(st, "Run Related Test File: no related test file found for " + _project_relative_path(st, st.current_file)) end if
+  save_result = _save_all_open(st)
+  st = save_result[0]
+  if save_result[1] == false then return _set_log(st, save_result[2]) end if
+  return _start_related_test_compile_job(st, test_file)
+end function
+
 // Clean project.
 function _clean_project(st)
   if st.build_running then
@@ -1893,11 +1922,12 @@ function _format_build_log(st, log_text, running, exit_code)
     running_text = "Program is running in the background..."
     ok_text = "Program finished: exit 0"
     fail_text = "Program finished: exit "
-  else if st.build_mode == "test-compile" or st.build_mode == "test-current-compile" then
+  else if st.build_mode == "test-compile" or st.build_mode == "test-current-compile" or st.build_mode == "test-related-compile" then
     label = "Test Compiler"
     compiler = project.project_test_entry_path(st.project)
     running_text = "Tests are being built..."
     if st.build_mode == "test-current-compile" then running_text = "Current test file is being built..." end if
+    if st.build_mode == "test-related-compile" then running_text = "Related test file is being built..." end if
     ok_text = "Test-Build finished: OK"
     fail_text = "Test-Build failed: exit "
   else if st.build_mode == "test-run" then
@@ -1912,7 +1942,7 @@ function _format_build_log(st, log_text, running, exit_code)
   end if
   if typeof(log_text) != "string" then log_text = "" end if
   log = label + ": " + compiler + "\r\n"
-  if st.build_mode == "compile" or st.build_mode == "compile-run" or st.build_mode == "rebuild" or st.build_mode == "test-compile" or st.build_mode == "test-current-compile" then
+  if st.build_mode == "compile" or st.build_mode == "compile-run" or st.build_mode == "rebuild" or st.build_mode == "test-compile" or st.build_mode == "test-current-compile" or st.build_mode == "test-related-compile" then
     log = log + "Profile: " + st.build_profile + "\r\n"
   end if
   if typeof(st.build_job) == "struct" and typeof(st.build_job.command_line) == "string" then
@@ -1956,11 +1986,11 @@ function _poll_build(st)
     if finished_mode == "compile-run" and exit_code == 0 then
       return _start_run_job(st)
     end if
-    if (finished_mode == "test-compile" or finished_mode == "test-current-compile") and exit_code == 0 then
+    if (finished_mode == "test-compile" or finished_mode == "test-current-compile" or finished_mode == "test-related-compile") and exit_code == 0 then
       return _start_test_run_job(st)
     end if
     if exit_code != 0 then
-      if finished_mode == "compile" or finished_mode == "compile-run" or finished_mode == "rebuild" or finished_mode == "test-compile" or finished_mode == "test-current-compile" then
+      if finished_mode == "compile" or finished_mode == "compile-run" or finished_mode == "rebuild" or finished_mode == "test-compile" or finished_mode == "test-current-compile" or finished_mode == "test-related-compile" then
         return _show_problems(st)
       end if
     end if
@@ -2257,6 +2287,7 @@ function _show_welcome(st)
   text = text + "- `F6` Run\n"
   text = text + "- `F7` Run tests\n"
   text = text + "- `Ctrl+F7` Run current test file\n"
+  text = text + "- `Ctrl+Shift+F7` Run related test file\n"
   text = text + "- `F2` Rename symbol preview\n"
   text = text + "- `Ctrl+Space` Complete\n"
   text = text + "- `Navigation > Outline`, `Problems`, and `Search Word in Project`\n"
@@ -2945,7 +2976,7 @@ end function
 function _command_palette_ids()
   return [
     ID_FILE_OPEN_PROJECT, ID_FILE_QUICK_OPEN, ID_FILE_NEW_PROJECT, ID_FILE_RELOAD, ID_FILE_SAVE,
-    ID_FILE_CLEAN, ID_FILE_BUILD, ID_FILE_REBUILD, ID_FILE_RUN, ID_FILE_STOP, ID_FILE_TEST, ID_FILE_TEST_CURRENT,
+    ID_FILE_CLEAN, ID_FILE_BUILD, ID_FILE_REBUILD, ID_FILE_RUN, ID_FILE_STOP, ID_FILE_TEST, ID_FILE_TEST_CURRENT, ID_FILE_TEST_RELATED,
     ID_EDIT_FIND, ID_EDIT_FIND_NEXT, ID_EDIT_RENAME_SYMBOL, ID_EDIT_COMPLETE, ID_EDIT_FORMAT,
     ID_NAV_OUTLINE, ID_NAV_WORKSPACE_HEALTH, ID_NAV_TODOS, ID_NAV_TEST_EXPLORER, ID_NAV_RELATED_TESTS, ID_NAV_IMPORT_GRAPH, ID_NAV_CALL_HIERARCHY, ID_NAV_SYMBOL_INFO, ID_NAV_CODE_INSPECTIONS, ID_NAV_PROJECT_INDEX, ID_NAV_PROJECT_SYMBOLS, ID_NAV_GOTO_SYMBOL,
     ID_NAV_GOTO_LINE, ID_NAV_GOTO_DEFINITION, ID_NAV_FIND_REFERENCES, ID_NAV_SEARCH_WORD, ID_NAV_PROBLEMS,
@@ -2960,7 +2991,7 @@ end function
 function _command_palette_labels()
   return [
     "File: Open Project", "File: Quick Open File", "File: New Project", "File: Reload Project", "File: Save",
-    "Build: Clean", "Build: Build", "Build: Rebuild", "Build: Run", "Build: Stop", "Build: Run Tests", "Build: Run Current Test File",
+    "Build: Clean", "Build: Build", "Build: Rebuild", "Build: Run", "Build: Stop", "Build: Run Tests", "Build: Run Current Test File", "Build: Run Related Test File",
     "Edit: Find", "Edit: Find Next", "Edit: Rename Symbol Preview", "Edit: Complete", "Edit: Format Document",
     "Navigation: Outline", "Navigation: Workspace Health", "Navigation: TODOs", "Navigation: Test Explorer", "Navigation: Related Tests", "Navigation: Import Graph", "Navigation: Call Hierarchy", "Navigation: Symbol Info", "Navigation: Code Inspections", "Navigation: Project Index", "Navigation: Project Symbols", "Navigation: Go to Symbol",
     "Navigation: Go to Line", "Navigation: Go to Definition", "Navigation: Find References", "Navigation: Search Word in Project", "Navigation: Problems",
@@ -2975,7 +3006,7 @@ end function
 function _command_palette_search_texts()
   return [
     "file open project workspace ctrl o", "file quick open find file ctrl p", "file new project create", "file reload project refresh", "file save ctrl s",
-    "build clean", "build compile f5", "build rebuild clean compile", "build run execute f6", "build stop cancel", "build test tests f7", "build test current file ctrl f7",
+    "build clean", "build compile f5", "build rebuild clean compile", "build run execute f6", "build stop cancel", "build test tests f7", "build test current file ctrl f7", "build test related file ctrl shift f7",
     "edit find search ctrl f", "edit find next f3", "edit rename symbol refactor f2 preview", "edit complete autocomplete ctrl space", "edit format document",
     "navigation outline symbols current file", "navigation workspace health dashboard status diagnostics", "navigation todo todos fixme tasks", "navigation test explorer tests runner", "navigation related tests current file", "navigation import graph imports dependencies", "navigation call hierarchy callers references", "navigation symbol info quick documentation inspect", "navigation code inspections unused symbols lint analysis", "navigation project index imports files", "navigation project symbols", "navigation goto symbol ctrl t",
     "navigation goto line ctrl g", "navigation goto definition f12", "navigation find references shift f12", "navigation search word project", "navigation problems diagnostics errors warnings",
@@ -3025,6 +3056,7 @@ function _perform_palette_command(st, id)
   if id == ID_FILE_STOP then return _stop_build_job(st) end if
   if id == ID_FILE_TEST then return _run_tests(st) end if
   if id == ID_FILE_TEST_CURRENT then return _run_current_test_file(st) end if
+  if id == ID_FILE_TEST_RELATED then return _run_related_test_file(st) end if
   if id == ID_FILE_RELOAD then return _reload_project(st) end if
   if id == ID_EDIT_FIND then return _open_find_window(st) end if
   if id == ID_EDIT_FIND_NEXT then return _find_next(st) end if
@@ -5725,6 +5757,7 @@ function _show_editor_context(st, mx, my)
   win.AppendMenuWId(menu, win.MF_STRING, ID_EDIT_RENAME_SYMBOL, "Rename Symbol...")
   win.AppendMenuWId(menu, win.MF_SEPARATOR, 0, "")
   win.AppendMenuWId(menu, win.MF_STRING, ID_FILE_TEST_CURRENT, "Run Current Test File")
+  win.AppendMenuWId(menu, win.MF_STRING, ID_FILE_TEST_RELATED, "Run Related Test File")
   win.AppendMenuWId(menu, win.MF_SEPARATOR, 0, "")
   win.AppendMenuWId(menu, win.MF_STRING, ID_FILE_SAVE, "Save")
   win.AppendMenuWId(menu, win.MF_STRING, ID_FILE_BUILD, "Build")
@@ -5798,6 +5831,7 @@ function _perform_command(st, id)
   if id == ID_FILE_STOP then return _stop_build_job(st) end if
   if id == ID_FILE_TEST then return _run_tests(st) end if
   if id == ID_FILE_TEST_CURRENT then return _run_current_test_file(st) end if
+  if id == ID_FILE_TEST_RELATED then return _run_related_test_file(st) end if
   if id == ID_FILE_RELOAD then return _reload_project(st) end if
   if id == ID_EDIT_UNDO then return _edit_undo(st) end if
   if id == ID_EDIT_REDO then return _edit_redo(st) end if
@@ -6030,6 +6064,7 @@ function _handle_hotkeys(st)
   if ctrl and _key_pressed(st, win.VK_T) then return _open_goto_symbol_window(st) end if
   if ctrl and _key_pressed(st, win.VK_V) then return _edit_paste(st) end if
   if ctrl and _key_pressed(st, win.VK_SPACE) then return _autocomplete(st) end if
+  if ctrl and shift and _key_pressed(st, win.VK_F7) then return _run_related_test_file(st) end if
   if ctrl and _key_pressed(st, win.VK_F7) then return _run_current_test_file(st) end if
   if _key_pressed(st, win.VK_F2) then return _open_rename_symbol_window(st) end if
   if _key_pressed(st, win.VK_F3) then return _find_next(st) end if

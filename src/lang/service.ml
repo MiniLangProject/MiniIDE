@@ -543,6 +543,23 @@ function related_test_items(snapshot, current_file, limit)
   return items
 end function
 
+// Return the first related test file for the requested source file.
+function related_test_file(snapshot, current_file)
+  items = related_test_items(snapshot, current_file, 50)
+  if typeof(items) != "array" or len(items) <= 0 then return "" end if
+  for i = 0 to len(items) - 1
+    item = items[i]
+    if typeof(item) != "struct" then continue end if
+    if item.kind == "file" and typeof(item.file) == "string" and item.file != "" then return item.file end if
+  end for
+  for i = 0 to len(items) - 1
+    item = items[i]
+    if typeof(item) != "struct" then continue end if
+    if typeof(item.file) == "string" and item.file != "" then return item.file end if
+  end for
+  return ""
+end function
+
 // Return lexical references for a symbol-like word.
 function references(snapshot, word, limit)
   refs = []
