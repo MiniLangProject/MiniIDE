@@ -86,6 +86,16 @@ function _has_diagnostic(items, fragment)
   return false
 end function
 
+// Return true when a health line equals the requested text.
+function _has_health_line(items, expected)
+  if typeof(items) != "array" then return false end if
+  if len(items) <= 0 then return false end if
+  for i = 0 to len(items) - 1
+    if items[i] == expected then return true end if
+  end for
+  return false
+end function
+
 // Create a focused language service fixture.
 function _create_fixture(root)
   _mkdir("build")
@@ -155,6 +165,12 @@ function main(args)
 
   diagnostics = service.diagnostics(snapshot)
   if _assert_true("project diagnostics include unresolved imports", _has_diagnostic(diagnostics, "Unresolved import: missing\\nope.ml")) == false then ok = false end if
+
+  health = service.workspace_health_lines(snapshot)
+  if _assert_true("workspace health counts files", _has_health_line(health, "Files: 1")) == false then ok = false end if
+  if _assert_true("workspace health counts imports", _has_health_line(health, "Imports: 1")) == false then ok = false end if
+  if _assert_true("workspace health counts unresolved imports", _has_health_line(health, "Unresolved imports: 1")) == false then ok = false end if
+  if _assert_true("workspace health counts diagnostics", _has_health_line(health, "Diagnostics: 1")) == false then ok = false end if
 
   if ok == false then return 1 end if
   print "Language service tests OK"

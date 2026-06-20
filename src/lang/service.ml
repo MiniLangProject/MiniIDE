@@ -197,6 +197,28 @@ function diagnostics(snapshot)
   return items
 end function
 
+// Return compact workspace-health lines for dashboards and status panels.
+function workspace_health_lines(snapshot)
+  if typeof(snapshot) != "struct" or typeof(snapshot.project_index) != "struct" then return ["Project index unavailable."] end if
+  idx = snapshot.project_index
+  file_count = 0
+  symbol_count = 0
+  import_count = 0
+  unresolved_count = 0
+  if typeof(idx.files) == "array" then file_count = len(idx.files) end if
+  if typeof(idx.symbols) == "array" then symbol_count = len(idx.symbols) end if
+  if typeof(idx.imports) == "array" then import_count = len(idx.imports) end if
+  if typeof(idx.unresolved_imports) == "array" then unresolved_count = len(idx.unresolved_imports) end if
+  diagnostic_count = len(diagnostics(snapshot))
+  return [
+    "Files: " + file_count,
+    "Symbols: " + symbol_count,
+    "Imports: " + import_count,
+    "Unresolved imports: " + unresolved_count,
+    "Diagnostics: " + diagnostic_count,
+  ]
+end function
+
 // Return lexical references for a symbol-like word.
 function references(snapshot, word, limit)
   refs = []
