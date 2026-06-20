@@ -507,7 +507,7 @@ function _test_output_path(root, name)
 end function
 
 // Build the input, output, and log paths for compiling tests.
-function _test_compile_paths(project, compiler_override, keep_going, max_errors, subsystem, extra_args)
+function _test_compile_paths_for_entry(project, test_entry_override, compiler_override, keep_going, max_errors, subsystem, extra_args)
   // Walk collections defensively because project data can be partially populated.
   root = "."
   name = "MiniIDE"
@@ -519,6 +519,7 @@ function _test_compile_paths(project, compiler_override, keep_going, max_errors,
     test_entry = project.test_entry
     if typeof(project.import_paths) == "array" then imports = project.import_paths end if
   end if
+  if typeof(test_entry_override) == "string" and test_entry_override != "" then test_entry = test_entry_override end if
 
   input_path = _resolve(root, test_entry)
   output_path = _test_output_path(root, name)
@@ -550,6 +551,11 @@ function _test_compile_paths(project, compiler_override, keep_going, max_errors,
   end if
   if extra_args != "" then cmd = cmd + " " + extra_args end if
   return [root, compiler, input_path, output_path, log_path, cmd]
+end function
+
+// Build the input, output, and log paths for compiling the configured tests.
+function _test_compile_paths(project, compiler_override, keep_going, max_errors, subsystem, extra_args)
+  return _test_compile_paths_for_entry(project, "", compiler_override, keep_going, max_errors, subsystem, extra_args)
 end function
 
 // Clean file.
@@ -610,6 +616,54 @@ function start_test_compile_with_options(project, compiler_override, keep_going,
 
   if fs.exists(input_path) == false then
     return _failed_job(log_path, cmd, compiler, "Test build start failed: test entry not found.\r\nExpected: " + input_path)
+  end if
+
+  wr = fs.writeAllText(log_path, "")
+  if typeof(wr) == "error" then
+    return _failed_job(log_path, cmd, compiler, "Test build start failed: cannot write log file " + log_path)
+  end if
+
+  sa = bytes(24, 0)
+  _write_u32(sa, 0, 24)
+  _write_ptr(sa, 8, 0)
+  _write_u32(sa, 16, 1)
+
+  log_handle = CreateFileWInherit(log_path, GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, sa, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, void)
+  if log_handle == INVALID_HANDLE_VALUE then
+    return _failed_job(log_path, cmd, compiler, "Test build start failed: cannot open log file " + log_path)
+  end if
+
+  si = bytes(104, 0)
+  _write_u32(si, 0, 104)
+  _write_u32(si, 60, STARTF_USESHOWWINDOW | STARTF_USESTDHANDLES)
+  _write_u16(si, 64, SW_HIDE)
+  _write_ptr(si, 88, log_handle)
+  _write_ptr(si, 96, log_handle)
+
+  pi = bytes(24, 0)
+  ok = CreateProcessW(void, cmd, void, void, true, CREATE_NO_WINDOW, void, root, si, pi)
+  CloseHandle(log_handle)
+  if ok == false then
+    return _failed_job(log_path, cmd, compiler, "Test build start failed: CreateProcessW failed.\r\nCommand: " + cmd)
+  end if
+
+  process = _read_ptr(pi, 0)
+  thread = _read_ptr(pi, 8)
+  return BuildJob(process, thread, STILL_ACTIVE, log_path, "", cmd, compiler, true)
+end function
+
+// Start compiling a specific test file as the test entry.
+function start_test_file_compile_with_options(project, test_file, compiler_override, keep_going, max_errors, subsystem, extra_args)
+  // Keep process setup and state capture together for reliable polling.
+  parts = _test_compile_paths_for_entry(project, test_file, compiler_override, keep_going, max_errors, subsystem, extra_args)
+  root = parts[0]
+  compiler = parts[1]
+  input_path = parts[2]
+  log_path = parts[4]
+  cmd = parts[5]
+
+  if fs.exists(input_path) == false then
+    return _failed_job(log_path, cmd, compiler, "Test build start failed: test file not found.\r\nExpected: " + input_path)
   end if
 
   wr = fs.writeAllText(log_path, "")
