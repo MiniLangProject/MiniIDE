@@ -95,6 +95,7 @@ const VK_RIGHT = 0x27
 const VK_DOWN = 0x28
 const VK_DELETE = 0x2E
 const VK_C = 0x43
+const VK_E = 0x45
 const VK_F = 0x46
 const VK_G = 0x47
 const VK_O = 0x4F

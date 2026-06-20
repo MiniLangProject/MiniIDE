@@ -222,6 +222,7 @@ const ID_NAV_RELATED_TESTS = 1061
 const ID_EDIT_RENAME_SYMBOL = 1062
 const ID_FILE_TEST_CURRENT = 1063
 const ID_FILE_TEST_RELATED = 1064
+const ID_FILE_RECENT_FILES = 1065
 const ID_EDIT_COMPLETE = 1033
 const ID_EDIT_FORMAT = 1034
 const ID_HELP_WELCOME = 1035
@@ -1229,6 +1230,7 @@ function _create_menus()
 
   win.AppendMenuWId(file_menu, win.MF_STRING, ID_FILE_OPEN_PROJECT, "&Open Project...\tCtrl+O")
   win.AppendMenuWId(file_menu, win.MF_STRING, ID_FILE_QUICK_OPEN, "Quick Open &File...\tCtrl+P")
+  win.AppendMenuWId(file_menu, win.MF_STRING, ID_FILE_RECENT_FILES, "Recent Fil&es\tCtrl+E")
   win.AppendMenuWId(file_menu, win.MF_STRING, ID_FILE_NEW_PROJECT, "&New Project...")
   win.AppendMenuWId(file_menu, win.MF_STRING, ID_FILE_RELOAD, "&Reload Project")
   win.AppendMenuWId(file_menu, win.MF_SEPARATOR, 0, "")
@@ -2288,6 +2290,7 @@ function _show_welcome(st)
   text = text + "- `F7` Run tests\n"
   text = text + "- `Ctrl+F7` Run current test file\n"
   text = text + "- `Ctrl+Shift+F7` Run related test file\n"
+  text = text + "- `Ctrl+E` Recent files\n"
   text = text + "- `F2` Rename symbol preview\n"
   text = text + "- `Ctrl+Space` Complete\n"
   text = text + "- `Navigation > Outline`, `Problems`, and `Search Word in Project`\n"
@@ -2975,7 +2978,7 @@ end function
 // Return the command IDs exposed by the command palette.
 function _command_palette_ids()
   return [
-    ID_FILE_OPEN_PROJECT, ID_FILE_QUICK_OPEN, ID_FILE_NEW_PROJECT, ID_FILE_RELOAD, ID_FILE_SAVE,
+    ID_FILE_OPEN_PROJECT, ID_FILE_QUICK_OPEN, ID_FILE_RECENT_FILES, ID_FILE_NEW_PROJECT, ID_FILE_RELOAD, ID_FILE_SAVE,
     ID_FILE_CLEAN, ID_FILE_BUILD, ID_FILE_REBUILD, ID_FILE_RUN, ID_FILE_STOP, ID_FILE_TEST, ID_FILE_TEST_CURRENT, ID_FILE_TEST_RELATED,
     ID_EDIT_FIND, ID_EDIT_FIND_NEXT, ID_EDIT_RENAME_SYMBOL, ID_EDIT_COMPLETE, ID_EDIT_FORMAT,
     ID_NAV_OUTLINE, ID_NAV_WORKSPACE_HEALTH, ID_NAV_TODOS, ID_NAV_TEST_EXPLORER, ID_NAV_RELATED_TESTS, ID_NAV_IMPORT_GRAPH, ID_NAV_CALL_HIERARCHY, ID_NAV_SYMBOL_INFO, ID_NAV_CODE_INSPECTIONS, ID_NAV_PROJECT_INDEX, ID_NAV_PROJECT_SYMBOLS, ID_NAV_GOTO_SYMBOL,
@@ -2990,7 +2993,7 @@ end function
 // Return the display labels exposed by the command palette.
 function _command_palette_labels()
   return [
-    "File: Open Project", "File: Quick Open File", "File: New Project", "File: Reload Project", "File: Save",
+    "File: Open Project", "File: Quick Open File", "File: Recent Files", "File: New Project", "File: Reload Project", "File: Save",
     "Build: Clean", "Build: Build", "Build: Rebuild", "Build: Run", "Build: Stop", "Build: Run Tests", "Build: Run Current Test File", "Build: Run Related Test File",
     "Edit: Find", "Edit: Find Next", "Edit: Rename Symbol Preview", "Edit: Complete", "Edit: Format Document",
     "Navigation: Outline", "Navigation: Workspace Health", "Navigation: TODOs", "Navigation: Test Explorer", "Navigation: Related Tests", "Navigation: Import Graph", "Navigation: Call Hierarchy", "Navigation: Symbol Info", "Navigation: Code Inspections", "Navigation: Project Index", "Navigation: Project Symbols", "Navigation: Go to Symbol",
@@ -3005,7 +3008,7 @@ end function
 // Return additional search aliases for command palette labels.
 function _command_palette_search_texts()
   return [
-    "file open project workspace ctrl o", "file quick open find file ctrl p", "file new project create", "file reload project refresh", "file save ctrl s",
+    "file open project workspace ctrl o", "file quick open find file ctrl p", "file recent files switch ctrl e", "file new project create", "file reload project refresh", "file save ctrl s",
     "build clean", "build compile f5", "build rebuild clean compile", "build run execute f6", "build stop cancel", "build test tests f7", "build test current file ctrl f7", "build test related file ctrl shift f7",
     "edit find search ctrl f", "edit find next f3", "edit rename symbol refactor f2 preview", "edit complete autocomplete ctrl space", "edit format document",
     "navigation outline symbols current file", "navigation workspace health dashboard status diagnostics", "navigation todo todos fixme tasks", "navigation test explorer tests runner", "navigation related tests current file", "navigation import graph imports dependencies", "navigation call hierarchy callers references", "navigation symbol info quick documentation inspect", "navigation code inspections unused symbols lint analysis", "navigation project index imports files", "navigation project symbols", "navigation goto symbol ctrl t",
@@ -3047,6 +3050,7 @@ end function
 function _perform_palette_command(st, id)
   if id == ID_FILE_OPEN_PROJECT then return _open_project_dialog(st) end if
   if id == ID_FILE_QUICK_OPEN then return _open_quick_open_window(st) end if
+  if id == ID_FILE_RECENT_FILES then return _show_recent_files(st) end if
   if id == ID_FILE_NEW_PROJECT then return _new_standard_project(st) end if
   if id == ID_FILE_SAVE then return _save_current(st) end if
   if id == ID_FILE_CLEAN then return _clean_project(st) end if
@@ -3231,6 +3235,34 @@ function _quick_open_query(st, query)
   title = "Quick Open Files"
   if len(items) >= 300 then title = title + " (first 300)" end if
   return _show_result_panel(st, "quick-open", title, rows, files, lines_out, cols)
+end function
+
+// Show the files currently open in this session.
+function _show_recent_files(st)
+  if typeof(st.open_files) != "array" or len(st.open_files) <= 0 then return _set_log(st, "Recent Files: no files are open.") end if
+
+  rows = []
+  files = []
+  lines_out = []
+  cols = []
+  i = len(st.open_files) - 1
+  while i >= 0
+    file = st.open_files[i]
+    if typeof(file) == "string" and file != "" then
+      marker = "  "
+      if i == st.active_tab then marker = "* " end if
+      label = _project_relative_path(st, file)
+      if _is_generated_editor_path(file) then label = _basename(file) end if
+      rows = rows + [marker + label]
+      files = files + [file]
+      lines_out = lines_out + [1]
+      cols = cols + [1]
+    end if
+    i = i - 1
+  end while
+
+  if len(rows) <= 0 then return _set_log(st, "Recent Files: no files are open.") end if
+  return _show_result_panel(st, "recent-files", "Recent Files", rows, files, lines_out, cols)
 end function
 
 // Open quick file window.
@@ -5822,6 +5854,7 @@ function _perform_command(st, id)
   // Keep validation near the top so callers can treat invalid input as a no-op.
   if id == ID_FILE_OPEN_PROJECT then return _open_project_dialog(st) end if
   if id == ID_FILE_QUICK_OPEN then return _open_quick_open_window(st) end if
+  if id == ID_FILE_RECENT_FILES then return _show_recent_files(st) end if
   if id == ID_FILE_NEW_PROJECT then return _new_standard_project(st) end if
   if id == ID_FILE_SAVE then return _save_current(st) end if
   if id == ID_FILE_CLEAN then return _clean_project(st) end if
@@ -6054,6 +6087,7 @@ function _handle_hotkeys(st)
   ctrl = _ctrl_down()
   shift = _shift_down()
   if ctrl and _key_pressed(st, win.VK_O) then return _open_project_dialog(st) end if
+  if ctrl and _key_pressed(st, win.VK_E) then return _show_recent_files(st) end if
   if ctrl and _key_pressed(st, win.VK_S) then return _save_current(st) end if
   if ctrl and _key_pressed(st, win.VK_X) then return _edit_cut(st) end if
   if ctrl and _key_pressed(st, win.VK_C) then return _edit_copy(st) end if
