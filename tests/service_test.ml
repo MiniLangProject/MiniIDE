@@ -52,6 +52,17 @@ function _has_item(items, label, kind)
   return false
 end function
 
+// Return true when a symbol item with name and kind exists.
+function _has_symbol_item(items, name, kind)
+  if typeof(items) != "array" then return false end if
+  if len(items) <= 0 then return false end if
+  for i = 0 to len(items) - 1
+    item = items[i]
+    if typeof(item) == "struct" and item.name == name and item.kind == kind then return true end if
+  end for
+  return false
+end function
+
 // Return true when a reference exists on the requested line.
 function _has_reference_line(items, line)
   if typeof(items) != "array" then return false end if
@@ -119,6 +130,10 @@ function main(args)
 
   symbol_items = service.completion_items(snapshot, "main", 20)
   if _assert_true("symbol completion keeps function kind", _has_item(symbol_items, "main", "function")) == false then ok = false end if
+
+  project_symbols = service.symbol_items(snapshot, "mo", 20)
+  if _assert_true("project symbols include filtered function", _has_symbol_item(project_symbols, "modelValue", "function")) == false then ok = false end if
+  if _assert_true("project symbols include filtered struct", _has_symbol_item(project_symbols, "Model", "struct")) == false then ok = false end if
 
   refs = service.references(snapshot, "modelValue", 20)
   if _assert_true("references include call and definition only", len(refs) == 2) == false then ok = false end if

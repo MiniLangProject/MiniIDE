@@ -36,6 +36,13 @@ struct CompletionItem
   line,
 end struct
 
+struct SymbolItem
+  name,
+  kind,
+  file,
+  line,
+end struct
+
 struct LanguageSnapshot
   project_index,
 end struct
@@ -141,6 +148,26 @@ function completion_labels(snapshot, prefix, limit)
     if typeof(item) == "struct" then labels = labels + [item.label] end if
   end for
   return labels
+end function
+
+// Return project symbols from a snapshot.
+function symbol_items(snapshot, prefix, limit)
+  if typeof(limit) != "int" or limit <= 0 then limit = 200 end if
+  items = []
+
+  idx = void
+  if typeof(snapshot) == "struct" then idx = snapshot.project_index end if
+  if typeof(idx) != "struct" or typeof(idx.symbols) != "array" then return items end if
+
+  for si = 0 to len(idx.symbols) - 1
+    sym = idx.symbols[si]
+    if typeof(sym) != "struct" then continue end if
+    if _matches_prefix(sym.name, prefix) == false then continue end if
+    items = items + [SymbolItem(sym.name, sym.kind, sym.file, sym.line)]
+    if len(items) >= limit then return items end if
+  end for
+
+  return items
 end function
 
 // Return lexical references for a symbol-like word.

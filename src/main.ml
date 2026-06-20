@@ -207,6 +207,7 @@ const ID_NAV_SEARCH_WORD = 1031
 const ID_NAV_PROBLEMS = 1032
 const ID_NAV_PROJECT_INDEX = 1048
 const ID_NAV_FIND_REFERENCES = 1049
+const ID_NAV_PROJECT_SYMBOLS = 1050
 const ID_EDIT_COMPLETE = 1033
 const ID_EDIT_FORMAT = 1034
 const ID_HELP_WELCOME = 1035
@@ -1227,6 +1228,7 @@ function _create_menus()
 
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_OUTLINE, "&Outline")
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_PROJECT_INDEX, "Project &Index")
+  win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_PROJECT_SYMBOLS, "Project &Symbols")
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_GOTO_LINE, "&Go to Line...\tCtrl+G")
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_GOTO_DEFINITION, "Go to &Definition\tF12")
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_FIND_REFERENCES, "Find &References\tShift+F12")
@@ -2885,6 +2887,31 @@ function _show_outline(st)
   title = "Outline"
   if current != "" then title = "Outline: " + _basename(current) end if
   return _show_result_panel(st, "outline", title, rows, files, lines_out, cols)
+end function
+
+// Show project symbols.
+function _show_project_symbols(st)
+  // Walk collections defensively because project data can be partially populated.
+  snapshot = lang_service.analyze_project(st.project)
+  items = lang_service.symbol_items(snapshot, "", 300)
+  if typeof(items) != "array" or len(items) <= 0 then return _set_log(st, "Project symbols: no symbols found.") end if
+
+  rows = []
+  files = []
+  lines_out = []
+  cols = []
+  for i = 0 to len(items) - 1
+    item = items[i]
+    if typeof(item) != "struct" then continue end if
+    rows = rows + [item.kind + "  " + item.name + "  " + _project_relative_path(st, item.file) + ":" + (item.line + 1)]
+    files = files + [item.file]
+    lines_out = lines_out + [item.line + 1]
+    cols = cols + [1]
+  end for
+
+  title = "Project Symbols"
+  if len(items) >= 300 then title = title + " (first 300)" end if
+  return _show_result_panel(st, "project-symbols", title, rows, files, lines_out, cols)
 end function
 
 // Show project index.
@@ -4771,6 +4798,7 @@ function _perform_command(st, id)
   if id == ID_EDIT_FORMAT then return _format_current(st) end if
   if id == ID_NAV_OUTLINE then return _show_outline(st) end if
   if id == ID_NAV_PROJECT_INDEX then return _show_project_index(st) end if
+  if id == ID_NAV_PROJECT_SYMBOLS then return _show_project_symbols(st) end if
   if id == ID_NAV_GOTO_LINE then return _open_goto_line_window(st) end if
   if id == ID_NAV_GOTO_DEFINITION then return _goto_definition(st) end if
   if id == ID_NAV_FIND_REFERENCES then return _find_references(st) end if
