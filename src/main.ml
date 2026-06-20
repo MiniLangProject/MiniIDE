@@ -86,6 +86,7 @@ struct AppState
   current_sel,
   nav_back,
   nav_forward,
+  bookmarks,
   last_tree_click_ms,
   last_tree_click_item,
   last_editor_text,
@@ -233,6 +234,8 @@ const ID_FILE_TEST_RELATED = 1064
 const ID_FILE_RECENT_FILES = 1065
 const ID_NAV_BACK = 1066
 const ID_NAV_FORWARD = 1067
+const ID_NAV_TOGGLE_BOOKMARK = 1068
+const ID_NAV_BOOKMARKS = 1069
 const ID_EDIT_COMPLETE = 1033
 const ID_EDIT_FORMAT = 1034
 const ID_HELP_WELCOME = 1035
@@ -682,6 +685,51 @@ function _navigate_forward(st)
   if typeof(current) == "struct" then st.nav_back = _push_nav_stack(st.nav_back, current) end if
   st = _open_nav_location(st, loc)
   return _set_log(st, "Navigation Forward: " + _project_relative_path(st, loc.file) + ":" + loc.line + ":" + loc.col)
+end function
+
+// Toggle a bookmark at the current editor line.
+function _toggle_bookmark(st)
+  loc = _current_nav_location(st)
+  if typeof(loc) != "struct" then return _set_log(st, "Toggle Bookmark: no file is open.") end if
+  if typeof(st.bookmarks) != "array" then st.bookmarks = [] end if
+  label = _project_relative_path(st, loc.file) + ":" + loc.line
+  updated = []
+  removed = false
+  for i = 0 to len(st.bookmarks) - 1
+    item = st.bookmarks[i]
+    if typeof(item) == "struct" and item.file == loc.file and item.line == loc.line then
+      removed = true
+    else
+      updated = updated + [item]
+    end if
+  end for
+  if removed then
+    st.bookmarks = updated
+    return _set_log(st, "Bookmark removed: " + label)
+  end if
+  st.bookmarks = st.bookmarks + [loc]
+  return _set_log(st, "Bookmark added: " + label)
+end function
+
+// Show all session bookmarks in the result panel.
+function _show_bookmarks(st)
+  if typeof(st.bookmarks) != "array" or len(st.bookmarks) <= 0 then return _set_log(st, "Bookmarks: no bookmarks set.") end if
+
+  rows = []
+  files = []
+  lines_out = []
+  cols = []
+  for i = 0 to len(st.bookmarks) - 1
+    item = st.bookmarks[i]
+    if typeof(item) != "struct" then continue end if
+    rows = rows + [_project_relative_path(st, item.file) + ":" + item.line + ":" + item.col]
+    files = files + [item.file]
+    lines_out = lines_out + [item.line]
+    cols = cols + [item.col]
+  end for
+
+  if len(rows) <= 0 then return _set_log(st, "Bookmarks: no bookmarks set.") end if
+  return _show_result_panel(st, "bookmarks", "Bookmarks", rows, files, lines_out, cols)
 end function
 
 // Open problem location.
@@ -1358,6 +1406,8 @@ function _create_menus()
 
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_BACK, "Navigate &Back\tAlt+Left")
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_FORWARD, "Navigate &Forward\tAlt+Right")
+  win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_TOGGLE_BOOKMARK, "Toggle &Bookmark\tCtrl+F2")
+  win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_BOOKMARKS, "&Bookmarks\tShift+F2")
   win.AppendMenuWId(nav_menu, win.MF_SEPARATOR, 0, "")
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_OUTLINE, "&Outline")
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_WORKSPACE_HEALTH, "Workspace &Health")
@@ -2126,6 +2176,7 @@ function _reload_project(st)
   st.current_file = ""
   st.nav_back = []
   st.nav_forward = []
+  st.bookmarks = []
   st.last_editor_text = ""
   st = _invalidate_highlight(st)
   st.last_line_numbers_text = ""
@@ -2177,6 +2228,7 @@ function _open_project_file(st, path)
   st.current_sel = -1
   st.nav_back = []
   st.nav_forward = []
+  st.bookmarks = []
   st.last_editor_text = ""
   st = _invalidate_highlight(st)
   st.last_line_numbers_text = ""
@@ -3082,7 +3134,7 @@ function _command_palette_ids()
     ID_FILE_OPEN_PROJECT, ID_FILE_QUICK_OPEN, ID_FILE_RECENT_FILES, ID_FILE_NEW_PROJECT, ID_FILE_RELOAD, ID_FILE_SAVE,
     ID_FILE_CLEAN, ID_FILE_BUILD, ID_FILE_REBUILD, ID_FILE_RUN, ID_FILE_STOP, ID_FILE_TEST, ID_FILE_TEST_CURRENT, ID_FILE_TEST_RELATED,
     ID_EDIT_FIND, ID_EDIT_FIND_NEXT, ID_EDIT_RENAME_SYMBOL, ID_EDIT_COMPLETE, ID_EDIT_FORMAT,
-    ID_NAV_BACK, ID_NAV_FORWARD, ID_NAV_OUTLINE, ID_NAV_WORKSPACE_HEALTH, ID_NAV_TODOS, ID_NAV_TEST_EXPLORER, ID_NAV_RELATED_TESTS, ID_NAV_IMPORT_GRAPH, ID_NAV_CALL_HIERARCHY, ID_NAV_SYMBOL_INFO, ID_NAV_CODE_INSPECTIONS, ID_NAV_PROJECT_INDEX, ID_NAV_PROJECT_SYMBOLS, ID_NAV_GOTO_SYMBOL,
+    ID_NAV_BACK, ID_NAV_FORWARD, ID_NAV_TOGGLE_BOOKMARK, ID_NAV_BOOKMARKS, ID_NAV_OUTLINE, ID_NAV_WORKSPACE_HEALTH, ID_NAV_TODOS, ID_NAV_TEST_EXPLORER, ID_NAV_RELATED_TESTS, ID_NAV_IMPORT_GRAPH, ID_NAV_CALL_HIERARCHY, ID_NAV_SYMBOL_INFO, ID_NAV_CODE_INSPECTIONS, ID_NAV_PROJECT_INDEX, ID_NAV_PROJECT_SYMBOLS, ID_NAV_GOTO_SYMBOL,
     ID_NAV_GOTO_LINE, ID_NAV_GOTO_DEFINITION, ID_NAV_FIND_REFERENCES, ID_NAV_SEARCH_WORD, ID_NAV_PROBLEMS,
     ID_CONFIG_COMPILE_SETTINGS, ID_CONFIG_PROFILE_DEBUG, ID_CONFIG_PROFILE_RELEASE,
     ID_CONFIG_THEME_DARK, ID_CONFIG_THEME_LIGHT, ID_CONFIG_COMPILER_SELECT, ID_CONFIG_COMPILER_RESET,
@@ -3097,7 +3149,7 @@ function _command_palette_labels()
     "File: Open Project", "File: Quick Open File", "File: Recent Files", "File: New Project", "File: Reload Project", "File: Save",
     "Build: Clean", "Build: Build", "Build: Rebuild", "Build: Run", "Build: Stop", "Build: Run Tests", "Build: Run Current Test File", "Build: Run Related Test File",
     "Edit: Find", "Edit: Find Next", "Edit: Rename Symbol Preview", "Edit: Complete", "Edit: Format Document",
-    "Navigation: Back", "Navigation: Forward", "Navigation: Outline", "Navigation: Workspace Health", "Navigation: TODOs", "Navigation: Test Explorer", "Navigation: Related Tests", "Navigation: Import Graph", "Navigation: Call Hierarchy", "Navigation: Symbol Info", "Navigation: Code Inspections", "Navigation: Project Index", "Navigation: Project Symbols", "Navigation: Go to Symbol",
+    "Navigation: Back", "Navigation: Forward", "Navigation: Toggle Bookmark", "Navigation: Bookmarks", "Navigation: Outline", "Navigation: Workspace Health", "Navigation: TODOs", "Navigation: Test Explorer", "Navigation: Related Tests", "Navigation: Import Graph", "Navigation: Call Hierarchy", "Navigation: Symbol Info", "Navigation: Code Inspections", "Navigation: Project Index", "Navigation: Project Symbols", "Navigation: Go to Symbol",
     "Navigation: Go to Line", "Navigation: Go to Definition", "Navigation: Find References", "Navigation: Search Word in Project", "Navigation: Problems",
     "Configuration: Compile Settings", "Configuration: Build Profile Debug", "Configuration: Build Profile Release",
     "Configuration: Theme Dark", "Configuration: Theme Light", "Configuration: Select Compiler", "Configuration: Reset Compiler",
@@ -3112,7 +3164,7 @@ function _command_palette_search_texts()
     "file open project workspace ctrl o", "file quick open find file ctrl p", "file recent files switch ctrl e", "file new project create", "file reload project refresh", "file save ctrl s",
     "build clean", "build compile f5", "build rebuild clean compile", "build run execute f6", "build stop cancel", "build test tests f7", "build test current file ctrl f7", "build test related file ctrl shift f7",
     "edit find search ctrl f", "edit find next f3", "edit rename symbol refactor f2 preview", "edit complete autocomplete ctrl space", "edit format document",
-    "navigation back alt left history previous", "navigation forward alt right history next", "navigation outline symbols current file", "navigation workspace health dashboard status diagnostics", "navigation todo todos fixme tasks", "navigation test explorer tests runner", "navigation related tests current file", "navigation import graph imports dependencies", "navigation call hierarchy callers references", "navigation symbol info quick documentation inspect", "navigation code inspections unused symbols lint analysis", "navigation project index imports files", "navigation project symbols", "navigation goto symbol ctrl t",
+    "navigation back alt left history previous", "navigation forward alt right history next", "navigation toggle bookmark ctrl f2 marker favorite", "navigation bookmarks shift f2 markers favorites", "navigation outline symbols current file", "navigation workspace health dashboard status diagnostics", "navigation todo todos fixme tasks", "navigation test explorer tests runner", "navigation related tests current file", "navigation import graph imports dependencies", "navigation call hierarchy callers references", "navigation symbol info quick documentation inspect", "navigation code inspections unused symbols lint analysis", "navigation project index imports files", "navigation project symbols", "navigation goto symbol ctrl t",
     "navigation goto line ctrl g", "navigation goto definition f12", "navigation find references shift f12", "navigation search word project", "navigation problems diagnostics errors warnings",
     "configuration compile settings compiler build", "configuration build profile debug", "configuration build profile release",
     "configuration theme dark", "configuration theme light", "configuration compiler select", "configuration compiler reset default",
@@ -3170,6 +3222,8 @@ function _perform_palette_command(st, id)
   if id == ID_EDIT_FORMAT then return _format_current(st) end if
   if id == ID_NAV_BACK then return _navigate_back(st) end if
   if id == ID_NAV_FORWARD then return _navigate_forward(st) end if
+  if id == ID_NAV_TOGGLE_BOOKMARK then return _toggle_bookmark(st) end if
+  if id == ID_NAV_BOOKMARKS then return _show_bookmarks(st) end if
   if id == ID_NAV_OUTLINE then return _show_outline(st) end if
   if id == ID_NAV_WORKSPACE_HEALTH then return _show_workspace_health(st) end if
   if id == ID_NAV_TODOS then return _show_todos(st) end if
@@ -4859,7 +4913,7 @@ function _create_state(root)
   win.set_control_font(btn_copy, font_ui)
   win.set_control_font(btn_paste, font_ui)
 
-  st = AppState(hwnd, menus[0], menus[1], menus[2], menus[3], menus[4], menus[5], toolbar_bg, tree_images, tree, tabbar, line_numbers, editor, editor, log, panel_title, result_list, autocomplete_list, status, btn_open, btn_save, btn_build, btn_run, btn_test, btn_reload, btn_cut, btn_copy, btn_paste, toolbar_icons, font_ui, font_code, p, compiler_path, build_keep_going, build_max_errors, build_subsystem, build_extra_args, build_profile, theme_mode, [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], -1, "", -1, [], [], 0, 0, "", "", -1, 0, 0, false, "", 0, "", -1, 0, false, 0, 0, array(256, 0), false, false, -1, "", 0, "", "log", [], [], [], [], "", void, "", false, "", 0, true)
+  st = AppState(hwnd, menus[0], menus[1], menus[2], menus[3], menus[4], menus[5], toolbar_bg, tree_images, tree, tabbar, line_numbers, editor, editor, log, panel_title, result_list, autocomplete_list, status, btn_open, btn_save, btn_build, btn_run, btn_test, btn_reload, btn_cut, btn_copy, btn_paste, toolbar_icons, font_ui, font_code, p, compiler_path, build_keep_going, build_max_errors, build_subsystem, build_extra_args, build_profile, theme_mode, [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], -1, "", -1, [], [], [], 0, 0, "", "", -1, 0, 0, false, "", 0, "", -1, 0, false, 0, 0, array(256, 0), false, false, -1, "", 0, "", "log", [], [], [], [], "", void, "", false, "", 0, true)
   st = _load_build_config(st)
   st = _populate_project_tree(st)
   st = _open_file(st, _entry_file(p))
@@ -5989,6 +6043,8 @@ function _perform_command(st, id)
   if id == ID_EDIT_FORMAT then return _format_current(st) end if
   if id == ID_NAV_BACK then return _navigate_back(st) end if
   if id == ID_NAV_FORWARD then return _navigate_forward(st) end if
+  if id == ID_NAV_TOGGLE_BOOKMARK then return _toggle_bookmark(st) end if
+  if id == ID_NAV_BOOKMARKS then return _show_bookmarks(st) end if
   if id == ID_NAV_OUTLINE then return _show_outline(st) end if
   if id == ID_NAV_WORKSPACE_HEALTH then return _show_workspace_health(st) end if
   if id == ID_NAV_TODOS then return _show_todos(st) end if
@@ -6215,6 +6271,8 @@ function _handle_hotkeys(st)
   if ctrl and _key_pressed(st, win.VK_SPACE) then return _autocomplete(st) end if
   if ctrl and shift and _key_pressed(st, win.VK_F7) then return _run_related_test_file(st) end if
   if ctrl and _key_pressed(st, win.VK_F7) then return _run_current_test_file(st) end if
+  if ctrl and _key_pressed(st, win.VK_F2) then return _toggle_bookmark(st) end if
+  if shift and _key_pressed(st, win.VK_F2) then return _show_bookmarks(st) end if
   if _key_pressed(st, win.VK_F2) then return _open_rename_symbol_window(st) end if
   if _key_pressed(st, win.VK_F3) then return _find_next(st) end if
   if _key_pressed(st, win.VK_F5) then return _build_project(st) end if
