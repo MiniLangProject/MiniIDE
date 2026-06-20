@@ -158,6 +158,7 @@ function Test-StaticWiring {
   Assert-True ($main.Contains("ID_EDIT_FIND_NEXT")) "Find next command is missing."
   Assert-True ($main.Contains("ID_EDIT_COMPLETE")) "Autocomplete command is missing."
   Assert-True ($main.Contains("ID_AUTOCOMPLETE_LIST")) "Autocomplete popup list is missing."
+  Assert-True ($main.Contains("lang_service.completion_labels")) "Autocomplete must use the language service facade."
   Assert-True ($main.Contains("_accept_autocomplete")) "Autocomplete accept handler is missing."
   Assert-True ($main.Contains("ID_CTX_TREE_NEW_TEST")) "Tree new test-file context command is missing."
   Assert-True ($main.Contains("ID_CTX_TREE_RENAME")) "Tree rename context command is missing."
@@ -217,6 +218,7 @@ function Test-StaticWiring {
   Assert-True (-not $markdown.Contains("_md_display_pos(doc.text")) "Markdown styles must not over-shift ranges for CRLF."
   Assert-True ($main.Contains('import "ui/theme.ml" as theme')) "Theme module import is missing."
   Assert-True ($main.Contains('import "lang/index.ml" as lang_index')) "Project index module import is missing."
+  Assert-True ($main.Contains('import "lang/service.ml" as lang_service')) "Language service module import is missing."
   $theme = Get-Content -LiteralPath (Join-Path $Root "src\ui\theme.ml") -Raw
   Assert-True ($theme.Contains("function syntax_color")) "Theme module must provide syntax colors."
   Assert-True ($markdown.Contains('import "ui/theme.ml" as theme')) "Markdown module must use shared theme colors."
@@ -365,6 +367,27 @@ function Test-ProjectIndex {
   & $out
   $exit = $LASTEXITCODE
   Assert-True ($exit -eq 0) "Project index regression test failed."
+}
+
+# Compile and run focused language service regression tests.
+function Test-LanguageService {
+  $fixture = Join-Path $Root "build\ServiceTestProject"
+  if (Test-Path -LiteralPath $fixture) {
+    Remove-Item -LiteralPath $fixture -Recurse -Force
+  }
+  $out = Join-Path $Root "build\service_test.exe"
+  if (Test-Path -LiteralPath $out) { Remove-Item -LiteralPath $out -Force }
+  $args = @(
+    ".\tests\service_test.ml",
+    ".\build\service_test.exe",
+    "-I", ".\src",
+    "-I", ".\MiniLangCompilerML",
+    "--keep-going", "--max-errors", "80", "--subsystem", "console"
+  )
+  Invoke-Checked $Compiler $args $Root | Out-Null
+  & $out
+  $exit = $LASTEXITCODE
+  Assert-True ($exit -eq 0) "Language service regression test failed."
 }
 
 # Create a small sample project used by the UI build smoke test.
@@ -664,6 +687,7 @@ try {
   Step "markdown renderer" { Test-MarkdownRenderer }
   Step "project loader" { Test-ProjectLoader }
   Step "project index" { Test-ProjectIndex }
+  Step "language service" { Test-LanguageService }
   Step "compile MiniIDE to temp" { Test-CompileMiniIde }
   if (-not $SkipUi) {
     Step "UI background compile smoke" { Test-UiBuildSmoke }

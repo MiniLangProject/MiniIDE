@@ -24,6 +24,7 @@ import "ui/theme.ml" as theme
 import "ui/markdown.ml" as markdown
 import "lang/symbols.ml" as symbols
 import "lang/index.ml" as lang_index
+import "lang/service.ml" as lang_service
 
 struct AppState
   hwnd,
@@ -2836,8 +2837,8 @@ function _autocomplete(st)
   display_text = win.edit_get_text(st.editor)
   sel = win.edit_getsel(st.editor)
   prefix = _word_prefix_before(display_text, sel[0])
-  index = symbols.build_index(st.project)
-  items = symbols.completions(index, prefix)
+  snapshot = lang_service.analyze_project(st.project)
+  items = lang_service.completion_labels(snapshot, prefix, 24)
   if typeof(items) != "array" or len(items) <= 0 then
     if prefix == "" then return _set_log(st, "No completions found.") end if
     return _set_log(st, "No completions for: " + prefix)
