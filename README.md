@@ -273,6 +273,9 @@ the compiler command for advanced flags such as heap or tracing options.
 
 ## Main Commands
 
+The command palette supports label, alias, shortcut, and acronym searches such
+as `qof` for `Quick Open File`.
+
 File menu:
 
 - `New Project...`: create a standard MiniLang project.

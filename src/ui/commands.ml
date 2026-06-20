@@ -18,6 +18,32 @@ package ui.commands
 
 import std.string as s
 
+// Return true when a character belongs to an ASCII command word.
+function _is_word_char(ch)
+  if typeof(ch) != "string" or ch == "" then return false end if
+  b = bytes(ch)
+  if len(b) <= 0 then return false end if
+  c = b[0]
+  return (c >= 65 and c <= 90) or (c >= 97 and c <= 122) or (c >= 48 and c <= 57)
+end function
+
+// Return a lower-case acronym built from command label word starts.
+function _acronym(text)
+  if typeof(text) != "string" then return "" end if
+  result = ""
+  in_word = false
+  for i = 0 to len(text) - 1
+    ch = text[i]
+    if _is_word_char(ch) then
+      if in_word == false then result = result + s.toLowerAscii(ch) end if
+      in_word = true
+    else
+      in_word = false
+    end if
+  end for
+  return result
+end function
+
 // Return the display labels exposed by the command palette.
 function labels()
   return [
@@ -54,9 +80,12 @@ function matches(labels, search_texts, idx, query)
   if typeof(query) != "string" or query == "" then return true end if
   extra = ""
   if typeof(search_texts) == "array" and idx < len(search_texts) then extra = search_texts[idx] end if
-  q = s.toLowerAscii(query)
+  q = s.toLowerAscii(s.trim(query))
+  if q == "" then return true end if
   hay = s.toLowerAscii(labels[idx] + " " + extra)
-  return s.indexOf(hay, q, 0) >= 0
+  if s.indexOf(hay, q, 0) >= 0 then return true end if
+  if s.indexOf(q, " ", 0) >= 0 then return false end if
+  return s.indexOf(_acronym(labels[idx]), q, 0) >= 0
 end function
 
 // Return the command selected by query or list selection.
