@@ -51,7 +51,7 @@ src/
   lang/           MiniLang syntax and symbol helpers.
   platform/       Win32 declarations and native UI wrappers.
   project/        Project file loading and project template generation.
-  ui/             Theme and Markdown rendering modules.
+  ui/             Theme, Markdown rendering, and command palette helpers.
   main.ml         MiniIDE application entry point.
 
 tests/
