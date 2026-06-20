@@ -208,6 +208,7 @@ const ID_NAV_PROBLEMS = 1032
 const ID_NAV_PROJECT_INDEX = 1048
 const ID_NAV_FIND_REFERENCES = 1049
 const ID_NAV_PROJECT_SYMBOLS = 1050
+const ID_NAV_GOTO_SYMBOL = 1051
 const ID_EDIT_COMPLETE = 1033
 const ID_EDIT_FORMAT = 1034
 const ID_HELP_WELCOME = 1035
@@ -251,6 +252,9 @@ const ID_RENAME_CANCEL = 1533
 const ID_HELP_SEARCH_TEXT_EDIT = 1541
 const ID_HELP_SEARCH_OK = 1542
 const ID_HELP_SEARCH_CANCEL = 1543
+const ID_SYMBOL_SEARCH_TEXT_EDIT = 1551
+const ID_SYMBOL_SEARCH_OK = 1552
+const ID_SYMBOL_SEARCH_CANCEL = 1553
 
 const ID_CTX_TAB_CLOSE = 1201
 const ID_CTX_TAB_CLOSE_OTHERS = 1202
@@ -1229,6 +1233,7 @@ function _create_menus()
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_OUTLINE, "&Outline")
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_PROJECT_INDEX, "Project &Index")
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_PROJECT_SYMBOLS, "Project &Symbols")
+  win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_GOTO_SYMBOL, "Go to &Symbol...\tCtrl+T")
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_GOTO_LINE, "&Go to Line...\tCtrl+G")
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_GOTO_DEFINITION, "Go to &Definition\tF12")
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_FIND_REFERENCES, "Find &References\tShift+F12")
@@ -2889,12 +2894,16 @@ function _show_outline(st)
   return _show_result_panel(st, "outline", title, rows, files, lines_out, cols)
 end function
 
-// Show project symbols.
-function _show_project_symbols(st)
+// Show project symbols matching a query.
+function _show_project_symbols_query(st, query)
   // Walk collections defensively because project data can be partially populated.
+  if typeof(query) != "string" then query = "" end if
   snapshot = lang_service.analyze_project(st.project)
-  items = lang_service.symbol_items(snapshot, "", 300)
-  if typeof(items) != "array" or len(items) <= 0 then return _set_log(st, "Project symbols: no symbols found.") end if
+  items = lang_service.symbol_items(snapshot, query, 300)
+  if typeof(items) != "array" or len(items) <= 0 then
+    if query == "" then return _set_log(st, "Project symbols: no symbols found.") end if
+    return _set_log(st, "Project symbols: no matches for " + query)
+  end if
 
   rows = []
   files = []
@@ -2910,8 +2919,117 @@ function _show_project_symbols(st)
   end for
 
   title = "Project Symbols"
+  if query != "" then title = "Project Symbols: " + query end if
   if len(items) >= 300 then title = title + " (first 300)" end if
   return _show_result_panel(st, "project-symbols", title, rows, files, lines_out, cols)
+end function
+
+// Show all project symbols.
+function _show_project_symbols(st)
+  return _show_project_symbols_query(st, "")
+end function
+
+// Return the initial symbol search text.
+function _initial_symbol_search_text(st)
+  if st.active_tab < 0 or st.active_tab >= len(st.open_texts) then return "" end if
+  text = win.edit_get_text(st.editor)
+  sel = win.edit_getsel(st.editor)
+  word = _word_at_pos(text, sel[0])
+  if word != "" then return word end if
+  return ""
+end function
+
+// Open goto symbol window.
+function _open_goto_symbol_window(st)
+  // Run a local message loop so the modal UI stays responsive.
+  initial = _initial_symbol_search_text(st)
+  dlg = win.create_main_window("Go to Symbol", 500, 180)
+  if dlg is void then return st end if
+  _settings_label(dlg, st.font_ui, "Symbol", 20, 28, 90, 24)
+  symbol_edit = _settings_edit_id(dlg, st.font_ui, initial, 116, 24, 340, 26, ID_SYMBOL_SEARCH_TEXT_EDIT)
+  _settings_label(dlg, st.font_ui, "Leave empty to show all project symbols.", 116, 56, 340, 22)
+  ok_btn = _settings_button(dlg, st.font_ui, "Search", 244, 104, 94, 30, ID_SYMBOL_SEARCH_OK)
+  cancel_btn = _settings_button(dlg, st.font_ui, "Cancel", 348, 104, 108, 30, ID_SYMBOL_SEARCH_CANCEL)
+  win.edit_select_all(symbol_edit)
+  win.SetFocus(symbol_edit)
+
+  query = ""
+  accepted = false
+  done = false
+  while done == false and win.IsWindow(dlg)
+    msg = bytes(48, 0)
+    while win.PeekMessageW(msg, void, 0, 0, win.PM_REMOVE)
+      code = win.msg_message(msg)
+      hwnd = win.msg_hwnd(msg)
+      handled = false
+
+      if code == win.WM_QUIT then
+        st.running = false
+        done = true
+        handled = true
+      else if code == win.WM_CLOSE and hwnd == dlg then
+        done = true
+        win.DestroyWindow(dlg)
+        handled = true
+      else if code == win.WM_CLOSE and hwnd == st.hwnd then
+        st = _request_exit(st)
+        done = true
+        if win.IsWindow(dlg) then win.DestroyWindow(dlg) end if
+        handled = true
+      else if (code == win.WM_DESTROY or code == win.WM_NCDESTROY) and hwnd == dlg then
+        done = true
+        handled = true
+      else if code == win.WM_KEYDOWN then
+        key = win.msg_wparam_u32(msg)
+        if key == win.VK_ESCAPE then
+          done = true
+          win.DestroyWindow(dlg)
+          handled = true
+        else if key == win.VK_RETURN then
+          query = s.trim(win.get_control_text(symbol_edit))
+          accepted = true
+          done = true
+          win.DestroyWindow(dlg)
+          handled = true
+        end if
+      else if code == win.WM_COMMAND and hwnd == dlg then
+        cid = win.msg_command_id(msg)
+        if cid == ID_SYMBOL_SEARCH_CANCEL then
+          done = true
+          win.DestroyWindow(dlg)
+          handled = true
+        else if cid == ID_SYMBOL_SEARCH_OK then
+          query = s.trim(win.get_control_text(symbol_edit))
+          accepted = true
+          done = true
+          win.DestroyWindow(dlg)
+          handled = true
+        end if
+      else if code == win.WM_LBUTTONUP then
+        if hwnd == cancel_btn then
+          done = true
+          win.DestroyWindow(dlg)
+          handled = true
+        else if hwnd == ok_btn then
+          query = s.trim(win.get_control_text(symbol_edit))
+          accepted = true
+          done = true
+          win.DestroyWindow(dlg)
+          handled = true
+        end if
+      end if
+
+      if handled == false then
+        win.TranslateMessage(msg)
+        win.DispatchMessageW(msg)
+      end if
+    end while
+    if done == false then win.Sleep(15) end if
+  end while
+
+  if accepted then return _show_project_symbols_query(st, query) end if
+  if st.running and win.IsWindow(st.hwnd) then win.SetFocus(st.editor) end if
+  return st
 end function
 
 // Show project index.
@@ -4799,6 +4917,7 @@ function _perform_command(st, id)
   if id == ID_NAV_OUTLINE then return _show_outline(st) end if
   if id == ID_NAV_PROJECT_INDEX then return _show_project_index(st) end if
   if id == ID_NAV_PROJECT_SYMBOLS then return _show_project_symbols(st) end if
+  if id == ID_NAV_GOTO_SYMBOL then return _open_goto_symbol_window(st) end if
   if id == ID_NAV_GOTO_LINE then return _open_goto_line_window(st) end if
   if id == ID_NAV_GOTO_DEFINITION then return _goto_definition(st) end if
   if id == ID_NAV_FIND_REFERENCES then return _find_references(st) end if
@@ -5002,6 +5121,7 @@ function _handle_hotkeys(st)
   if ctrl and _key_pressed(st, win.VK_C) then return _edit_copy(st) end if
   if ctrl and _key_pressed(st, win.VK_F) then return _open_find_window(st) end if
   if ctrl and _key_pressed(st, win.VK_G) then return _open_goto_line_window(st) end if
+  if ctrl and _key_pressed(st, win.VK_T) then return _open_goto_symbol_window(st) end if
   if ctrl and _key_pressed(st, win.VK_V) then return _edit_paste(st) end if
   if ctrl and _key_pressed(st, win.VK_SPACE) then return _autocomplete(st) end if
   if _key_pressed(st, win.VK_F3) then return _find_next(st) end if
