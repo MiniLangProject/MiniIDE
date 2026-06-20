@@ -28,6 +28,15 @@ struct ReferenceItem
   text,
 end struct
 
+struct CallHierarchyItem
+  name,
+  kind,
+  file,
+  line,
+  col,
+  text,
+end struct
+
 struct DiagnosticItem
   kind,
   message,
@@ -441,4 +450,22 @@ function references(snapshot, word, limit)
   end for
 
   return refs
+end function
+
+// Return a simple call hierarchy for a symbol-like word.
+function call_hierarchy_items(snapshot, word, limit)
+  items = []
+  if typeof(word) != "string" or word == "" then return items end if
+  refs = references(snapshot, word, limit)
+  if typeof(refs) != "array" or len(refs) <= 0 then return items end if
+  for i = 0 to len(refs) - 1
+    ref = refs[i]
+    if typeof(ref) != "struct" then continue end if
+    kind = "reference"
+    trimmed = s.trim(ref.text)
+    if s.startsWith(trimmed, "function " + word) then kind = "definition" end if
+    items = items + [CallHierarchyItem(word, kind, ref.file, ref.line, ref.col, ref.text)]
+    if typeof(limit) == "int" and limit > 0 and len(items) >= limit then return items end if
+  end for
+  return items
 end function

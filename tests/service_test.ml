@@ -86,6 +86,17 @@ function _has_import_item(items, target, resolved)
   return false
 end function
 
+// Return true when a call hierarchy item of the requested kind exists.
+function _has_call_item(items, kind, line)
+  if typeof(items) != "array" then return false end if
+  if len(items) <= 0 then return false end if
+  for i = 0 to len(items) - 1
+    item = items[i]
+    if typeof(item) == "struct" and item.kind == kind and item.line == line then return true end if
+  end for
+  return false
+end function
+
 // Return true when a reference exists on the requested line.
 function _has_reference_line(items, line)
   if typeof(items) != "array" then return false end if
@@ -227,6 +238,10 @@ function main(args)
   if _assert_true("references include call and definition only", len(refs) == 2) == false then ok = false end if
   if _assert_true("references include call line", _has_reference_line(refs, 6)) == false then ok = false end if
   if _assert_true("references include definition line", _has_reference_line(refs, 8)) == false then ok = false end if
+
+  call_items = service.call_hierarchy_items(snapshot, "modelValue", 20)
+  if _assert_true("call hierarchy includes call reference", _has_call_item(call_items, "reference", 6)) == false then ok = false end if
+  if _assert_true("call hierarchy includes definition", _has_call_item(call_items, "definition", 8)) == false then ok = false end if
 
   diagnostics = service.diagnostics(snapshot)
   if _assert_true("project diagnostics include unresolved imports", _has_diagnostic(diagnostics, "Unresolved import: missing\\nope.ml")) == false then ok = false end if
