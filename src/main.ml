@@ -3095,26 +3095,41 @@ end function
 // Show problems.
 function _show_problems(st)
   // Walk collections defensively because project data can be partially populated.
-  items = build.parse_diagnostics(st.build_last_log)
-  if typeof(items) != "array" or len(items) <= 0 then
-    return _set_log(st, "Problems: no entries in the last build log.")
-  end if
   rows = []
   files = []
   lines_out = []
   cols = []
-  for i = 0 to len(items) - 1
-    d = items[i]
-    if typeof(d) != "struct" then continue end if
-    file = d.file
-    if file != "" and _is_abs(file) == false and typeof(st.project) == "struct" then
-      file = project.resolve_project_path(st.project, file)
-    end if
-    rows = rows + [d.kind + "  " + _project_relative_path(st, file) + ":" + d.line + ":" + d.col + "  " + d.message]
-    files = files + [file]
-    lines_out = lines_out + [d.line]
-    cols = cols + [d.col]
-  end for
+
+  snapshot = lang_service.analyze_project(st.project)
+  project_items = lang_service.diagnostics(snapshot)
+  if typeof(project_items) == "array" and len(project_items) > 0 then
+    for pi = 0 to len(project_items) - 1
+      d = project_items[pi]
+      if typeof(d) != "struct" then continue end if
+      rows = rows + [d.kind + "  " + _project_relative_path(st, d.file) + ":" + d.line + ":" + d.col + "  " + d.message]
+      files = files + [d.file]
+      lines_out = lines_out + [d.line]
+      cols = cols + [d.col]
+    end for
+  end if
+
+  items = build.parse_diagnostics(st.build_last_log)
+  if typeof(items) == "array" and len(items) > 0 then
+    for i = 0 to len(items) - 1
+      d = items[i]
+      if typeof(d) != "struct" then continue end if
+      file = d.file
+      if file != "" and _is_abs(file) == false and typeof(st.project) == "struct" then
+        file = project.resolve_project_path(st.project, file)
+      end if
+      rows = rows + [d.kind + "  " + _project_relative_path(st, file) + ":" + d.line + ":" + d.col + "  " + d.message]
+      files = files + [file]
+      lines_out = lines_out + [d.line]
+      cols = cols + [d.col]
+    end for
+  end if
+
+  if len(rows) <= 0 then return _set_log(st, "Problems: no entries in project analysis or the last build log.") end if
   return _show_result_panel(st, "problems", "Problems", rows, files, lines_out, cols)
 end function
 

@@ -28,6 +28,14 @@ struct ReferenceItem
   text,
 end struct
 
+struct DiagnosticItem
+  kind,
+  message,
+  file,
+  line,
+  col,
+end struct
+
 struct CompletionItem
   label,
   insert_text,
@@ -166,6 +174,25 @@ function symbol_items(snapshot, prefix, limit)
     items = items + [SymbolItem(sym.name, sym.kind, sym.file, sym.line)]
     if len(items) >= limit then return items end if
   end for
+
+  return items
+end function
+
+// Return project-analysis diagnostics.
+function diagnostics(snapshot)
+  items = []
+  idx = void
+  if typeof(snapshot) == "struct" then idx = snapshot.project_index end if
+  if typeof(idx) != "struct" or typeof(idx.unresolved_imports) != "array" then return items end if
+
+  if len(idx.unresolved_imports) > 0 then
+    for i = 0 to len(idx.unresolved_imports) - 1
+      imp = idx.unresolved_imports[i]
+      if typeof(imp) != "struct" then continue end if
+      msg = "Unresolved import: " + imp.target
+      items = items + [DiagnosticItem("warning", msg, imp.file, imp.line + 1, 1)]
+    end for
+  end if
 
   return items
 end function

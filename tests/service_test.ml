@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import std.fs as fs
+import std.string as s
 import "project/project.ml" as project
 import "lang/service.ml" as service
 
@@ -74,6 +75,17 @@ function _has_reference_line(items, line)
   return false
 end function
 
+// Return true when a diagnostic with a message fragment exists.
+function _has_diagnostic(items, fragment)
+  if typeof(items) != "array" then return false end if
+  if len(items) <= 0 then return false end if
+  for i = 0 to len(items) - 1
+    item = items[i]
+    if typeof(item) == "struct" and s.indexOf(item.message, fragment, 0) >= 0 then return true end if
+  end for
+  return false
+end function
+
 // Create a focused language service fixture.
 function _create_fixture(root)
   _mkdir("build")
@@ -91,6 +103,7 @@ function _create_fixture(root)
     "importPath=src\n")
 
   fs.writeAllText(project.path_join(root, "src\\main.ml"),
+    "import \"missing\\nope.ml\" as nope\n" +
     "struct Model\n" +
     "end struct\n" +
     "function main(args)\n" +
@@ -137,8 +150,11 @@ function main(args)
 
   refs = service.references(snapshot, "modelValue", 20)
   if _assert_true("references include call and definition only", len(refs) == 2) == false then ok = false end if
-  if _assert_true("references include call line", _has_reference_line(refs, 4)) == false then ok = false end if
-  if _assert_true("references include definition line", _has_reference_line(refs, 6)) == false then ok = false end if
+  if _assert_true("references include call line", _has_reference_line(refs, 5)) == false then ok = false end if
+  if _assert_true("references include definition line", _has_reference_line(refs, 7)) == false then ok = false end if
+
+  diagnostics = service.diagnostics(snapshot)
+  if _assert_true("project diagnostics include unresolved imports", _has_diagnostic(diagnostics, "Unresolved import: missing\\nope.ml")) == false then ok = false end if
 
   if ok == false then return 1 end if
   print "Language service tests OK"
