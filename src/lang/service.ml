@@ -58,7 +58,16 @@ struct TodoItem
   text,
 end struct
 
+struct TestItem
+  name,
+  kind,
+  file,
+  line,
+  status,
+end struct
+
 struct LanguageSnapshot
+  project,
   project_index,
 end struct
 
@@ -99,7 +108,7 @@ end function
 
 // Analyze a project and return the reusable language snapshot.
 function analyze_project(project)
-  return LanguageSnapshot(lang_index.build_project_index(project))
+  return LanguageSnapshot(project, lang_index.build_project_index(project))
 end function
 
 // Return true when the completion item already exists.
@@ -252,6 +261,90 @@ function todo_items(snapshot, limit)
       items = items + [TodoItem(kind, file_info.path, li + 1, s.trim(raw))]
       if len(items) >= limit then return items end if
     end for
+  end for
+
+  return items
+end function
+
+// Return true when the path is absolute on Windows.
+function _is_abs_path(path)
+  if typeof(path) != "string" then return false end if
+  if len(path) > 2 and path[1] == ":" then return true end if
+  if s.startsWith(path, "\\") or s.startsWith(path, "/") then return true end if
+  return false
+end function
+
+// Join a project root and relative path.
+function _join_path(root, path)
+  if typeof(root) != "string" or root == "" then return path end if
+  if typeof(path) != "string" or path == "" then return root end if
+  if _is_abs_path(path) then return path end if
+  last = root[len(root) - 1]
+  if last == "\\" or last == "/" then return root + path end if
+  return root + "\\" + path
+end function
+
+// Return true when a test item is already present.
+function _has_test_item(items, name, file, line)
+  if typeof(items) != "array" then return false end if
+  if len(items) <= 0 then return false end if
+  for i = 0 to len(items) - 1
+    item = items[i]
+    if typeof(item) == "struct" and item.name == name and item.file == file and item.line == line then return true end if
+  end for
+  return false
+end function
+
+// Add a test item once.
+function _add_test_item(items, name, kind, file, line, status)
+  if typeof(name) != "string" or name == "" then return items end if
+  if typeof(file) != "string" then file = "" end if
+  if typeof(line) != "int" or line <= 0 then line = 1 end if
+  if _has_test_item(items, name, file, line) then return items end if
+  return items + [TestItem(name, kind, file, line, status)]
+end function
+
+// Return true when a file path should be treated as test-related.
+function _is_test_path(path)
+  if typeof(path) != "string" then return false end if
+  lower = s.toLowerAscii(path)
+  return s.indexOf(lower, "\\tests\\", 0) >= 0 or s.indexOf(lower, "/tests/", 0) >= 0 or s.endsWith(lower, "_test.ml") or s.endsWith(lower, "\\test.ml")
+end function
+
+// Return true when a symbol name looks like a test.
+function _is_test_symbol(name)
+  if typeof(name) != "string" then return false end if
+  lower = s.toLowerAscii(name)
+  return s.startsWith(lower, "test") or s.indexOf(lower, "_test", 0) >= 0
+end function
+
+// Return test entry and test-like functions for a project snapshot.
+function test_items(snapshot, limit)
+  items = []
+  if typeof(limit) != "int" or limit <= 0 then limit = 200 end if
+  project = void
+  idx = void
+  if typeof(snapshot) == "struct" then
+    project = snapshot.project
+    idx = snapshot.project_index
+  end if
+
+  if typeof(project) == "struct" then
+    test_entry = project.test_entry
+    test_file = _join_path(project.root, test_entry)
+    status = "configured"
+    if fs.exists(test_file) == false then status = "missing" end if
+    items = _add_test_item(items, "Test Entry", "entry", test_file, 1, status)
+  end if
+
+  if typeof(idx) != "struct" or typeof(idx.symbols) != "array" then return items end if
+  for si = 0 to len(idx.symbols) - 1
+    sym = idx.symbols[si]
+    if typeof(sym) != "struct" then continue end if
+    if sym.kind != "function" and sym.kind != "method" then continue end if
+    if _is_test_path(sym.file) == false and _is_test_symbol(sym.name) == false then continue end if
+    items = _add_test_item(items, sym.name, sym.kind, sym.file, sym.line + 1, "discovered")
+    if len(items) >= limit then return items end if
   end for
 
   return items

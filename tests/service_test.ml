@@ -97,6 +97,17 @@ function _has_todo(items, kind, fragment)
   return false
 end function
 
+// Return true when a test explorer item exists.
+function _has_test_item(items, name, kind, status)
+  if typeof(items) != "array" then return false end if
+  if len(items) <= 0 then return false end if
+  for i = 0 to len(items) - 1
+    item = items[i]
+    if typeof(item) == "struct" and item.name == name and item.kind == kind and item.status == status then return true end if
+  end for
+  return false
+end function
+
 // Return true when a health line equals the requested text.
 function _has_health_line(items, expected)
   if typeof(items) != "array" then return false end if
@@ -112,6 +123,7 @@ function _create_fixture(root)
   _mkdir("build")
   _mkdir(root)
   _mkdir(project.path_join(root, "src"))
+  _mkdir(project.path_join(root, "tests"))
 
   fs.writeAllText(project.path_join(root, "ServiceTest.mlproj"),
     "name=ServiceTest\n" +
@@ -138,6 +150,11 @@ function _create_fixture(root)
     "  return 2\n" +
     "end function\n" +
     "// TODO: revisit model lifecycle\n")
+
+  fs.writeAllText(project.path_join(root, "tests\\main_test.ml"),
+    "function test_model_lifecycle()\n" +
+    "  return 0\n" +
+    "end function\n")
 
   return root
 end function
@@ -179,13 +196,17 @@ function main(args)
   if _assert_true("project diagnostics include unresolved imports", _has_diagnostic(diagnostics, "Unresolved import: missing\\nope.ml")) == false then ok = false end if
 
   health = service.workspace_health_lines(snapshot)
-  if _assert_true("workspace health counts files", _has_health_line(health, "Files: 1")) == false then ok = false end if
+  if _assert_true("workspace health counts files", _has_health_line(health, "Files: 2")) == false then ok = false end if
   if _assert_true("workspace health counts imports", _has_health_line(health, "Imports: 1")) == false then ok = false end if
   if _assert_true("workspace health counts unresolved imports", _has_health_line(health, "Unresolved imports: 1")) == false then ok = false end if
   if _assert_true("workspace health counts diagnostics", _has_health_line(health, "Diagnostics: 1")) == false then ok = false end if
 
   todos = service.todo_items(snapshot, 20)
   if _assert_true("TODO explorer finds project task", _has_todo(todos, "TODO", "revisit model lifecycle")) == false then ok = false end if
+
+  tests = service.test_items(snapshot, 20)
+  if _assert_true("test explorer includes configured entry", _has_test_item(tests, "Test Entry", "entry", "configured")) == false then ok = false end if
+  if _assert_true("test explorer discovers test function", _has_test_item(tests, "test_model_lifecycle", "function", "discovered")) == false then ok = false end if
 
   if ok == false then return 1 end if
   print "Language service tests OK"
