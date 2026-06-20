@@ -298,6 +298,8 @@ Navigation menu:
 - `Bookmarks` / `Shift+F2`: show session bookmarks in the results panel.
 - `Next Bookmark` / `Alt+Down` and `Previous Bookmark` / `Alt+Up`: cycle
   through bookmarked locations.
+- `Reveal Active File` / `Alt+F1`: select the active editor file in the
+  project tree.
 - `Outline`: show package/function/struct/const symbols for the active file.
 - `File Structure` / `Ctrl+F12`: show symbols in the active file.
 - `Project Symbols` and `Go to Symbol...` / `Ctrl+T`: browse or filter symbols
