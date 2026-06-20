@@ -45,6 +45,14 @@ struct DiagnosticItem
   col,
 end struct
 
+struct InspectionItem
+  severity,
+  message,
+  file,
+  line,
+  col,
+end struct
+
 struct CompletionItem
   label,
   insert_text,
@@ -496,5 +504,31 @@ function call_hierarchy_items(snapshot, word, limit)
     items = items + [CallHierarchyItem(word, kind, ref.file, ref.line, ref.col, ref.text)]
     if typeof(limit) == "int" and limit > 0 and len(items) >= limit then return items end if
   end for
+  return items
+end function
+
+// Return lightweight code-inspection findings.
+function code_inspection_items(snapshot, limit)
+  items = []
+  if typeof(limit) != "int" or limit <= 0 then limit = 200 end if
+  idx = void
+  if typeof(snapshot) == "struct" then idx = snapshot.project_index end if
+  if typeof(idx) != "struct" or typeof(idx.symbols) != "array" then return items end if
+
+  for si = 0 to len(idx.symbols) - 1
+    sym = idx.symbols[si]
+    if typeof(sym) != "struct" then continue end if
+    if sym.kind != "function" and sym.kind != "method" and sym.kind != "const" and sym.kind != "struct" and sym.kind != "enum" then continue end if
+    if sym.name == "main" or _is_test_symbol(sym.name) then continue end if
+    refs = references(snapshot, sym.name, 2)
+    ref_count = 0
+    if typeof(refs) == "array" then ref_count = len(refs) end if
+    if ref_count <= 1 then
+      msg = "Possibly unused " + sym.kind + ": " + sym.name
+      items = items + [InspectionItem("info", msg, sym.file, sym.line + 1, 1)]
+      if len(items) >= limit then return items end if
+    end if
+  end for
+
   return items
 end function
