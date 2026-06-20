@@ -324,6 +324,7 @@ function Test-StaticWiring {
   Assert-True ($commands.Contains("function labels")) "Command palette labels helper is missing."
   Assert-True ($commands.Contains("function search_texts")) "Command palette search helper is missing."
   Assert-True ($commands.Contains("function pick")) "Command palette pick helper is missing."
+  Assert-True (Test-Path -LiteralPath (Join-Path $Root "tests\commands_test.ml")) "Command palette regression test is missing."
   Assert-True ($commands.Contains("File: Quick Open File")) "Command palette must expose Quick Open."
   Assert-True ($commands.Contains("Edit: Undo")) "Command palette must expose Undo."
   Assert-True ($commands.Contains("Edit: Redo")) "Command palette must expose Redo."
@@ -504,6 +505,23 @@ function Test-CompileMiniIde {
     }
   }
   throw "MiniIDE test executable could not be compiled and started after multiple attempts. $lastError"
+}
+
+# Compile and run focused command palette regression tests.
+function Test-CommandPalette {
+  $out = Join-Path $Root "build\commands_test.exe"
+  if (Test-Path -LiteralPath $out) { Remove-Item -LiteralPath $out -Force }
+  $args = @(
+    ".\tests\commands_test.ml",
+    ".\build\commands_test.exe",
+    "-I", ".\src",
+    "-I", ".\MiniLangCompilerML",
+    "--keep-going", "--max-errors", "80", "--subsystem", "console"
+  )
+  Invoke-Checked $Compiler $args $Root | Out-Null
+  & $out
+  $exit = $LASTEXITCODE
+  Assert-True ($exit -eq 0) "Command palette regression test failed."
 }
 
 # Compile and run focused Markdown renderer regression tests.
@@ -880,6 +898,7 @@ New-CleanDir $TempRoot
 
 try {
   Step "static wiring" { Test-StaticWiring }
+  Step "command palette" { Test-CommandPalette }
   Step "markdown renderer" { Test-MarkdownRenderer }
   Step "project loader" { Test-ProjectLoader }
   Step "project index" { Test-ProjectIndex }

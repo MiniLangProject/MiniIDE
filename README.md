@@ -162,6 +162,7 @@ Run the full test suite:
 The full test runner:
 
 - performs static source wiring checks;
+- compiles and runs focused command palette metadata/search tests;
 - compiles and runs focused Markdown renderer tests;
 - compiles and runs project-loader tests;
 - compiles MiniIDE to an isolated temporary executable;
