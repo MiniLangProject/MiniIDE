@@ -203,6 +203,7 @@ function _create_fixture(root)
     "end function\n" +
     "function modelValueExtra()\n" +
     "  // modelValue should not be counted in a line comment\n" +
+    "  util\n" +
     "  return 2\n" +
     "end function\n" +
     "// TODO: revisit model lifecycle\n")
@@ -210,6 +211,9 @@ function _create_fixture(root)
   fs.writeAllText(project.path_join(root, "src\\util.ml"),
     "function helper_util()\n" +
     "  return 1\n" +
+    "end function\n" +
+    "function lonely_helper()\n" +
+    "  return 2\n" +
     "end function\n")
 
   fs.writeAllText(project.path_join(root, "tests\\main_test.ml"),
@@ -273,7 +277,9 @@ function main(args)
   if _assert_true("project diagnostics include unresolved imports", _has_diagnostic(diagnostics, "Unresolved import: missing\\nope.ml")) == false then ok = false end if
 
   inspections = service.code_inspection_items(snapshot, 50)
-  if _assert_true("code inspections include unused helper", _has_inspection(inspections, "Possibly unused function: helper_util")) == false then ok = false end if
+  if _assert_true("code inspections include unused helper", _has_inspection(inspections, "Possibly unused function: lonely_helper")) == false then ok = false end if
+  if _assert_true("code inspections include unused import alias", _has_inspection(inspections, "Unused import alias: app")) == false then ok = false end if
+  if _assert_true("code inspections skip used import alias", _has_inspection(inspections, "Unused import alias: util") == false) == false then ok = false end if
 
   health = service.workspace_health_lines(snapshot)
   if _assert_true("workspace health counts files", _has_health_line(health, "Files: 3")) == false then ok = false end if

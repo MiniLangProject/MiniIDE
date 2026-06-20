@@ -115,6 +115,7 @@ function Invoke-CheckedTimed($File, [string[]]$Arguments, $WorkingDirectory, [in
 function Test-StaticWiring {
   $main = Get-Content -LiteralPath (Join-Path $Root "src\main.ml") -Raw
   $build = Get-Content -LiteralPath (Join-Path $Root "src\build\build_service.ml") -Raw
+  $service = Get-Content -LiteralPath (Join-Path $Root "src\lang\service.ml") -Raw
 
   $ids = [regex]::Matches($main, 'const\s+(ID_[A-Z0-9_]+)\s*=\s*(\d+)') |
     ForEach-Object { [pscustomobject]@{ Name = $_.Groups[1].Value; Value = [int]$_.Groups[2].Value } }
@@ -186,6 +187,8 @@ function Test-StaticWiring {
   Assert-True ($main.Contains("lang_service.symbol_info")) "Symbol Info must use the language service facade."
   Assert-True ($main.Contains("_show_code_inspections")) "Code Inspections renderer is missing."
   Assert-True ($main.Contains("lang_service.code_inspection_items")) "Code Inspections must use the language service facade."
+  Assert-True ($service.Contains("_import_alias_used")) "Code inspections must detect unused import aliases."
+  Assert-True ($service.Contains("Unused import alias")) "Unused import alias inspection message is missing."
   Assert-True ($main.Contains("_show_project_index")) "Project index result renderer is missing."
   Assert-True ($main.Contains("_show_project_symbols")) "Project symbols result renderer is missing."
   Assert-True ($main.Contains("_show_project_symbols_query")) "Project symbol query renderer is missing."

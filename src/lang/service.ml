@@ -548,13 +548,65 @@ function call_hierarchy_items(snapshot, word, limit)
   return items
 end function
 
+// Return true when an import alias is used in a source line.
+function _line_uses_import_alias(line, alias)
+  if typeof(line) != "string" or typeof(alias) != "string" or alias == "" then return false end if
+  pos = s.indexOf(line, alias, 0)
+  while pos >= 0
+    before_ok = true
+    after_ok = true
+    if pos > 0 and _is_word_char(line[pos - 1]) then before_ok = false end if
+    after = pos + len(alias)
+    if after < len(line) then
+      ch = line[after]
+      if ch != "." and _is_word_char(ch) then after_ok = false end if
+    end if
+    if before_ok and after_ok then return true end if
+    pos = s.indexOf(line, alias, pos + 1)
+  end while
+  return false
+end function
+
+// Return true when an import alias is used outside import declarations.
+function _import_alias_used(file, alias, import_line)
+  if typeof(file) != "string" or typeof(alias) != "string" or alias == "" then return false end if
+  text = fs.readAllText(file)
+  if typeof(text) != "string" then return false end if
+  lines = s.split(s.replaceAll(text, "\r\n", "\n"), "\n")
+  if typeof(lines) != "array" then return false end if
+
+  for li = 0 to len(lines) - 1
+    if typeof(import_line) == "int" and li == import_line then continue end if
+    line = s.trim(_strip_line_comment(lines[li]))
+    if line == "" then continue end if
+    if s.startsWith(line, "import ") then continue end if
+    if _line_uses_import_alias(line, alias) then return true end if
+  end for
+  return false
+end function
+
 // Return lightweight code-inspection findings.
 function code_inspection_items(snapshot, limit)
   items = []
   if typeof(limit) != "int" or limit <= 0 then limit = 200 end if
   idx = void
   if typeof(snapshot) == "struct" then idx = snapshot.project_index end if
-  if typeof(idx) != "struct" or typeof(idx.symbols) != "array" then return items end if
+  if typeof(idx) != "struct" then return items end if
+
+  if typeof(idx.imports) == "array" then
+    for ii = 0 to len(idx.imports) - 1
+      imp = idx.imports[ii]
+      if typeof(imp) != "struct" then continue end if
+      if imp.resolved == false then continue end if
+      if typeof(imp.alias) != "string" or imp.alias == "" then continue end if
+      if _import_alias_used(imp.file, imp.alias, imp.line) then continue end if
+      msg_import = "Unused import alias: " + imp.alias
+      items = items + [InspectionItem("info", msg_import, imp.file, imp.line + 1, 1)]
+      if len(items) >= limit then return items end if
+    end for
+  end if
+
+  if typeof(idx.symbols) != "array" then return items end if
 
   for si = 0 to len(idx.symbols) - 1
     sym = idx.symbols[si]
