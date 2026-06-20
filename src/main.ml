@@ -276,6 +276,7 @@ const ID_QUICK_OPEN_CANCEL = 1573
 const ID_RENAME_SYMBOL_TEXT_EDIT = 1581
 const ID_RENAME_SYMBOL_OK = 1582
 const ID_RENAME_SYMBOL_CANCEL = 1583
+const ID_RENAME_SYMBOL_APPLY = 1584
 
 const ID_CTX_TAB_CLOSE = 1201
 const ID_CTX_TAB_CLOSE_OTHERS = 1202
@@ -3770,6 +3771,64 @@ function _show_rename_symbol_preview(st, word, new_name)
   return _show_result_panel(st, "rename-preview", title, rows, files, lines_out, cols)
 end function
 
+// Return a compact rename error message.
+function _rename_error_text(result)
+  if typeof(result) != "struct" or typeof(result.errors) != "array" or len(result.errors) <= 0 then return "Rename Symbol failed." end if
+  text = "Rename Symbol failed: " + result.errors[0]
+  if len(result.errors) > 1 then text = text + " (+" + (len(result.errors) - 1) + " more)" end if
+  return text
+end function
+
+// Refresh open tabs for files changed by a project-wide rename.
+function _refresh_renamed_open_files(st, files)
+  if typeof(files) != "array" or len(files) <= 0 then return st end if
+  if typeof(st.open_files) != "array" then return st end if
+  for fi = 0 to len(files) - 1
+    file = files[fi]
+    idx = _path_index(st.open_files, file)
+    if idx < 0 then continue end if
+    text = fs.readAllText(file)
+    if typeof(text) != "string" then continue end if
+    text = _normalize_editor_text(text)
+    st.open_texts[idx] = text
+    st.open_saved_texts[idx] = text
+    st.open_dirty[idx] = false
+    st.open_undo[idx] = []
+    st.open_redo[idx] = []
+    st = markdown.clear_cache(st, idx)
+    st = _invalidate_markdown_view(st, idx)
+    if idx == st.active_tab then
+      st = _write_active_editor(st, text)
+      st.last_editor_text = text
+      st = _invalidate_highlight(st)
+      st.last_line_numbers_text = ""
+    end if
+  end for
+  st = _refresh_tabs(st)
+  _set_title(st)
+  return st
+end function
+
+// Apply a symbol rename to project files.
+function _apply_rename_symbol(st, word, new_name)
+  st = _sync_active_tab(st)
+  guard = _guard_no_dirty(st, "applying rename")
+  st = guard[0]
+  if guard[1] == false then return st end if
+
+  snapshot = lang_service.analyze_project(st.project)
+  result = lang_service.apply_rename(snapshot, word, new_name, 1000)
+  if typeof(result) != "struct" or result.ok == false then return _set_log(st, _rename_error_text(result)) end if
+
+  st = _refresh_renamed_open_files(st, result.files)
+  root = "."
+  if typeof(st.project) == "struct" then root = st.project.root end if
+  st.project = project.load_project(root)
+  st = _populate_project_tree(st)
+  st = _refresh_tabs(st)
+  return _set_log(st, "Renamed " + word + " -> " + s.trim(new_name) + ": " + result.replacements + " replacements in " + len(result.files) + " files.")
+end function
+
 // Open rename symbol preview window.
 function _open_rename_symbol_window(st)
   // Run a local message loop so the modal UI stays responsive.
@@ -3779,16 +3838,18 @@ function _open_rename_symbol_window(st)
   word = _word_at_pos(display_text, sel[0])
   if word == "" then return _set_log(st, "No symbol under the cursor.") end if
 
-  dlg = win.create_main_window("Rename Symbol Preview", 500, 180)
+  dlg = win.create_main_window("Rename Symbol", 560, 190)
   if dlg is void then return st end if
   _settings_label(dlg, st.font_ui, "New name", 20, 28, 90, 24)
-  rename_edit = _settings_edit_id(dlg, st.font_ui, word, 116, 24, 340, 26, ID_RENAME_SYMBOL_TEXT_EDIT)
-  ok_btn = _settings_button(dlg, st.font_ui, "Preview", 244, 104, 94, 30, ID_RENAME_SYMBOL_OK)
-  cancel_btn = _settings_button(dlg, st.font_ui, "Cancel", 348, 104, 108, 30, ID_RENAME_SYMBOL_CANCEL)
+  rename_edit = _settings_edit_id(dlg, st.font_ui, word, 116, 24, 400, 26, ID_RENAME_SYMBOL_TEXT_EDIT)
+  ok_btn = _settings_button(dlg, st.font_ui, "Preview", 196, 104, 94, 30, ID_RENAME_SYMBOL_OK)
+  apply_btn = _settings_button(dlg, st.font_ui, "Apply", 300, 104, 94, 30, ID_RENAME_SYMBOL_APPLY)
+  cancel_btn = _settings_button(dlg, st.font_ui, "Cancel", 404, 104, 112, 30, ID_RENAME_SYMBOL_CANCEL)
   win.edit_select_all(rename_edit)
   win.SetFocus(rename_edit)
 
   new_name = ""
+  action = ""
   accepted = false
   done = false
   while done == false and win.IsWindow(dlg)
@@ -3822,6 +3883,7 @@ function _open_rename_symbol_window(st)
           handled = true
         else if key == win.VK_RETURN then
           new_name = s.trim(win.get_control_text(rename_edit))
+          action = "preview"
           accepted = true
           done = true
           win.DestroyWindow(dlg)
@@ -3835,6 +3897,14 @@ function _open_rename_symbol_window(st)
           handled = true
         else if cid == ID_RENAME_SYMBOL_OK then
           new_name = s.trim(win.get_control_text(rename_edit))
+          action = "preview"
+          accepted = true
+          done = true
+          win.DestroyWindow(dlg)
+          handled = true
+        else if cid == ID_RENAME_SYMBOL_APPLY then
+          new_name = s.trim(win.get_control_text(rename_edit))
+          action = "apply"
           accepted = true
           done = true
           win.DestroyWindow(dlg)
@@ -3847,6 +3917,14 @@ function _open_rename_symbol_window(st)
           handled = true
         else if hwnd == ok_btn then
           new_name = s.trim(win.get_control_text(rename_edit))
+          action = "preview"
+          accepted = true
+          done = true
+          win.DestroyWindow(dlg)
+          handled = true
+        else if hwnd == apply_btn then
+          new_name = s.trim(win.get_control_text(rename_edit))
+          action = "apply"
           accepted = true
           done = true
           win.DestroyWindow(dlg)
@@ -3862,6 +3940,7 @@ function _open_rename_symbol_window(st)
     if done == false then win.Sleep(15) end if
   end while
 
+  if accepted and action == "apply" then return _apply_rename_symbol(st, word, new_name) end if
   if accepted then return _show_rename_symbol_preview(st, word, new_name) end if
   if st.running and win.IsWindow(st.hwnd) then win.SetFocus(st.editor) end if
   return st

@@ -37,6 +37,13 @@ struct RenamePreviewItem
   text,
 end struct
 
+struct RenameApplyResult
+  ok,
+  replacements,
+  files,
+  errors,
+end struct
+
 struct CallHierarchyItem
   name,
   kind,
@@ -585,6 +592,87 @@ function rename_preview_items(snapshot, word, new_name, limit)
     if typeof(limit) == "int" and limit > 0 and len(items) >= limit then return items end if
   end for
   return items
+end function
+
+// Return a line with whole-word replacements outside line comments.
+function _replace_word_in_line(line, word, new_name)
+  if typeof(line) != "string" then return ["", 0] end if
+  if typeof(word) != "string" or word == "" then return [line, 0] end if
+  if typeof(new_name) != "string" then return [line, 0] end if
+  searchable = _strip_line_comment(line)
+  result = ""
+  cursor = 0
+  count = 0
+  pos = _find_word(searchable, word, 0)
+  while pos >= 0
+    if pos > cursor then result = result + s.substr(line, cursor, pos - cursor) end if
+    result = result + new_name
+    cursor = pos + len(word)
+    count = count + 1
+    pos = _find_word(searchable, word, cursor)
+  end while
+  if count <= 0 then return [line, 0] end if
+  if cursor < len(line) then result = result + s.substr(line, cursor, len(line) - cursor) end if
+  return [result, count]
+end function
+
+// Return a source text with whole-word replacements outside line comments.
+function _replace_word_in_text(text, word, new_name)
+  if typeof(text) != "string" then return ["", 0] end if
+  lines = s.split(s.replaceAll(text, "\r\n", "\n"), "\n")
+  if typeof(lines) != "array" then return [text, 0] end if
+  output = ""
+  count = 0
+  for li = 0 to len(lines) - 1
+    replaced = _replace_word_in_line(lines[li], word, new_name)
+    line = replaced[0]
+    count = count + replaced[1]
+    if li > 0 then output = output + "\n" end if
+    output = output + line
+  end for
+  return [output, count]
+end function
+
+// Apply a project-wide symbol rename to source files.
+function apply_rename(snapshot, word, new_name, limit)
+  if typeof(limit) != "int" or limit <= 0 then limit = 1000 end if
+  if typeof(word) != "string" or word == "" then return RenameApplyResult(false, 0, [], ["Missing symbol name"]) end if
+  if typeof(new_name) != "string" then return RenameApplyResult(false, 0, [], ["Missing new name"]) end if
+  new_name = s.trim(new_name)
+  if _is_simple_identifier(new_name) == false then return RenameApplyResult(false, 0, [], ["Invalid new name: " + new_name]) end if
+  if word == new_name then return RenameApplyResult(false, 0, [], ["Name is unchanged"]) end if
+
+  refs = references(snapshot, word, limit + 1)
+  if typeof(refs) != "array" or len(refs) <= 0 then return RenameApplyResult(false, 0, [], ["No rename targets found"]) end if
+  if len(refs) > limit then return RenameApplyResult(false, 0, [], ["Too many rename targets"]) end if
+
+  idx = void
+  if typeof(snapshot) == "struct" then idx = snapshot.project_index end if
+  if typeof(idx) != "struct" or typeof(idx.files) != "array" then return RenameApplyResult(false, 0, [], ["Project index unavailable"]) end if
+
+  files = []
+  texts = []
+  replacements = 0
+  errors = []
+  for fi = 0 to len(idx.files) - 1
+    file_info = idx.files[fi]
+    if typeof(file_info) != "struct" then continue end if
+    text = fs.readAllText(file_info.path)
+    if typeof(text) != "string" then continue end if
+    changed = _replace_word_in_text(text, word, new_name)
+    if changed[1] <= 0 then continue end if
+    files = files + [file_info.path]
+    texts = texts + [changed[0]]
+    replacements = replacements + changed[1]
+  end for
+
+  if replacements <= 0 then return RenameApplyResult(false, 0, [], ["No rename targets found"]) end if
+  for wi = 0 to len(files) - 1
+    wr = fs.writeAllText(files[wi], texts[wi])
+    if typeof(wr) == "error" then errors = errors + [files[wi] + ": " + wr.message] end if
+  end for
+  if len(errors) > 0 then return RenameApplyResult(false, replacements, files, errors) end if
+  return RenameApplyResult(true, replacements, files, [])
 end function
 
 // Return a simple call hierarchy for a symbol-like word.

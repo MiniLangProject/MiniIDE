@@ -42,6 +42,16 @@ function _has_label(labels, value)
   return false
 end function
 
+// Return true when strings contains value.
+function _has_string(items, value)
+  if typeof(items) != "array" then return false end if
+  if len(items) <= 0 then return false end if
+  for i = 0 to len(items) - 1
+    if items[i] == value then return true end if
+  end for
+  return false
+end function
+
 // Return true when a completion item with label and kind exists.
 function _has_item(items, label, kind)
   if typeof(items) != "array" then return false end if
@@ -314,6 +324,20 @@ function main(args)
   related_tests = service.related_test_items(snapshot, project.path_join(p.root, "src\\main.ml"), 20)
   if _assert_true("related tests include importing test file", _has_test_item(related_tests, project.path_join(p.root, "tests\\main_test.ml"), "file", "related")) == false then ok = false end if
   if _assert_true("related tests include importing test function", _has_test_item(related_tests, "test_model_lifecycle", "function", "related")) == false then ok = false end if
+
+  invalid_apply = service.apply_rename(snapshot, "modelValue", "bad-name", 20)
+  if _assert_true("apply rename rejects invalid new name", typeof(invalid_apply) == "struct" and invalid_apply.ok == false) == false then ok = false end if
+
+  apply_result = service.apply_rename(snapshot, "modelValue", "renamedValue", 20)
+  main_path = project.path_join(p.root, "src\\main.ml")
+  if _assert_true("apply rename succeeds", typeof(apply_result) == "struct" and apply_result.ok) == false then ok = false end if
+  if _assert_true("apply rename counts replacements", apply_result.replacements == 2) == false then ok = false end if
+  if _assert_true("apply rename reports changed file", _has_string(apply_result.files, main_path)) == false then ok = false end if
+  renamed_text = fs.readAllText(main_path)
+  if _assert_true("apply rename updates call", s.indexOf(renamed_text, "return renamedValue()", 0) >= 0) == false then ok = false end if
+  if _assert_true("apply rename updates definition", s.indexOf(renamed_text, "function renamedValue()", 0) >= 0) == false then ok = false end if
+  if _assert_true("apply rename leaves comments alone", s.indexOf(renamed_text, "modelValue should not be counted", 0) >= 0) == false then ok = false end if
+  if _assert_true("apply rename leaves longer identifiers alone", s.indexOf(renamed_text, "function modelValueExtra()", 0) >= 0) == false then ok = false end if
 
   if ok == false then return 1 end if
   print "Language service tests OK"
