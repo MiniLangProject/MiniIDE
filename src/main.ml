@@ -206,6 +206,7 @@ const ID_NAV_OUTLINE = 1030
 const ID_NAV_SEARCH_WORD = 1031
 const ID_NAV_PROBLEMS = 1032
 const ID_NAV_PROJECT_INDEX = 1048
+const ID_NAV_FIND_REFERENCES = 1049
 const ID_EDIT_COMPLETE = 1033
 const ID_EDIT_FORMAT = 1034
 const ID_HELP_WELCOME = 1035
@@ -1228,6 +1229,7 @@ function _create_menus()
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_PROJECT_INDEX, "Project &Index")
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_GOTO_LINE, "&Go to Line...\tCtrl+G")
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_GOTO_DEFINITION, "Go to &Definition\tF12")
+  win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_FIND_REFERENCES, "Find &References")
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_SEARCH_WORD, "Search &Word in Project")
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_PROBLEMS, "&Problems")
 
@@ -3013,6 +3015,37 @@ function _search_current_word(st)
   return _show_result_panel(st, "search", title, rows, files, lines_out, cols)
 end function
 
+// Find references for the current symbol-like word.
+function _find_references(st)
+  // Walk collections defensively because project data can be partially populated.
+  if st.active_tab < 0 or st.active_tab >= len(st.open_texts) then return _set_log(st, "No file is open.") end if
+  display_text = win.edit_get_text(st.editor)
+  sel = win.edit_getsel(st.editor)
+  word = _word_at_pos(display_text, sel[0])
+  if word == "" then return _set_log(st, "No symbol under the cursor.") end if
+
+  snapshot = lang_service.analyze_project(st.project)
+  refs = lang_service.references(snapshot, word, 100)
+  if typeof(refs) != "array" or len(refs) <= 0 then return _set_log(st, "No references found: " + word) end if
+
+  rows = []
+  files = []
+  lines_out = []
+  cols = []
+  for i = 0 to len(refs) - 1
+    ref = refs[i]
+    if typeof(ref) != "struct" then continue end if
+    rows = rows + [_project_relative_path(st, ref.file) + ":" + ref.line + ":" + ref.col + "  " + ref.text]
+    files = files + [ref.file]
+    lines_out = lines_out + [ref.line]
+    cols = cols + [ref.col]
+  end for
+
+  title = "References: " + word
+  if len(refs) >= 100 then title = title + " (first 100 matches)" end if
+  return _show_result_panel(st, "references", title, rows, files, lines_out, cols)
+end function
+
 // Move the editor caret to line col.
 function _jump_to_line_col(st, line_no, col_no)
   if st.active_tab < 0 or st.active_tab >= len(st.open_texts) then return _set_log(st, "No file is open.") end if
@@ -4735,6 +4768,7 @@ function _perform_command(st, id)
   if id == ID_NAV_PROJECT_INDEX then return _show_project_index(st) end if
   if id == ID_NAV_GOTO_LINE then return _open_goto_line_window(st) end if
   if id == ID_NAV_GOTO_DEFINITION then return _goto_definition(st) end if
+  if id == ID_NAV_FIND_REFERENCES then return _find_references(st) end if
   if id == ID_NAV_SEARCH_WORD then return _search_current_word(st) end if
   if id == ID_NAV_PROBLEMS then return _show_problems(st) end if
   if id == ID_CTX_EDITOR_SELECT_ALL then return _edit_select_all(st) end if
