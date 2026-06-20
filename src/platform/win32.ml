@@ -98,6 +98,7 @@ const VK_C = 0x43
 const VK_F = 0x46
 const VK_G = 0x47
 const VK_O = 0x4F
+const VK_P = 0x50
 const VK_S = 0x53
 const VK_T = 0x54
 const VK_V = 0x56

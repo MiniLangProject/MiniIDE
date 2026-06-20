@@ -209,6 +209,7 @@ const ID_NAV_PROJECT_INDEX = 1048
 const ID_NAV_FIND_REFERENCES = 1049
 const ID_NAV_PROJECT_SYMBOLS = 1050
 const ID_NAV_GOTO_SYMBOL = 1051
+const ID_COMMAND_PALETTE = 1052
 const ID_EDIT_COMPLETE = 1033
 const ID_EDIT_FORMAT = 1034
 const ID_HELP_WELCOME = 1035
@@ -255,6 +256,10 @@ const ID_HELP_SEARCH_CANCEL = 1543
 const ID_SYMBOL_SEARCH_TEXT_EDIT = 1551
 const ID_SYMBOL_SEARCH_OK = 1552
 const ID_SYMBOL_SEARCH_CANCEL = 1553
+const ID_COMMAND_SEARCH_TEXT_EDIT = 1561
+const ID_COMMAND_LIST = 1562
+const ID_COMMAND_RUN = 1563
+const ID_COMMAND_CANCEL = 1564
 
 const ID_CTX_TAB_CLOSE = 1201
 const ID_CTX_TAB_CLOSE_OTHERS = 1202
@@ -1226,6 +1231,8 @@ function _create_menus()
   win.AppendMenuWId(edit_menu, win.MF_SEPARATOR, 0, "")
   win.AppendMenuWId(edit_menu, win.MF_STRING, ID_EDIT_FIND, "&Find...\tCtrl+F")
   win.AppendMenuWId(edit_menu, win.MF_STRING, ID_EDIT_FIND_NEXT, "Find &Next\tF3")
+  win.AppendMenuWId(edit_menu, win.MF_SEPARATOR, 0, "")
+  win.AppendMenuWId(edit_menu, win.MF_STRING, ID_COMMAND_PALETTE, "Command &Palette...\tCtrl+Shift+P")
   win.AppendMenuWId(edit_menu, win.MF_SEPARATOR, 0, "")
   win.AppendMenuWId(edit_menu, win.MF_STRING, ID_EDIT_COMPLETE, "&Complete\tCtrl+Space")
   win.AppendMenuWId(edit_menu, win.MF_STRING, ID_EDIT_FORMAT, "Format &Document")
@@ -2862,6 +2869,224 @@ function _autocomplete(st)
   end if
 
   return _show_autocomplete_popup(st, items, prefix)
+end function
+
+// Return the command IDs exposed by the command palette.
+function _command_palette_ids()
+  return [
+    ID_FILE_OPEN_PROJECT, ID_FILE_NEW_PROJECT, ID_FILE_RELOAD, ID_FILE_SAVE,
+    ID_FILE_CLEAN, ID_FILE_BUILD, ID_FILE_REBUILD, ID_FILE_RUN, ID_FILE_STOP, ID_FILE_TEST,
+    ID_EDIT_FIND, ID_EDIT_FIND_NEXT, ID_EDIT_COMPLETE, ID_EDIT_FORMAT,
+    ID_NAV_OUTLINE, ID_NAV_PROJECT_INDEX, ID_NAV_PROJECT_SYMBOLS, ID_NAV_GOTO_SYMBOL,
+    ID_NAV_GOTO_LINE, ID_NAV_GOTO_DEFINITION, ID_NAV_FIND_REFERENCES, ID_NAV_SEARCH_WORD, ID_NAV_PROBLEMS,
+    ID_CONFIG_COMPILE_SETTINGS, ID_CONFIG_PROFILE_DEBUG, ID_CONFIG_PROFILE_RELEASE,
+    ID_CONFIG_THEME_DARK, ID_CONFIG_THEME_LIGHT, ID_CONFIG_COMPILER_SELECT, ID_CONFIG_COMPILER_RESET,
+    ID_CONFIG_RELOAD, ID_CONFIG_SHOW,
+    ID_HELP_WELCOME, ID_HELP_LANGUAGE, ID_HELP_LANGUAGE_SEARCH, ID_HELP_ABOUT,
+  ]
+end function
+
+// Return the display labels exposed by the command palette.
+function _command_palette_labels()
+  return [
+    "File: Open Project", "File: New Project", "File: Reload Project", "File: Save",
+    "Build: Clean", "Build: Build", "Build: Rebuild", "Build: Run", "Build: Stop", "Build: Run Tests",
+    "Edit: Find", "Edit: Find Next", "Edit: Complete", "Edit: Format Document",
+    "Navigation: Outline", "Navigation: Project Index", "Navigation: Project Symbols", "Navigation: Go to Symbol",
+    "Navigation: Go to Line", "Navigation: Go to Definition", "Navigation: Find References", "Navigation: Search Word in Project", "Navigation: Problems",
+    "Configuration: Compile Settings", "Configuration: Build Profile Debug", "Configuration: Build Profile Release",
+    "Configuration: Theme Dark", "Configuration: Theme Light", "Configuration: Select Compiler", "Configuration: Reset Compiler",
+    "Configuration: Reload Configuration", "Configuration: Show Configuration",
+    "Help: Home", "Help: MiniLang Language Reference", "Help: Search MiniLang Help", "Help: About MiniIDE",
+  ]
+end function
+
+// Return additional search aliases for command palette labels.
+function _command_palette_search_texts()
+  return [
+    "file open project workspace ctrl o", "file new project create", "file reload project refresh", "file save ctrl s",
+    "build clean", "build compile f5", "build rebuild clean compile", "build run execute f6", "build stop cancel", "build test tests f7",
+    "edit find search ctrl f", "edit find next f3", "edit complete autocomplete ctrl space", "edit format document",
+    "navigation outline symbols current file", "navigation project index imports files", "navigation project symbols", "navigation goto symbol ctrl t",
+    "navigation goto line ctrl g", "navigation goto definition f12", "navigation find references shift f12", "navigation search word project", "navigation problems diagnostics errors warnings",
+    "configuration compile settings compiler build", "configuration build profile debug", "configuration build profile release",
+    "configuration theme dark", "configuration theme light", "configuration compiler select", "configuration compiler reset default",
+    "configuration reload", "configuration show",
+    "help home welcome", "help minilang language reference", "help search minilang language", "help about miniide",
+  ]
+end function
+
+// Return true when a command palette entry matches the query.
+function _command_palette_matches(labels, search_texts, idx, query)
+  if typeof(labels) != "array" or idx < 0 or idx >= len(labels) then return false end if
+  if typeof(query) != "string" or query == "" then return true end if
+  extra = ""
+  if typeof(search_texts) == "array" and idx < len(search_texts) then extra = search_texts[idx] end if
+  q = s.toLowerAscii(query)
+  hay = s.toLowerAscii(labels[idx] + " " + extra)
+  return s.indexOf(hay, q, 0) >= 0
+end function
+
+// Return the command selected by query or list selection.
+function _command_palette_pick(ids, labels, search_texts, query, selected)
+  if typeof(ids) != "array" or typeof(labels) != "array" or len(ids) <= 0 then return 0 end if
+  if typeof(query) != "string" then query = "" end if
+  query = s.trim(query)
+  if query == "" and selected >= 0 and selected < len(ids) then return ids[selected] end if
+  count = len(ids)
+  if len(labels) < count then count = len(labels) end if
+  for i = 0 to count - 1
+    if _command_palette_matches(labels, search_texts, i, query) then return ids[i] end if
+  end for
+  if selected >= 0 and selected < len(ids) then return ids[selected] end if
+  return 0
+end function
+
+// Dispatch a command selected through the command palette without recursing into the palette command.
+function _perform_palette_command(st, id)
+  if id == ID_FILE_OPEN_PROJECT then return _open_project_dialog(st) end if
+  if id == ID_FILE_NEW_PROJECT then return _new_standard_project(st) end if
+  if id == ID_FILE_SAVE then return _save_current(st) end if
+  if id == ID_FILE_CLEAN then return _clean_project(st) end if
+  if id == ID_FILE_BUILD then return _build_project(st) end if
+  if id == ID_FILE_REBUILD then return _rebuild_project(st) end if
+  if id == ID_FILE_RUN then return _run_project(st) end if
+  if id == ID_FILE_STOP then return _stop_build_job(st) end if
+  if id == ID_FILE_TEST then return _run_tests(st) end if
+  if id == ID_FILE_RELOAD then return _reload_project(st) end if
+  if id == ID_EDIT_FIND then return _open_find_window(st) end if
+  if id == ID_EDIT_FIND_NEXT then return _find_next(st) end if
+  if id == ID_EDIT_COMPLETE then return _autocomplete(st) end if
+  if id == ID_EDIT_FORMAT then return _format_current(st) end if
+  if id == ID_NAV_OUTLINE then return _show_outline(st) end if
+  if id == ID_NAV_PROJECT_INDEX then return _show_project_index(st) end if
+  if id == ID_NAV_PROJECT_SYMBOLS then return _show_project_symbols(st) end if
+  if id == ID_NAV_GOTO_SYMBOL then return _open_goto_symbol_window(st) end if
+  if id == ID_NAV_GOTO_LINE then return _open_goto_line_window(st) end if
+  if id == ID_NAV_GOTO_DEFINITION then return _goto_definition(st) end if
+  if id == ID_NAV_FIND_REFERENCES then return _find_references(st) end if
+  if id == ID_NAV_SEARCH_WORD then return _search_current_word(st) end if
+  if id == ID_NAV_PROBLEMS then return _show_problems(st) end if
+  if id == ID_CONFIG_COMPILE_SETTINGS then return _open_compile_settings_window(st) end if
+  if id == ID_CONFIG_PROFILE_DEBUG then return _select_build_profile(st, "debug") end if
+  if id == ID_CONFIG_PROFILE_RELEASE then return _select_build_profile(st, "release") end if
+  if id == ID_CONFIG_THEME_DARK then return _select_theme(st, "dark") end if
+  if id == ID_CONFIG_THEME_LIGHT then return _select_theme(st, "light") end if
+  if id == ID_CONFIG_COMPILER_SELECT then return _select_compiler(st) end if
+  if id == ID_CONFIG_COMPILER_RESET then return _reset_compiler(st) end if
+  if id == ID_CONFIG_RELOAD then return _reload_config(st) end if
+  if id == ID_CONFIG_SHOW then return _show_config(st) end if
+  if id == ID_HELP_WELCOME then return _show_welcome(st) end if
+  if id == ID_HELP_LANGUAGE then return _open_language_help(st) end if
+  if id == ID_HELP_LANGUAGE_SEARCH then return _open_language_help_search(st) end if
+  if id == ID_HELP_ABOUT then return _about(st) end if
+  return st
+end function
+
+// Open command palette window.
+function _open_command_palette(st)
+  // Run a local message loop so the modal UI stays responsive.
+  ids = _command_palette_ids()
+  labels = _command_palette_labels()
+  search_texts = _command_palette_search_texts()
+  dlg = win.create_main_window("Command Palette", 620, 420)
+  if dlg is void then return _set_log(st, "Command Palette could not be opened.") end if
+
+  _settings_label(dlg, st.font_ui, "Command", 20, 26, 90, 24)
+  command_edit = _settings_edit_id(dlg, st.font_ui, "", 116, 22, 460, 26, ID_COMMAND_SEARCH_TEXT_EDIT)
+  list_style = win.WS_TABSTOP | win.WS_VSCROLL | win.LBS_NOTIFY | win.LBS_HASSTRINGS | win.LBS_NOINTEGRALHEIGHT
+  command_list = win.create_child_id(dlg, "LISTBOX", "", 0, list_style, 20, 62, 556, 270, ID_COMMAND_LIST)
+  win.set_control_font(command_list, st.font_ui)
+  for i = 0 to len(labels) - 1
+    win.listbox_add(command_list, labels[i])
+  end for
+  if len(labels) > 0 then win.listbox_setsel(command_list, 0) end if
+  run_btn = _settings_button(dlg, st.font_ui, "Run", 382, 352, 86, 30, ID_COMMAND_RUN)
+  cancel_btn = _settings_button(dlg, st.font_ui, "Cancel", 480, 352, 96, 30, ID_COMMAND_CANCEL)
+  win.SetFocus(command_edit)
+
+  selected_id = 0
+  done = false
+  while done == false and win.IsWindow(dlg)
+    msg = bytes(48, 0)
+    while win.PeekMessageW(msg, void, 0, 0, win.PM_REMOVE)
+      code = win.msg_message(msg)
+      hwnd = win.msg_hwnd(msg)
+      handled = false
+
+      if code == win.WM_QUIT then
+        st.running = false
+        done = true
+        handled = true
+      else if code == win.WM_CLOSE and hwnd == dlg then
+        done = true
+        win.DestroyWindow(dlg)
+        handled = true
+      else if code == win.WM_CLOSE and hwnd == st.hwnd then
+        st = _request_exit(st)
+        done = true
+        if win.IsWindow(dlg) then win.DestroyWindow(dlg) end if
+        handled = true
+      else if (code == win.WM_DESTROY or code == win.WM_NCDESTROY) and hwnd == dlg then
+        done = true
+        handled = true
+      else if code == win.WM_KEYDOWN then
+        key = win.msg_wparam_u32(msg)
+        if key == win.VK_ESCAPE then
+          done = true
+          win.DestroyWindow(dlg)
+          handled = true
+        else if key == win.VK_RETURN then
+          query = win.get_control_text(command_edit)
+          selected_id = _command_palette_pick(ids, labels, search_texts, query, win.listbox_getsel(command_list))
+          done = true
+          win.DestroyWindow(dlg)
+          handled = true
+        end if
+      else if code == win.WM_COMMAND and hwnd == dlg then
+        cid = win.msg_command_id(msg)
+        notify = win.msg_command_notify(msg)
+        if cid == ID_COMMAND_CANCEL then
+          done = true
+          win.DestroyWindow(dlg)
+          handled = true
+        else if cid == ID_COMMAND_RUN then
+          query = win.get_control_text(command_edit)
+          selected_id = _command_palette_pick(ids, labels, search_texts, query, win.listbox_getsel(command_list))
+          done = true
+          win.DestroyWindow(dlg)
+          handled = true
+        else if cid == ID_COMMAND_LIST and notify == win.LBN_DBLCLK then
+          selected_id = _command_palette_pick(ids, labels, search_texts, "", win.listbox_getsel(command_list))
+          done = true
+          win.DestroyWindow(dlg)
+          handled = true
+        end if
+      else if code == win.WM_LBUTTONUP then
+        if hwnd == cancel_btn then
+          done = true
+          win.DestroyWindow(dlg)
+          handled = true
+        else if hwnd == run_btn then
+          query = win.get_control_text(command_edit)
+          selected_id = _command_palette_pick(ids, labels, search_texts, query, win.listbox_getsel(command_list))
+          done = true
+          win.DestroyWindow(dlg)
+          handled = true
+        end if
+      end if
+
+      if handled == false then
+        win.TranslateMessage(msg)
+        win.DispatchMessageW(msg)
+      end if
+    end while
+    if done == false then win.Sleep(15) end if
+  end while
+
+  if selected_id != 0 then return _perform_palette_command(st, selected_id) end if
+  if st.running and win.IsWindow(st.hwnd) then win.SetFocus(st.editor) end if
+  return st
 end function
 
 // Show outline.
@@ -4927,6 +5152,7 @@ function _perform_command(st, id)
   if id == ID_EDIT_PASTE then return _edit_paste(st) end if
   if id == ID_EDIT_FIND then return _open_find_window(st) end if
   if id == ID_EDIT_FIND_NEXT then return _find_next(st) end if
+  if id == ID_COMMAND_PALETTE then return _open_command_palette(st) end if
   if id == ID_EDIT_COMPLETE then return _autocomplete(st) end if
   if id == ID_EDIT_FORMAT then return _format_current(st) end if
   if id == ID_NAV_OUTLINE then return _show_outline(st) end if
@@ -5136,6 +5362,7 @@ function _handle_hotkeys(st)
   if ctrl and _key_pressed(st, win.VK_C) then return _edit_copy(st) end if
   if ctrl and _key_pressed(st, win.VK_F) then return _open_find_window(st) end if
   if ctrl and _key_pressed(st, win.VK_G) then return _open_goto_line_window(st) end if
+  if ctrl and shift and _key_pressed(st, win.VK_P) then return _open_command_palette(st) end if
   if ctrl and _key_pressed(st, win.VK_T) then return _open_goto_symbol_window(st) end if
   if ctrl and _key_pressed(st, win.VK_V) then return _edit_paste(st) end if
   if ctrl and _key_pressed(st, win.VK_SPACE) then return _autocomplete(st) end if
