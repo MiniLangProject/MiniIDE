@@ -293,6 +293,8 @@ Edit menu:
   lines.
 - `Window: Close Other Tabs` and `Window: Close All Tabs` are available from
   the command palette and tab context menu.
+- `Output: Copy`, `Output: Select All`, and `Output: Clear` are available
+  from the command palette and bottom log context menu.
 
 Navigation menu:
 
