@@ -291,11 +291,23 @@ Edit menu:
 
 Navigation menu:
 
+- `Navigate Back` / `Alt+Left` and `Navigate Forward` / `Alt+Right`: move
+  through explicit jump history.
+- `Toggle Bookmark` / `Ctrl+F2`: add or remove a session bookmark on the
+  current line.
+- `Bookmarks` / `Shift+F2`: show session bookmarks in the results panel.
+- `Next Bookmark` / `Alt+Down` and `Previous Bookmark` / `Alt+Up`: cycle
+  through bookmarked locations.
 - `Outline`: show package/function/struct/const symbols for the active file.
+- `File Structure` / `Ctrl+F12`: show symbols in the active file.
+- `Project Symbols` and `Go to Symbol...` / `Ctrl+T`: browse or filter symbols
+  across the project.
 - `Go to Line...` / `Ctrl+G`: jump to a line in the active editor tab.
 - `Go to Definition` / `F12`: jump to a matching project symbol.
+- `Find References` / `Shift+F12`: list project references for the current
+  symbol.
 - `Search Word in Project`: search the current word across project `.ml` files.
-- `Problems`: show diagnostics parsed from the last build log.
+- `Problems`: show diagnostics from project analysis and the last build log.
 
 Help menu:
 
