@@ -57,6 +57,15 @@ struct FileItem
   line_count,
 end struct
 
+struct ImportItem
+  source_file,
+  line,
+  target,
+  alias,
+  resolved_path,
+  resolved,
+end struct
+
 struct TodoItem
   kind,
   file,
@@ -217,6 +226,29 @@ function file_items(snapshot, query, limit)
     rel = file_info.relative_path
     if query != "" and s.indexOf(s.toLowerAscii(rel), query, 0) < 0 then continue end if
     items = items + [FileItem(file_info.path, rel, file_info.line_count)]
+    if len(items) >= limit then return items end if
+  end for
+
+  return items
+end function
+
+// Return project import edges from a snapshot.
+function import_items(snapshot, query, limit)
+  if typeof(limit) != "int" or limit <= 0 then limit = 300 end if
+  if typeof(query) != "string" then query = "" end if
+  query = s.toLowerAscii(s.trim(query))
+  items = []
+
+  idx = void
+  if typeof(snapshot) == "struct" then idx = snapshot.project_index end if
+  if typeof(idx) != "struct" or typeof(idx.imports) != "array" then return items end if
+
+  for ii = 0 to len(idx.imports) - 1
+    imp = idx.imports[ii]
+    if typeof(imp) != "struct" then continue end if
+    hay = s.toLowerAscii(imp.file + " " + imp.target + " " + imp.alias + " " + imp.resolved_path)
+    if query != "" and s.indexOf(hay, query, 0) < 0 then continue end if
+    items = items + [ImportItem(imp.file, imp.line + 1, imp.target, imp.alias, imp.resolved_path, imp.resolved)]
     if len(items) >= limit then return items end if
   end for
 

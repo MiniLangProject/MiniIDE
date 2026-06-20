@@ -75,6 +75,17 @@ function _has_file_item(items, relative_path)
   return false
 end function
 
+// Return true when an import item with target and status exists.
+function _has_import_item(items, target, resolved)
+  if typeof(items) != "array" then return false end if
+  if len(items) <= 0 then return false end if
+  for i = 0 to len(items) - 1
+    item = items[i]
+    if typeof(item) == "struct" and item.target == target and item.resolved == resolved then return true end if
+  end for
+  return false
+end function
+
 // Return true when a reference exists on the requested line.
 function _has_reference_line(items, line)
   if typeof(items) != "array" then return false end if
@@ -148,6 +159,7 @@ function _create_fixture(root)
 
   fs.writeAllText(project.path_join(root, "src\\main.ml"),
     "import \"missing\\nope.ml\" as nope\n" +
+    "import \"util.ml\" as util\n" +
     "struct Model\n" +
     "end struct\n" +
     "function main(args)\n" +
@@ -161,6 +173,11 @@ function _create_fixture(root)
     "  return 2\n" +
     "end function\n" +
     "// TODO: revisit model lifecycle\n")
+
+  fs.writeAllText(project.path_join(root, "src\\util.ml"),
+    "function helper_util()\n" +
+    "  return 1\n" +
+    "end function\n")
 
   fs.writeAllText(project.path_join(root, "tests\\main_test.ml"),
     "function test_model_lifecycle()\n" +
@@ -201,17 +218,22 @@ function main(args)
   file_items = service.file_items(snapshot, "tests", 20)
   if _assert_true("quick open files include matching test file", _has_file_item(file_items, "tests\\main_test.ml")) == false then ok = false end if
 
+  import_items = service.import_items(snapshot, "missing", 20)
+  if _assert_true("import graph includes unresolved import", _has_import_item(import_items, "missing\\nope.ml", false)) == false then ok = false end if
+  resolved_imports = service.import_items(snapshot, "util", 20)
+  if _assert_true("import graph includes resolved import", _has_import_item(resolved_imports, "util.ml", true)) == false then ok = false end if
+
   refs = service.references(snapshot, "modelValue", 20)
   if _assert_true("references include call and definition only", len(refs) == 2) == false then ok = false end if
-  if _assert_true("references include call line", _has_reference_line(refs, 5)) == false then ok = false end if
-  if _assert_true("references include definition line", _has_reference_line(refs, 7)) == false then ok = false end if
+  if _assert_true("references include call line", _has_reference_line(refs, 6)) == false then ok = false end if
+  if _assert_true("references include definition line", _has_reference_line(refs, 8)) == false then ok = false end if
 
   diagnostics = service.diagnostics(snapshot)
   if _assert_true("project diagnostics include unresolved imports", _has_diagnostic(diagnostics, "Unresolved import: missing\\nope.ml")) == false then ok = false end if
 
   health = service.workspace_health_lines(snapshot)
-  if _assert_true("workspace health counts files", _has_health_line(health, "Files: 2")) == false then ok = false end if
-  if _assert_true("workspace health counts imports", _has_health_line(health, "Imports: 1")) == false then ok = false end if
+  if _assert_true("workspace health counts files", _has_health_line(health, "Files: 3")) == false then ok = false end if
+  if _assert_true("workspace health counts imports", _has_health_line(health, "Imports: 2")) == false then ok = false end if
   if _assert_true("workspace health counts unresolved imports", _has_health_line(health, "Unresolved imports: 1")) == false then ok = false end if
   if _assert_true("workspace health counts diagnostics", _has_health_line(health, "Diagnostics: 1")) == false then ok = false end if
 
