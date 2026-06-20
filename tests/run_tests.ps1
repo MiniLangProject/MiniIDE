@@ -157,6 +157,8 @@ function Test-StaticWiring {
   Assert-True ($main.Contains("_show_project_index")) "Project index result renderer is missing."
   Assert-True ($main.Contains("_find_references")) "Find references renderer is missing."
   Assert-True ($main.Contains("lang_service.references")) "Find references must use the language service facade."
+  Assert-True ($main.Contains("Shift+F12")) "Find references shortcut text is missing."
+  Assert-True ($main.Contains("shift and _key_pressed(st, win.VK_F12)")) "Shift+F12 hotkey wiring is missing."
   Assert-True ($main.Contains("ID_EDIT_FIND")) "Find command is missing."
   Assert-True ($main.Contains("ID_EDIT_FIND_NEXT")) "Find next command is missing."
   Assert-True ($main.Contains("ID_EDIT_COMPLETE")) "Autocomplete command is missing."

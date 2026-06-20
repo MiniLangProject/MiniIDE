@@ -1229,7 +1229,7 @@ function _create_menus()
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_PROJECT_INDEX, "Project &Index")
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_GOTO_LINE, "&Go to Line...\tCtrl+G")
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_GOTO_DEFINITION, "Go to &Definition\tF12")
-  win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_FIND_REFERENCES, "Find &References")
+  win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_FIND_REFERENCES, "Find &References\tShift+F12")
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_SEARCH_WORD, "Search &Word in Project")
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_PROBLEMS, "&Problems")
 
@@ -3790,6 +3790,11 @@ function _ctrl_down()
   return win.key_down(win.VK_CONTROL)
 end function
 
+// Return the shift down.
+function _shift_down()
+  return win.key_down(win.VK_SHIFT)
+end function
+
 // Return the button hit.
 function _button_hit(st, mx, my)
   if my < 0 or my > 32 then return 0 end if
@@ -4962,6 +4967,7 @@ end function
 // Handle hotkeys.
 function _handle_hotkeys(st)
   ctrl = _ctrl_down()
+  shift = _shift_down()
   if ctrl and _key_pressed(st, win.VK_O) then return _open_project_dialog(st) end if
   if ctrl and _key_pressed(st, win.VK_S) then return _save_current(st) end if
   if ctrl and _key_pressed(st, win.VK_X) then return _edit_cut(st) end if
@@ -4974,6 +4980,7 @@ function _handle_hotkeys(st)
   if _key_pressed(st, win.VK_F5) then return _build_project(st) end if
   if _key_pressed(st, win.VK_F6) then return _run_project(st) end if
   if _key_pressed(st, win.VK_F7) then return _run_tests(st) end if
+  if shift and _key_pressed(st, win.VK_F12) then return _find_references(st) end if
   if _key_pressed(st, win.VK_F12) then return _goto_definition(st) end if
   return st
 end function
