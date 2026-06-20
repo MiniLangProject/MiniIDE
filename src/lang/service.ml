@@ -51,6 +51,12 @@ struct SymbolItem
   line,
 end struct
 
+struct FileItem
+  path,
+  relative_path,
+  line_count,
+end struct
+
 struct TodoItem
   kind,
   file,
@@ -188,6 +194,29 @@ function symbol_items(snapshot, prefix, limit)
     if typeof(sym) != "struct" then continue end if
     if _matches_prefix(sym.name, prefix) == false then continue end if
     items = items + [SymbolItem(sym.name, sym.kind, sym.file, sym.line)]
+    if len(items) >= limit then return items end if
+  end for
+
+  return items
+end function
+
+// Return project files from a snapshot.
+function file_items(snapshot, query, limit)
+  if typeof(limit) != "int" or limit <= 0 then limit = 200 end if
+  if typeof(query) != "string" then query = "" end if
+  query = s.toLowerAscii(s.trim(query))
+  items = []
+
+  idx = void
+  if typeof(snapshot) == "struct" then idx = snapshot.project_index end if
+  if typeof(idx) != "struct" or typeof(idx.files) != "array" then return items end if
+
+  for fi = 0 to len(idx.files) - 1
+    file_info = idx.files[fi]
+    if typeof(file_info) != "struct" then continue end if
+    rel = file_info.relative_path
+    if query != "" and s.indexOf(s.toLowerAscii(rel), query, 0) < 0 then continue end if
+    items = items + [FileItem(file_info.path, rel, file_info.line_count)]
     if len(items) >= limit then return items end if
   end for
 

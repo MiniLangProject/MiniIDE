@@ -182,6 +182,7 @@ const ID_FILE_TEST = 1009
 const ID_FILE_CLEAN = 1040
 const ID_FILE_REBUILD = 1041
 const ID_FILE_STOP = 1042
+const ID_FILE_QUICK_OPEN = 1056
 const ID_EDIT_CUT = 1010
 const ID_EDIT_COPY = 1011
 const ID_EDIT_PASTE = 1012
@@ -263,6 +264,9 @@ const ID_COMMAND_SEARCH_TEXT_EDIT = 1561
 const ID_COMMAND_LIST = 1562
 const ID_COMMAND_RUN = 1563
 const ID_COMMAND_CANCEL = 1564
+const ID_QUICK_OPEN_TEXT_EDIT = 1571
+const ID_QUICK_OPEN_OK = 1572
+const ID_QUICK_OPEN_CANCEL = 1573
 
 const ID_CTX_TAB_CLOSE = 1201
 const ID_CTX_TAB_CLOSE_OTHERS = 1202
@@ -1212,6 +1216,7 @@ function _create_menus()
   win.AppendMenuWId(config_menu, win.MF_STRING, ID_CONFIG_SHOW, "&Show Configuration")
 
   win.AppendMenuWId(file_menu, win.MF_STRING, ID_FILE_OPEN_PROJECT, "&Open Project...\tCtrl+O")
+  win.AppendMenuWId(file_menu, win.MF_STRING, ID_FILE_QUICK_OPEN, "Quick Open &File...\tCtrl+P")
   win.AppendMenuWId(file_menu, win.MF_STRING, ID_FILE_NEW_PROJECT, "&New Project...")
   win.AppendMenuWId(file_menu, win.MF_STRING, ID_FILE_RELOAD, "&Reload Project")
   win.AppendMenuWId(file_menu, win.MF_SEPARATOR, 0, "")
@@ -2880,7 +2885,7 @@ end function
 // Return the command IDs exposed by the command palette.
 function _command_palette_ids()
   return [
-    ID_FILE_OPEN_PROJECT, ID_FILE_NEW_PROJECT, ID_FILE_RELOAD, ID_FILE_SAVE,
+    ID_FILE_OPEN_PROJECT, ID_FILE_QUICK_OPEN, ID_FILE_NEW_PROJECT, ID_FILE_RELOAD, ID_FILE_SAVE,
     ID_FILE_CLEAN, ID_FILE_BUILD, ID_FILE_REBUILD, ID_FILE_RUN, ID_FILE_STOP, ID_FILE_TEST,
     ID_EDIT_FIND, ID_EDIT_FIND_NEXT, ID_EDIT_COMPLETE, ID_EDIT_FORMAT,
     ID_NAV_OUTLINE, ID_NAV_WORKSPACE_HEALTH, ID_NAV_TODOS, ID_NAV_TEST_EXPLORER, ID_NAV_PROJECT_INDEX, ID_NAV_PROJECT_SYMBOLS, ID_NAV_GOTO_SYMBOL,
@@ -2895,7 +2900,7 @@ end function
 // Return the display labels exposed by the command palette.
 function _command_palette_labels()
   return [
-    "File: Open Project", "File: New Project", "File: Reload Project", "File: Save",
+    "File: Open Project", "File: Quick Open File", "File: New Project", "File: Reload Project", "File: Save",
     "Build: Clean", "Build: Build", "Build: Rebuild", "Build: Run", "Build: Stop", "Build: Run Tests",
     "Edit: Find", "Edit: Find Next", "Edit: Complete", "Edit: Format Document",
     "Navigation: Outline", "Navigation: Workspace Health", "Navigation: TODOs", "Navigation: Test Explorer", "Navigation: Project Index", "Navigation: Project Symbols", "Navigation: Go to Symbol",
@@ -2910,7 +2915,7 @@ end function
 // Return additional search aliases for command palette labels.
 function _command_palette_search_texts()
   return [
-    "file open project workspace ctrl o", "file new project create", "file reload project refresh", "file save ctrl s",
+    "file open project workspace ctrl o", "file quick open find file ctrl p", "file new project create", "file reload project refresh", "file save ctrl s",
     "build clean", "build compile f5", "build rebuild clean compile", "build run execute f6", "build stop cancel", "build test tests f7",
     "edit find search ctrl f", "edit find next f3", "edit complete autocomplete ctrl space", "edit format document",
     "navigation outline symbols current file", "navigation workspace health dashboard status diagnostics", "navigation todo todos fixme tasks", "navigation test explorer tests runner", "navigation project index imports files", "navigation project symbols", "navigation goto symbol ctrl t",
@@ -2951,6 +2956,7 @@ end function
 // Dispatch a command selected through the command palette without recursing into the palette command.
 function _perform_palette_command(st, id)
   if id == ID_FILE_OPEN_PROJECT then return _open_project_dialog(st) end if
+  if id == ID_FILE_QUICK_OPEN then return _open_quick_open_window(st) end if
   if id == ID_FILE_NEW_PROJECT then return _new_standard_project(st) end if
   if id == ID_FILE_SAVE then return _save_current(st) end if
   if id == ID_FILE_CLEAN then return _clean_project(st) end if
@@ -3094,6 +3100,128 @@ function _open_command_palette(st)
   end while
 
   if selected_id != 0 then return _perform_palette_command(st, selected_id) end if
+  if st.running and win.IsWindow(st.hwnd) then win.SetFocus(st.editor) end if
+  return st
+end function
+
+// Show or open project files matching a query.
+function _quick_open_query(st, query)
+  if typeof(query) != "string" then query = "" end if
+  query = s.trim(query)
+  snapshot = lang_service.analyze_project(st.project)
+  items = lang_service.file_items(snapshot, query, 300)
+  if typeof(items) != "array" or len(items) <= 0 then
+    if query == "" then return _set_log(st, "Quick Open: no project files found.") end if
+    return _set_log(st, "Quick Open: no matches for " + query)
+  end if
+
+  if query != "" then return _open_file(st, items[0].path) end if
+
+  rows = []
+  files = []
+  lines_out = []
+  cols = []
+  for i = 0 to len(items) - 1
+    item = items[i]
+    if typeof(item) != "struct" then continue end if
+    rows = rows + [item.relative_path + "  " + item.line_count + " lines"]
+    files = files + [item.path]
+    lines_out = lines_out + [1]
+    cols = cols + [1]
+  end for
+
+  title = "Quick Open Files"
+  if len(items) >= 300 then title = title + " (first 300)" end if
+  return _show_result_panel(st, "quick-open", title, rows, files, lines_out, cols)
+end function
+
+// Open quick file window.
+function _open_quick_open_window(st)
+  // Run a local message loop so the modal UI stays responsive.
+  dlg = win.create_main_window("Quick Open File", 520, 180)
+  if dlg is void then return _set_log(st, "Quick Open could not be opened.") end if
+  _settings_label(dlg, st.font_ui, "File", 20, 28, 90, 24)
+  file_edit = _settings_edit_id(dlg, st.font_ui, "", 116, 24, 360, 26, ID_QUICK_OPEN_TEXT_EDIT)
+  _settings_label(dlg, st.font_ui, "Leave empty to list project files.", 116, 56, 360, 22)
+  ok_btn = _settings_button(dlg, st.font_ui, "Open", 264, 104, 94, 30, ID_QUICK_OPEN_OK)
+  cancel_btn = _settings_button(dlg, st.font_ui, "Cancel", 368, 104, 108, 30, ID_QUICK_OPEN_CANCEL)
+  win.SetFocus(file_edit)
+
+  query = ""
+  accepted = false
+  done = false
+  while done == false and win.IsWindow(dlg)
+    msg = bytes(48, 0)
+    while win.PeekMessageW(msg, void, 0, 0, win.PM_REMOVE)
+      code = win.msg_message(msg)
+      hwnd = win.msg_hwnd(msg)
+      handled = false
+
+      if code == win.WM_QUIT then
+        st.running = false
+        done = true
+        handled = true
+      else if code == win.WM_CLOSE and hwnd == dlg then
+        done = true
+        win.DestroyWindow(dlg)
+        handled = true
+      else if code == win.WM_CLOSE and hwnd == st.hwnd then
+        st = _request_exit(st)
+        done = true
+        if win.IsWindow(dlg) then win.DestroyWindow(dlg) end if
+        handled = true
+      else if (code == win.WM_DESTROY or code == win.WM_NCDESTROY) and hwnd == dlg then
+        done = true
+        handled = true
+      else if code == win.WM_KEYDOWN then
+        key = win.msg_wparam_u32(msg)
+        if key == win.VK_ESCAPE then
+          done = true
+          win.DestroyWindow(dlg)
+          handled = true
+        else if key == win.VK_RETURN then
+          query = s.trim(win.get_control_text(file_edit))
+          accepted = true
+          done = true
+          win.DestroyWindow(dlg)
+          handled = true
+        end if
+      else if code == win.WM_COMMAND and hwnd == dlg then
+        cid = win.msg_command_id(msg)
+        if cid == ID_QUICK_OPEN_CANCEL then
+          done = true
+          win.DestroyWindow(dlg)
+          handled = true
+        else if cid == ID_QUICK_OPEN_OK then
+          query = s.trim(win.get_control_text(file_edit))
+          accepted = true
+          done = true
+          win.DestroyWindow(dlg)
+          handled = true
+        end if
+      else if code == win.WM_LBUTTONUP then
+        if hwnd == cancel_btn then
+          done = true
+          win.DestroyWindow(dlg)
+          handled = true
+        else if hwnd == ok_btn then
+          query = s.trim(win.get_control_text(file_edit))
+          accepted = true
+          done = true
+          win.DestroyWindow(dlg)
+          handled = true
+        end if
+      end if
+
+      if handled == false then
+        win.TranslateMessage(msg)
+        win.DispatchMessageW(msg)
+      end if
+    end while
+    if done == false then win.Sleep(15) end if
+  end while
+
+  if accepted then return _quick_open_query(st, query) end if
   if st.running and win.IsWindow(st.hwnd) then win.SetFocus(st.editor) end if
   return st
 end function
@@ -5243,6 +5371,7 @@ end function
 function _perform_command(st, id)
   // Keep validation near the top so callers can treat invalid input as a no-op.
   if id == ID_FILE_OPEN_PROJECT then return _open_project_dialog(st) end if
+  if id == ID_FILE_QUICK_OPEN then return _open_quick_open_window(st) end if
   if id == ID_FILE_NEW_PROJECT then return _new_standard_project(st) end if
   if id == ID_FILE_SAVE then return _save_current(st) end if
   if id == ID_FILE_CLEAN then return _clean_project(st) end if
@@ -5473,6 +5602,7 @@ function _handle_hotkeys(st)
   if ctrl and _key_pressed(st, win.VK_F) then return _open_find_window(st) end if
   if ctrl and _key_pressed(st, win.VK_G) then return _open_goto_line_window(st) end if
   if ctrl and shift and _key_pressed(st, win.VK_P) then return _open_command_palette(st) end if
+  if ctrl and _key_pressed(st, win.VK_P) then return _open_quick_open_window(st) end if
   if ctrl and _key_pressed(st, win.VK_T) then return _open_goto_symbol_window(st) end if
   if ctrl and _key_pressed(st, win.VK_V) then return _edit_paste(st) end if
   if ctrl and _key_pressed(st, win.VK_SPACE) then return _autocomplete(st) end if
