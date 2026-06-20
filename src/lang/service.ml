@@ -51,6 +51,13 @@ struct SymbolItem
   line,
 end struct
 
+struct TodoItem
+  kind,
+  file,
+  line,
+  text,
+end struct
+
 struct LanguageSnapshot
   project_index,
 end struct
@@ -217,6 +224,37 @@ function workspace_health_lines(snapshot)
     "Unresolved imports: " + unresolved_count,
     "Diagnostics: " + diagnostic_count,
   ]
+end function
+
+// Return TODO and FIXME comments across indexed source files.
+function todo_items(snapshot, limit)
+  items = []
+  if typeof(limit) != "int" or limit <= 0 then limit = 200 end if
+
+  idx = void
+  if typeof(snapshot) == "struct" then idx = snapshot.project_index end if
+  if typeof(idx) != "struct" or typeof(idx.files) != "array" then return items end if
+
+  for fi = 0 to len(idx.files) - 1
+    file_info = idx.files[fi]
+    if typeof(file_info) != "struct" then continue end if
+    text = fs.readAllText(file_info.path)
+    if typeof(text) != "string" then continue end if
+    lines = s.split(s.replaceAll(text, "\r\n", "\n"), "\n")
+    if typeof(lines) != "array" then continue end if
+    for li = 0 to len(lines) - 1
+      raw = lines[li]
+      lower = s.toLowerAscii(raw)
+      kind = ""
+      if s.indexOf(lower, "todo", 0) >= 0 then kind = "TODO" end if
+      if kind == "" and s.indexOf(lower, "fixme", 0) >= 0 then kind = "FIXME" end if
+      if kind == "" then continue end if
+      items = items + [TodoItem(kind, file_info.path, li + 1, s.trim(raw))]
+      if len(items) >= limit then return items end if
+    end for
+  end for
+
+  return items
 end function
 
 // Return lexical references for a symbol-like word.

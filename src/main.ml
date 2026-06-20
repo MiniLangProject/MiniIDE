@@ -211,6 +211,7 @@ const ID_NAV_PROJECT_SYMBOLS = 1050
 const ID_NAV_GOTO_SYMBOL = 1051
 const ID_COMMAND_PALETTE = 1052
 const ID_NAV_WORKSPACE_HEALTH = 1053
+const ID_NAV_TODOS = 1054
 const ID_EDIT_COMPLETE = 1033
 const ID_EDIT_FORMAT = 1034
 const ID_HELP_WELCOME = 1035
@@ -1240,6 +1241,7 @@ function _create_menus()
 
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_OUTLINE, "&Outline")
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_WORKSPACE_HEALTH, "Workspace &Health")
+  win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_TODOS, "&TODOs")
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_PROJECT_INDEX, "Project &Index")
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_PROJECT_SYMBOLS, "Project &Symbols")
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_GOTO_SYMBOL, "Go to &Symbol...\tCtrl+T")
@@ -2879,7 +2881,7 @@ function _command_palette_ids()
     ID_FILE_OPEN_PROJECT, ID_FILE_NEW_PROJECT, ID_FILE_RELOAD, ID_FILE_SAVE,
     ID_FILE_CLEAN, ID_FILE_BUILD, ID_FILE_REBUILD, ID_FILE_RUN, ID_FILE_STOP, ID_FILE_TEST,
     ID_EDIT_FIND, ID_EDIT_FIND_NEXT, ID_EDIT_COMPLETE, ID_EDIT_FORMAT,
-    ID_NAV_OUTLINE, ID_NAV_WORKSPACE_HEALTH, ID_NAV_PROJECT_INDEX, ID_NAV_PROJECT_SYMBOLS, ID_NAV_GOTO_SYMBOL,
+    ID_NAV_OUTLINE, ID_NAV_WORKSPACE_HEALTH, ID_NAV_TODOS, ID_NAV_PROJECT_INDEX, ID_NAV_PROJECT_SYMBOLS, ID_NAV_GOTO_SYMBOL,
     ID_NAV_GOTO_LINE, ID_NAV_GOTO_DEFINITION, ID_NAV_FIND_REFERENCES, ID_NAV_SEARCH_WORD, ID_NAV_PROBLEMS,
     ID_CONFIG_COMPILE_SETTINGS, ID_CONFIG_PROFILE_DEBUG, ID_CONFIG_PROFILE_RELEASE,
     ID_CONFIG_THEME_DARK, ID_CONFIG_THEME_LIGHT, ID_CONFIG_COMPILER_SELECT, ID_CONFIG_COMPILER_RESET,
@@ -2894,7 +2896,7 @@ function _command_palette_labels()
     "File: Open Project", "File: New Project", "File: Reload Project", "File: Save",
     "Build: Clean", "Build: Build", "Build: Rebuild", "Build: Run", "Build: Stop", "Build: Run Tests",
     "Edit: Find", "Edit: Find Next", "Edit: Complete", "Edit: Format Document",
-    "Navigation: Outline", "Navigation: Workspace Health", "Navigation: Project Index", "Navigation: Project Symbols", "Navigation: Go to Symbol",
+    "Navigation: Outline", "Navigation: Workspace Health", "Navigation: TODOs", "Navigation: Project Index", "Navigation: Project Symbols", "Navigation: Go to Symbol",
     "Navigation: Go to Line", "Navigation: Go to Definition", "Navigation: Find References", "Navigation: Search Word in Project", "Navigation: Problems",
     "Configuration: Compile Settings", "Configuration: Build Profile Debug", "Configuration: Build Profile Release",
     "Configuration: Theme Dark", "Configuration: Theme Light", "Configuration: Select Compiler", "Configuration: Reset Compiler",
@@ -2909,7 +2911,7 @@ function _command_palette_search_texts()
     "file open project workspace ctrl o", "file new project create", "file reload project refresh", "file save ctrl s",
     "build clean", "build compile f5", "build rebuild clean compile", "build run execute f6", "build stop cancel", "build test tests f7",
     "edit find search ctrl f", "edit find next f3", "edit complete autocomplete ctrl space", "edit format document",
-    "navigation outline symbols current file", "navigation workspace health dashboard status diagnostics", "navigation project index imports files", "navigation project symbols", "navigation goto symbol ctrl t",
+    "navigation outline symbols current file", "navigation workspace health dashboard status diagnostics", "navigation todo todos fixme tasks", "navigation project index imports files", "navigation project symbols", "navigation goto symbol ctrl t",
     "navigation goto line ctrl g", "navigation goto definition f12", "navigation find references shift f12", "navigation search word project", "navigation problems diagnostics errors warnings",
     "configuration compile settings compiler build", "configuration build profile debug", "configuration build profile release",
     "configuration theme dark", "configuration theme light", "configuration compiler select", "configuration compiler reset default",
@@ -2962,6 +2964,7 @@ function _perform_palette_command(st, id)
   if id == ID_EDIT_FORMAT then return _format_current(st) end if
   if id == ID_NAV_OUTLINE then return _show_outline(st) end if
   if id == ID_NAV_WORKSPACE_HEALTH then return _show_workspace_health(st) end if
+  if id == ID_NAV_TODOS then return _show_todos(st) end if
   if id == ID_NAV_PROJECT_INDEX then return _show_project_index(st) end if
   if id == ID_NAV_PROJECT_SYMBOLS then return _show_project_symbols(st) end if
   if id == ID_NAV_GOTO_SYMBOL then return _open_goto_symbol_window(st) end if
@@ -3306,6 +3309,31 @@ function _show_workspace_health(st)
   end if
 
   return _show_result_panel(st, "workspace-health", "Workspace Health", rows, files, lines_out, cols)
+end function
+
+// Show TODO and FIXME items.
+function _show_todos(st)
+  // Walk collections defensively because project data can be partially populated.
+  snapshot = lang_service.analyze_project(st.project)
+  items = lang_service.todo_items(snapshot, 300)
+  if typeof(items) != "array" or len(items) <= 0 then return _set_log(st, "TODOs: no TODO or FIXME entries found.") end if
+
+  rows = []
+  files = []
+  lines_out = []
+  cols = []
+  for i = 0 to len(items) - 1
+    item = items[i]
+    if typeof(item) != "struct" then continue end if
+    rows = rows + [item.kind + "  " + _project_relative_path(st, item.file) + ":" + item.line + "  " + item.text]
+    files = files + [item.file]
+    lines_out = lines_out + [item.line]
+    cols = cols + [1]
+  end for
+
+  title = "TODOs"
+  if len(items) >= 300 then title = title + " (first 300)" end if
+  return _show_result_panel(st, "todos", title, rows, files, lines_out, cols)
 end function
 
 // Show project index.
@@ -5208,6 +5236,7 @@ function _perform_command(st, id)
   if id == ID_EDIT_FORMAT then return _format_current(st) end if
   if id == ID_NAV_OUTLINE then return _show_outline(st) end if
   if id == ID_NAV_WORKSPACE_HEALTH then return _show_workspace_health(st) end if
+  if id == ID_NAV_TODOS then return _show_todos(st) end if
   if id == ID_NAV_PROJECT_INDEX then return _show_project_index(st) end if
   if id == ID_NAV_PROJECT_SYMBOLS then return _show_project_symbols(st) end if
   if id == ID_NAV_GOTO_SYMBOL then return _open_goto_symbol_window(st) end if
