@@ -204,6 +204,7 @@ const ID_CONFIG_THEME_DARK = 1047
 const ID_NAV_OUTLINE = 1030
 const ID_NAV_SEARCH_WORD = 1031
 const ID_NAV_PROBLEMS = 1032
+const ID_NAV_PROJECT_INDEX = 1048
 const ID_EDIT_COMPLETE = 1033
 const ID_EDIT_FORMAT = 1034
 const ID_HELP_WELCOME = 1035
@@ -1223,6 +1224,7 @@ function _create_menus()
   win.AppendMenuWId(edit_menu, win.MF_STRING, ID_EDIT_FORMAT, "Format &Document")
 
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_OUTLINE, "&Outline")
+  win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_PROJECT_INDEX, "Project &Index")
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_GOTO_LINE, "&Go to Line...\tCtrl+G")
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_GOTO_DEFINITION, "Go to &Definition\tF12")
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_SEARCH_WORD, "Search &Word in Project")
@@ -2880,6 +2882,66 @@ function _show_outline(st)
   title = "Outline"
   if current != "" then title = "Outline: " + _basename(current) end if
   return _show_result_panel(st, "outline", title, rows, files, lines_out, cols)
+end function
+
+// Show project index.
+function _show_project_index(st)
+  // Walk collections defensively because project data can be partially populated.
+  idx = try(lang_index.build_project_index(st.project))
+  if typeof(idx) == "error" then return _set_log(st, "Project index failed: " + idx.message) end if
+  if typeof(idx) != "struct" then return _set_log(st, "Project index unavailable.") end if
+
+  rows = [lang_index.summary(idx)]
+  files = [""]
+  lines_out = [0]
+  cols = [0]
+
+  if typeof(idx.unresolved_imports) == "array" and len(idx.unresolved_imports) > 0 then
+    rows = rows + ["Unresolved imports"]
+    files = files + [""]
+    lines_out = lines_out + [0]
+    cols = cols + [0]
+    for ui = 0 to len(idx.unresolved_imports) - 1
+      imp = idx.unresolved_imports[ui]
+      if typeof(imp) != "struct" then continue end if
+      rows = rows + ["  " + _project_relative_path(st, imp.file) + ":" + (imp.line + 1) + "  import " + imp.target]
+      files = files + [imp.file]
+      lines_out = lines_out + [imp.line + 1]
+      cols = cols + [1]
+    end for
+  end if
+
+  if typeof(idx.files) == "array" and len(idx.files) > 0 then
+    rows = rows + ["Files"]
+    files = files + [""]
+    lines_out = lines_out + [0]
+    cols = cols + [0]
+    for fi = 0 to len(idx.files) - 1
+      f = idx.files[fi]
+      if typeof(f) != "struct" then continue end if
+      rows = rows + ["  " + f.relative_path + "  " + f.line_count + " lines"]
+      files = files + [f.path]
+      lines_out = lines_out + [1]
+      cols = cols + [1]
+    end for
+  end if
+
+  if typeof(idx.symbols) == "array" and len(idx.symbols) > 0 then
+    rows = rows + ["Symbols"]
+    files = files + [""]
+    lines_out = lines_out + [0]
+    cols = cols + [0]
+    for si = 0 to len(idx.symbols) - 1
+      sym = idx.symbols[si]
+      if typeof(sym) != "struct" then continue end if
+      rows = rows + ["  " + sym.kind + "  " + sym.name + "  " + _project_relative_path(st, sym.file) + ":" + (sym.line + 1)]
+      files = files + [sym.file]
+      lines_out = lines_out + [sym.line + 1]
+      cols = cols + [1]
+    end for
+  end if
+
+  return _show_result_panel(st, "project-index", "Project Index", rows, files, lines_out, cols)
 end function
 
 // Show problems.
@@ -4669,6 +4731,7 @@ function _perform_command(st, id)
   if id == ID_EDIT_COMPLETE then return _autocomplete(st) end if
   if id == ID_EDIT_FORMAT then return _format_current(st) end if
   if id == ID_NAV_OUTLINE then return _show_outline(st) end if
+  if id == ID_NAV_PROJECT_INDEX then return _show_project_index(st) end if
   if id == ID_NAV_GOTO_LINE then return _open_goto_line_window(st) end if
   if id == ID_NAV_GOTO_DEFINITION then return _goto_definition(st) end if
   if id == ID_NAV_SEARCH_WORD then return _search_current_word(st) end if
