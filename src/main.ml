@@ -242,6 +242,7 @@ const ID_NAV_FILE_STRUCTURE = 1072
 const ID_NAV_REVEAL_ACTIVE_FILE = 1073
 const ID_FILE_SAVE_ALL = 1074
 const ID_EDIT_SELECT_ALL = 1075
+const ID_FILE_CLOSE_TAB = 1076
 const ID_EDIT_COMPLETE = 1033
 const ID_EDIT_FORMAT = 1034
 const ID_HELP_WELCOME = 1035
@@ -1412,6 +1413,7 @@ function _create_menus()
   win.AppendMenuWId(file_menu, win.MF_STRING, ID_FILE_RECENT_FILES, "Recent Fil&es\tCtrl+E")
   win.AppendMenuWId(file_menu, win.MF_STRING, ID_FILE_NEW_PROJECT, "&New Project...")
   win.AppendMenuWId(file_menu, win.MF_STRING, ID_FILE_RELOAD, "&Reload Project")
+  win.AppendMenuWId(file_menu, win.MF_STRING, ID_FILE_CLOSE_TAB, "&Close Tab")
   win.AppendMenuWId(file_menu, win.MF_SEPARATOR, 0, "")
   win.AppendMenuWId(file_menu, win.MF_STRING, ID_FILE_SAVE, "&Save\tCtrl+S")
   win.AppendMenuWId(file_menu, win.MF_STRING, ID_FILE_SAVE_ALL, "Save &All\tCtrl+Shift+S")
@@ -3184,7 +3186,7 @@ end function
 // Return the command IDs exposed by the command palette.
 function _command_palette_ids()
   return [
-    ID_FILE_OPEN_PROJECT, ID_FILE_QUICK_OPEN, ID_FILE_RECENT_FILES, ID_FILE_NEW_PROJECT, ID_FILE_RELOAD, ID_FILE_SAVE, ID_FILE_SAVE_ALL, ID_CTX_TAB_CLOSE_OTHERS, ID_CTX_TAB_CLOSE_ALL,
+    ID_FILE_OPEN_PROJECT, ID_FILE_QUICK_OPEN, ID_FILE_RECENT_FILES, ID_FILE_NEW_PROJECT, ID_FILE_RELOAD, ID_FILE_CLOSE_TAB, ID_FILE_SAVE, ID_FILE_SAVE_ALL, ID_CTX_TAB_CLOSE_OTHERS, ID_CTX_TAB_CLOSE_ALL,
     ID_FILE_CLEAN, ID_FILE_BUILD, ID_FILE_REBUILD, ID_FILE_RUN, ID_FILE_STOP, ID_FILE_TEST, ID_FILE_TEST_CURRENT, ID_FILE_TEST_RELATED,
     ID_EDIT_FIND, ID_EDIT_FIND_NEXT, ID_EDIT_SELECT_ALL, ID_EDIT_RENAME_SYMBOL, ID_EDIT_COMPLETE, ID_EDIT_FORMAT,
     ID_NAV_BACK, ID_NAV_FORWARD, ID_NAV_TOGGLE_BOOKMARK, ID_NAV_BOOKMARKS, ID_NAV_NEXT_BOOKMARK, ID_NAV_PREV_BOOKMARK, ID_NAV_REVEAL_ACTIVE_FILE, ID_NAV_OUTLINE, ID_NAV_FILE_STRUCTURE, ID_NAV_WORKSPACE_HEALTH, ID_NAV_TODOS, ID_NAV_TEST_EXPLORER, ID_NAV_RELATED_TESTS, ID_NAV_IMPORT_GRAPH, ID_NAV_CALL_HIERARCHY, ID_NAV_SYMBOL_INFO, ID_NAV_CODE_INSPECTIONS, ID_NAV_PROJECT_INDEX, ID_NAV_PROJECT_SYMBOLS, ID_NAV_GOTO_SYMBOL,
@@ -3199,7 +3201,7 @@ end function
 // Return the display labels exposed by the command palette.
 function _command_palette_labels()
   return [
-    "File: Open Project", "File: Quick Open File", "File: Recent Files", "File: New Project", "File: Reload Project", "File: Save", "File: Save All", "Window: Close Other Tabs", "Window: Close All Tabs",
+    "File: Open Project", "File: Quick Open File", "File: Recent Files", "File: New Project", "File: Reload Project", "File: Close Tab", "File: Save", "File: Save All", "Window: Close Other Tabs", "Window: Close All Tabs",
     "Build: Clean", "Build: Build", "Build: Rebuild", "Build: Run", "Build: Stop", "Build: Run Tests", "Build: Run Current Test File", "Build: Run Related Test File",
     "Edit: Find", "Edit: Find Next", "Edit: Select All", "Edit: Rename Symbol Preview", "Edit: Complete", "Edit: Format Document",
     "Navigation: Back", "Navigation: Forward", "Navigation: Toggle Bookmark", "Navigation: Bookmarks", "Navigation: Next Bookmark", "Navigation: Previous Bookmark", "Navigation: Reveal Active File", "Navigation: Outline", "Navigation: File Structure", "Navigation: Workspace Health", "Navigation: TODOs", "Navigation: Test Explorer", "Navigation: Related Tests", "Navigation: Import Graph", "Navigation: Call Hierarchy", "Navigation: Symbol Info", "Navigation: Code Inspections", "Navigation: Project Index", "Navigation: Project Symbols", "Navigation: Go to Symbol",
@@ -3214,7 +3216,7 @@ end function
 // Return additional search aliases for command palette labels.
 function _command_palette_search_texts()
   return [
-    "file open project workspace ctrl o", "file quick open find file ctrl p", "file recent files switch ctrl e", "file new project create", "file reload project refresh", "file save ctrl s", "file save all ctrl shift s", "window close other tabs editor", "window close all tabs editor",
+    "file open project workspace ctrl o", "file quick open find file ctrl p", "file recent files switch ctrl e", "file new project create", "file reload project refresh", "file close tab ctrl w editor", "file save ctrl s", "file save all ctrl shift s", "window close other tabs editor", "window close all tabs editor",
     "build clean", "build compile f5", "build rebuild clean compile", "build run execute f6", "build stop cancel", "build test tests f7", "build test current file ctrl f7", "build test related file ctrl shift f7",
     "edit find search ctrl f", "edit find next f3", "edit select all ctrl a", "edit rename symbol refactor f2 preview", "edit complete autocomplete ctrl space", "edit format document",
     "navigation back alt left history previous", "navigation forward alt right history next", "navigation toggle bookmark ctrl f2 marker favorite", "navigation bookmarks shift f2 markers favorites", "navigation next bookmark alt down marker favorite", "navigation previous bookmark alt up marker favorite", "navigation reveal active file project tree select alt f1", "navigation outline symbols current file", "navigation file structure ctrl f12 current symbols", "navigation workspace health dashboard status diagnostics", "navigation todo todos fixme tasks", "navigation test explorer tests runner", "navigation related tests current file", "navigation import graph imports dependencies", "navigation call hierarchy callers references", "navigation symbol info quick documentation inspect", "navigation code inspections unused symbols lint analysis", "navigation project index imports files", "navigation project symbols", "navigation goto symbol ctrl t",
@@ -3269,6 +3271,7 @@ function _perform_palette_command(st, id)
   if id == ID_FILE_TEST_CURRENT then return _run_current_test_file(st) end if
   if id == ID_FILE_TEST_RELATED then return _run_related_test_file(st) end if
   if id == ID_FILE_RELOAD then return _reload_project(st) end if
+  if id == ID_FILE_CLOSE_TAB then return _close_current_tab(st) end if
   if id == ID_CTX_TAB_CLOSE_OTHERS then return _close_other_tabs(st) end if
   if id == ID_CTX_TAB_CLOSE_ALL then return _close_all_tabs(st) end if
   if id == ID_EDIT_FIND then return _open_find_window(st) end if
@@ -5322,6 +5325,11 @@ function _close_tab(st, idx)
   return _activate_tab(st, target)
 end function
 
+// Close the active editor tab.
+function _close_current_tab(st)
+  return _close_tab(st, st.active_tab)
+end function
+
 // Close other tabs.
 function _close_other_tabs(st)
   // Walk collections defensively because project data can be partially populated.
@@ -6116,6 +6124,7 @@ function _perform_command(st, id)
   if id == ID_FILE_TEST_CURRENT then return _run_current_test_file(st) end if
   if id == ID_FILE_TEST_RELATED then return _run_related_test_file(st) end if
   if id == ID_FILE_RELOAD then return _reload_project(st) end if
+  if id == ID_FILE_CLOSE_TAB then return _close_current_tab(st) end if
   if id == ID_EDIT_UNDO then return _edit_undo(st) end if
   if id == ID_EDIT_REDO then return _edit_redo(st) end if
   if id == ID_EDIT_CUT then return _edit_cut(st) end if
