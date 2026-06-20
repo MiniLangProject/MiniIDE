@@ -274,6 +274,7 @@ File menu:
 - `New Project...`: create a standard MiniLang project.
 - `Open Project...`: open a `.mlproj` file or project directory.
 - `Save`: save the active editor tab.
+- `Save All` / `Ctrl+Shift+S`: save all dirty editable tabs.
 - `Build`: compile the current project.
 - `Run`: compile if needed, then run the project executable.
 - `Run Tests`: build and run the configured `testEntry`.

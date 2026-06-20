@@ -240,6 +240,7 @@ const ID_NAV_NEXT_BOOKMARK = 1070
 const ID_NAV_PREV_BOOKMARK = 1071
 const ID_NAV_FILE_STRUCTURE = 1072
 const ID_NAV_REVEAL_ACTIVE_FILE = 1073
+const ID_FILE_SAVE_ALL = 1074
 const ID_EDIT_COMPLETE = 1033
 const ID_EDIT_FORMAT = 1034
 const ID_HELP_WELCOME = 1035
@@ -1412,6 +1413,7 @@ function _create_menus()
   win.AppendMenuWId(file_menu, win.MF_STRING, ID_FILE_RELOAD, "&Reload Project")
   win.AppendMenuWId(file_menu, win.MF_SEPARATOR, 0, "")
   win.AppendMenuWId(file_menu, win.MF_STRING, ID_FILE_SAVE, "&Save\tCtrl+S")
+  win.AppendMenuWId(file_menu, win.MF_STRING, ID_FILE_SAVE_ALL, "Save &All\tCtrl+Shift+S")
   win.AppendMenuWId(file_menu, win.MF_STRING, ID_FILE_CLEAN, "&Clean")
   win.AppendMenuWId(file_menu, win.MF_STRING, ID_FILE_BUILD, "&Build\tF5")
   win.AppendMenuWId(file_menu, win.MF_STRING, ID_FILE_REBUILD, "&Rebuild")
@@ -1865,6 +1867,16 @@ function _save_all_open(st)
   st = _refresh_tabs(st)
   _set_title(st)
   return [st, true, ""]
+end function
+
+// Save all dirty editable tabs.
+function _save_all(st)
+  dirty = _dirty_tab_names(st)
+  result = _save_all_open(st)
+  st = result[0]
+  if result[1] == false then return _set_log(st, result[2]) end if
+  if dirty == "" then return _set_log(st, "Save All: no unsaved files.") end if
+  return _set_log(st, "Save All: saved " + dirty + ".")
 end function
 
 // Start compile job.
@@ -3170,7 +3182,7 @@ end function
 // Return the command IDs exposed by the command palette.
 function _command_palette_ids()
   return [
-    ID_FILE_OPEN_PROJECT, ID_FILE_QUICK_OPEN, ID_FILE_RECENT_FILES, ID_FILE_NEW_PROJECT, ID_FILE_RELOAD, ID_FILE_SAVE,
+    ID_FILE_OPEN_PROJECT, ID_FILE_QUICK_OPEN, ID_FILE_RECENT_FILES, ID_FILE_NEW_PROJECT, ID_FILE_RELOAD, ID_FILE_SAVE, ID_FILE_SAVE_ALL,
     ID_FILE_CLEAN, ID_FILE_BUILD, ID_FILE_REBUILD, ID_FILE_RUN, ID_FILE_STOP, ID_FILE_TEST, ID_FILE_TEST_CURRENT, ID_FILE_TEST_RELATED,
     ID_EDIT_FIND, ID_EDIT_FIND_NEXT, ID_EDIT_RENAME_SYMBOL, ID_EDIT_COMPLETE, ID_EDIT_FORMAT,
     ID_NAV_BACK, ID_NAV_FORWARD, ID_NAV_TOGGLE_BOOKMARK, ID_NAV_BOOKMARKS, ID_NAV_NEXT_BOOKMARK, ID_NAV_PREV_BOOKMARK, ID_NAV_REVEAL_ACTIVE_FILE, ID_NAV_OUTLINE, ID_NAV_FILE_STRUCTURE, ID_NAV_WORKSPACE_HEALTH, ID_NAV_TODOS, ID_NAV_TEST_EXPLORER, ID_NAV_RELATED_TESTS, ID_NAV_IMPORT_GRAPH, ID_NAV_CALL_HIERARCHY, ID_NAV_SYMBOL_INFO, ID_NAV_CODE_INSPECTIONS, ID_NAV_PROJECT_INDEX, ID_NAV_PROJECT_SYMBOLS, ID_NAV_GOTO_SYMBOL,
@@ -3185,7 +3197,7 @@ end function
 // Return the display labels exposed by the command palette.
 function _command_palette_labels()
   return [
-    "File: Open Project", "File: Quick Open File", "File: Recent Files", "File: New Project", "File: Reload Project", "File: Save",
+    "File: Open Project", "File: Quick Open File", "File: Recent Files", "File: New Project", "File: Reload Project", "File: Save", "File: Save All",
     "Build: Clean", "Build: Build", "Build: Rebuild", "Build: Run", "Build: Stop", "Build: Run Tests", "Build: Run Current Test File", "Build: Run Related Test File",
     "Edit: Find", "Edit: Find Next", "Edit: Rename Symbol Preview", "Edit: Complete", "Edit: Format Document",
     "Navigation: Back", "Navigation: Forward", "Navigation: Toggle Bookmark", "Navigation: Bookmarks", "Navigation: Next Bookmark", "Navigation: Previous Bookmark", "Navigation: Reveal Active File", "Navigation: Outline", "Navigation: File Structure", "Navigation: Workspace Health", "Navigation: TODOs", "Navigation: Test Explorer", "Navigation: Related Tests", "Navigation: Import Graph", "Navigation: Call Hierarchy", "Navigation: Symbol Info", "Navigation: Code Inspections", "Navigation: Project Index", "Navigation: Project Symbols", "Navigation: Go to Symbol",
@@ -3200,7 +3212,7 @@ end function
 // Return additional search aliases for command palette labels.
 function _command_palette_search_texts()
   return [
-    "file open project workspace ctrl o", "file quick open find file ctrl p", "file recent files switch ctrl e", "file new project create", "file reload project refresh", "file save ctrl s",
+    "file open project workspace ctrl o", "file quick open find file ctrl p", "file recent files switch ctrl e", "file new project create", "file reload project refresh", "file save ctrl s", "file save all ctrl shift s",
     "build clean", "build compile f5", "build rebuild clean compile", "build run execute f6", "build stop cancel", "build test tests f7", "build test current file ctrl f7", "build test related file ctrl shift f7",
     "edit find search ctrl f", "edit find next f3", "edit rename symbol refactor f2 preview", "edit complete autocomplete ctrl space", "edit format document",
     "navigation back alt left history previous", "navigation forward alt right history next", "navigation toggle bookmark ctrl f2 marker favorite", "navigation bookmarks shift f2 markers favorites", "navigation next bookmark alt down marker favorite", "navigation previous bookmark alt up marker favorite", "navigation reveal active file project tree select alt f1", "navigation outline symbols current file", "navigation file structure ctrl f12 current symbols", "navigation workspace health dashboard status diagnostics", "navigation todo todos fixme tasks", "navigation test explorer tests runner", "navigation related tests current file", "navigation import graph imports dependencies", "navigation call hierarchy callers references", "navigation symbol info quick documentation inspect", "navigation code inspections unused symbols lint analysis", "navigation project index imports files", "navigation project symbols", "navigation goto symbol ctrl t",
@@ -3245,6 +3257,7 @@ function _perform_palette_command(st, id)
   if id == ID_FILE_RECENT_FILES then return _show_recent_files(st) end if
   if id == ID_FILE_NEW_PROJECT then return _new_standard_project(st) end if
   if id == ID_FILE_SAVE then return _save_current(st) end if
+  if id == ID_FILE_SAVE_ALL then return _save_all(st) end if
   if id == ID_FILE_CLEAN then return _clean_project(st) end if
   if id == ID_FILE_BUILD then return _build_project(st) end if
   if id == ID_FILE_REBUILD then return _rebuild_project(st) end if
@@ -6088,6 +6101,7 @@ function _perform_command(st, id)
   if id == ID_FILE_RECENT_FILES then return _show_recent_files(st) end if
   if id == ID_FILE_NEW_PROJECT then return _new_standard_project(st) end if
   if id == ID_FILE_SAVE then return _save_current(st) end if
+  if id == ID_FILE_SAVE_ALL then return _save_all(st) end if
   if id == ID_FILE_CLEAN then return _clean_project(st) end if
   if id == ID_FILE_BUILD then return _build_project(st) end if
   if id == ID_FILE_REBUILD then return _rebuild_project(st) end if
@@ -6333,6 +6347,7 @@ function _handle_hotkeys(st)
   if alt and _key_pressed(st, win.VK_F1) then return _reveal_active_file(st) end if
   if ctrl and _key_pressed(st, win.VK_O) then return _open_project_dialog(st) end if
   if ctrl and _key_pressed(st, win.VK_E) then return _show_recent_files(st) end if
+  if ctrl and shift and _key_pressed(st, win.VK_S) then return _save_all(st) end if
   if ctrl and _key_pressed(st, win.VK_S) then return _save_current(st) end if
   if ctrl and _key_pressed(st, win.VK_X) then return _edit_cut(st) end if
   if ctrl and _key_pressed(st, win.VK_C) then return _edit_copy(st) end if
