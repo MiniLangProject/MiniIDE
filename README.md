@@ -241,6 +241,9 @@ Use `Configuration > Compile Settings...` to choose:
 - keep-going mode;
 - extra compiler arguments.
 
+`Configuration: Toggle Keep-going` is available from the command palette for
+quickly switching compiler error recovery while working.
+
 Use `Configuration > Select Compiler...` to choose a project-specific compiler
 executable. MiniIDE stores local build settings in `.miniide.cfg`:
 

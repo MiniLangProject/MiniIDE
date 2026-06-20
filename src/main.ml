@@ -3194,7 +3194,7 @@ function _command_palette_ids()
     ID_NAV_GOTO_LINE, ID_NAV_GOTO_DEFINITION, ID_NAV_FIND_REFERENCES, ID_NAV_SEARCH_WORD, ID_NAV_PROBLEMS,
     ID_CONFIG_COMPILE_SETTINGS, ID_CONFIG_PROFILE_DEBUG, ID_CONFIG_PROFILE_RELEASE,
     ID_CONFIG_THEME_DARK, ID_CONFIG_THEME_LIGHT, ID_CONFIG_COMPILER_SELECT, ID_CONFIG_COMPILER_RESET,
-    ID_CONFIG_RELOAD, ID_CONFIG_SHOW,
+    ID_CONFIG_TOGGLE_KEEP_GOING, ID_CONFIG_RELOAD, ID_CONFIG_SHOW,
     ID_HELP_WELCOME, ID_HELP_LANGUAGE, ID_HELP_LANGUAGE_SEARCH, ID_HELP_ABOUT,
   ]
 end function
@@ -3262,6 +3262,7 @@ function _perform_palette_command(st, id)
   if id == ID_CONFIG_THEME_LIGHT then return _select_theme(st, "light") end if
   if id == ID_CONFIG_COMPILER_SELECT then return _select_compiler(st) end if
   if id == ID_CONFIG_COMPILER_RESET then return _reset_compiler(st) end if
+  if id == ID_CONFIG_TOGGLE_KEEP_GOING then return _toggle_keep_going(st) end if
   if id == ID_CONFIG_RELOAD then return _reload_config(st) end if
   if id == ID_CONFIG_SHOW then return _show_config(st) end if
   if id == ID_HELP_WELCOME then return _show_welcome(st) end if
