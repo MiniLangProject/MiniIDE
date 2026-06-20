@@ -290,6 +290,8 @@ Edit menu:
 - `Complete` / `Ctrl+Space`: show MiniLang keywords and project symbols.
 - `Format Document`: trim trailing whitespace and collapse excessive blank
   lines.
+- `Window: Close Other Tabs` and `Window: Close All Tabs` are available from
+  the command palette and tab context menu.
 
 Navigation menu:
 
