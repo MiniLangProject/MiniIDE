@@ -84,6 +84,8 @@ struct AppState
   active_tab,
   current_file,
   current_sel,
+  nav_back,
+  nav_forward,
   last_tree_click_ms,
   last_tree_click_item,
   last_editor_text,
@@ -147,6 +149,12 @@ struct CompileSettingsValues
   compiler,
   max_text,
   extra_args,
+end struct
+
+struct NavLocation
+  file,
+  line,
+  col,
 end struct
 
 const MENU_H = 26
@@ -223,6 +231,8 @@ const ID_EDIT_RENAME_SYMBOL = 1062
 const ID_FILE_TEST_CURRENT = 1063
 const ID_FILE_TEST_RELATED = 1064
 const ID_FILE_RECENT_FILES = 1065
+const ID_NAV_BACK = 1066
+const ID_NAV_FORWARD = 1067
 const ID_EDIT_COMPLETE = 1033
 const ID_EDIT_FORMAT = 1034
 const ID_HELP_WELCOME = 1035
@@ -591,6 +601,89 @@ function _resolve_result_file(st, file)
   return file
 end function
 
+// Return the current editor location for navigation history.
+function _current_nav_location(st)
+  if typeof(st.current_file) != "string" or st.current_file == "" then return end if
+  if st.active_tab < 0 or st.active_tab >= len(st.open_files) then return end if
+  sel = win.edit_getsel(st.editor)
+  pos = sel[0]
+  line = win.edit_line_from_char(st.editor, pos) + 1
+  line_start = win.edit_line_index(st.editor, line - 1)
+  col = 1
+  if typeof(line_start) == "int" and line_start >= 0 then col = pos - line_start + 1 end if
+  if line < 1 then line = 1 end if
+  if col < 1 then col = 1 end if
+  return NavLocation(st.current_file, line, col)
+end function
+
+// Return true when two navigation locations point to the same place.
+function _same_nav_location(a, b)
+  if typeof(a) != "struct" or typeof(b) != "struct" then return false end if
+  return a.file == b.file and a.line == b.line and a.col == b.col
+end function
+
+// Push one location onto a bounded navigation stack.
+function _push_nav_stack(stack, loc)
+  if typeof(stack) != "array" then stack = [] end if
+  if typeof(loc) != "struct" then return stack end if
+  if len(stack) > 0 and _same_nav_location(stack[len(stack) - 1], loc) then return stack end if
+  stack = stack + [loc]
+  if len(stack) <= 80 then return stack end if
+  trimmed = []
+  for i = len(stack) - 80 to len(stack) - 1
+    trimmed = trimmed + [stack[i]]
+  end for
+  return trimmed
+end function
+
+// Return a stack without the last navigation item.
+function _pop_nav_stack(stack)
+  if typeof(stack) != "array" or len(stack) <= 0 then return [] end if
+  result = []
+  for i = 0 to len(stack) - 2
+    result = result + [stack[i]]
+  end for
+  return result
+end function
+
+// Record the current location before an explicit navigation jump.
+function _record_navigation(st)
+  loc = _current_nav_location(st)
+  if typeof(loc) != "struct" then return st end if
+  st.nav_back = _push_nav_stack(st.nav_back, loc)
+  st.nav_forward = []
+  return st
+end function
+
+// Open a navigation location without recording a new history entry.
+function _open_nav_location(st, loc)
+  if typeof(loc) != "struct" then return st end if
+  st = _open_file(st, loc.file)
+  return _jump_to_line_col(st, loc.line, loc.col)
+end function
+
+// Navigate backward through jump history.
+function _navigate_back(st)
+  if typeof(st.nav_back) != "array" or len(st.nav_back) <= 0 then return _set_log(st, "Navigation Back: no previous location.") end if
+  current = _current_nav_location(st)
+  loc = st.nav_back[len(st.nav_back) - 1]
+  st.nav_back = _pop_nav_stack(st.nav_back)
+  if typeof(current) == "struct" then st.nav_forward = _push_nav_stack(st.nav_forward, current) end if
+  st = _open_nav_location(st, loc)
+  return _set_log(st, "Navigation Back: " + _project_relative_path(st, loc.file) + ":" + loc.line + ":" + loc.col)
+end function
+
+// Navigate forward through jump history.
+function _navigate_forward(st)
+  if typeof(st.nav_forward) != "array" or len(st.nav_forward) <= 0 then return _set_log(st, "Navigation Forward: no next location.") end if
+  current = _current_nav_location(st)
+  loc = st.nav_forward[len(st.nav_forward) - 1]
+  st.nav_forward = _pop_nav_stack(st.nav_forward)
+  if typeof(current) == "struct" then st.nav_back = _push_nav_stack(st.nav_back, current) end if
+  st = _open_nav_location(st, loc)
+  return _set_log(st, "Navigation Forward: " + _project_relative_path(st, loc.file) + ":" + loc.line + ":" + loc.col)
+end function
+
 // Open problem location.
 function _open_problem_location(st, file, line_no, col_no)
   file = _resolve_result_file(st, file)
@@ -599,6 +692,7 @@ function _open_problem_location(st, file, line_no, col_no)
   if typeof(col_no) != "int" then col_no = 1 end if
   if line_no < 1 then line_no = 1 end if
   if col_no < 1 then col_no = 1 end if
+  st = _record_navigation(st)
   st = _open_file(st, file)
   return _jump_to_line_col(st, line_no, col_no)
 end function
@@ -1262,6 +1356,9 @@ function _create_menus()
   win.AppendMenuWId(edit_menu, win.MF_STRING, ID_EDIT_COMPLETE, "&Complete\tCtrl+Space")
   win.AppendMenuWId(edit_menu, win.MF_STRING, ID_EDIT_FORMAT, "Format &Document")
 
+  win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_BACK, "Navigate &Back\tAlt+Left")
+  win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_FORWARD, "Navigate &Forward\tAlt+Right")
+  win.AppendMenuWId(nav_menu, win.MF_SEPARATOR, 0, "")
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_OUTLINE, "&Outline")
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_WORKSPACE_HEALTH, "Workspace &Health")
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_TODOS, "&TODOs")
@@ -2027,6 +2124,8 @@ function _reload_project(st)
   st.open_markdown_view_themes = []
   st.active_tab = -1
   st.current_file = ""
+  st.nav_back = []
+  st.nav_forward = []
   st.last_editor_text = ""
   st = _invalidate_highlight(st)
   st.last_line_numbers_text = ""
@@ -2076,6 +2175,8 @@ function _open_project_file(st, path)
   st.active_tab = -1
   st.current_file = ""
   st.current_sel = -1
+  st.nav_back = []
+  st.nav_forward = []
   st.last_editor_text = ""
   st = _invalidate_highlight(st)
   st.last_line_numbers_text = ""
@@ -2981,7 +3082,7 @@ function _command_palette_ids()
     ID_FILE_OPEN_PROJECT, ID_FILE_QUICK_OPEN, ID_FILE_RECENT_FILES, ID_FILE_NEW_PROJECT, ID_FILE_RELOAD, ID_FILE_SAVE,
     ID_FILE_CLEAN, ID_FILE_BUILD, ID_FILE_REBUILD, ID_FILE_RUN, ID_FILE_STOP, ID_FILE_TEST, ID_FILE_TEST_CURRENT, ID_FILE_TEST_RELATED,
     ID_EDIT_FIND, ID_EDIT_FIND_NEXT, ID_EDIT_RENAME_SYMBOL, ID_EDIT_COMPLETE, ID_EDIT_FORMAT,
-    ID_NAV_OUTLINE, ID_NAV_WORKSPACE_HEALTH, ID_NAV_TODOS, ID_NAV_TEST_EXPLORER, ID_NAV_RELATED_TESTS, ID_NAV_IMPORT_GRAPH, ID_NAV_CALL_HIERARCHY, ID_NAV_SYMBOL_INFO, ID_NAV_CODE_INSPECTIONS, ID_NAV_PROJECT_INDEX, ID_NAV_PROJECT_SYMBOLS, ID_NAV_GOTO_SYMBOL,
+    ID_NAV_BACK, ID_NAV_FORWARD, ID_NAV_OUTLINE, ID_NAV_WORKSPACE_HEALTH, ID_NAV_TODOS, ID_NAV_TEST_EXPLORER, ID_NAV_RELATED_TESTS, ID_NAV_IMPORT_GRAPH, ID_NAV_CALL_HIERARCHY, ID_NAV_SYMBOL_INFO, ID_NAV_CODE_INSPECTIONS, ID_NAV_PROJECT_INDEX, ID_NAV_PROJECT_SYMBOLS, ID_NAV_GOTO_SYMBOL,
     ID_NAV_GOTO_LINE, ID_NAV_GOTO_DEFINITION, ID_NAV_FIND_REFERENCES, ID_NAV_SEARCH_WORD, ID_NAV_PROBLEMS,
     ID_CONFIG_COMPILE_SETTINGS, ID_CONFIG_PROFILE_DEBUG, ID_CONFIG_PROFILE_RELEASE,
     ID_CONFIG_THEME_DARK, ID_CONFIG_THEME_LIGHT, ID_CONFIG_COMPILER_SELECT, ID_CONFIG_COMPILER_RESET,
@@ -2996,7 +3097,7 @@ function _command_palette_labels()
     "File: Open Project", "File: Quick Open File", "File: Recent Files", "File: New Project", "File: Reload Project", "File: Save",
     "Build: Clean", "Build: Build", "Build: Rebuild", "Build: Run", "Build: Stop", "Build: Run Tests", "Build: Run Current Test File", "Build: Run Related Test File",
     "Edit: Find", "Edit: Find Next", "Edit: Rename Symbol Preview", "Edit: Complete", "Edit: Format Document",
-    "Navigation: Outline", "Navigation: Workspace Health", "Navigation: TODOs", "Navigation: Test Explorer", "Navigation: Related Tests", "Navigation: Import Graph", "Navigation: Call Hierarchy", "Navigation: Symbol Info", "Navigation: Code Inspections", "Navigation: Project Index", "Navigation: Project Symbols", "Navigation: Go to Symbol",
+    "Navigation: Back", "Navigation: Forward", "Navigation: Outline", "Navigation: Workspace Health", "Navigation: TODOs", "Navigation: Test Explorer", "Navigation: Related Tests", "Navigation: Import Graph", "Navigation: Call Hierarchy", "Navigation: Symbol Info", "Navigation: Code Inspections", "Navigation: Project Index", "Navigation: Project Symbols", "Navigation: Go to Symbol",
     "Navigation: Go to Line", "Navigation: Go to Definition", "Navigation: Find References", "Navigation: Search Word in Project", "Navigation: Problems",
     "Configuration: Compile Settings", "Configuration: Build Profile Debug", "Configuration: Build Profile Release",
     "Configuration: Theme Dark", "Configuration: Theme Light", "Configuration: Select Compiler", "Configuration: Reset Compiler",
@@ -3011,7 +3112,7 @@ function _command_palette_search_texts()
     "file open project workspace ctrl o", "file quick open find file ctrl p", "file recent files switch ctrl e", "file new project create", "file reload project refresh", "file save ctrl s",
     "build clean", "build compile f5", "build rebuild clean compile", "build run execute f6", "build stop cancel", "build test tests f7", "build test current file ctrl f7", "build test related file ctrl shift f7",
     "edit find search ctrl f", "edit find next f3", "edit rename symbol refactor f2 preview", "edit complete autocomplete ctrl space", "edit format document",
-    "navigation outline symbols current file", "navigation workspace health dashboard status diagnostics", "navigation todo todos fixme tasks", "navigation test explorer tests runner", "navigation related tests current file", "navigation import graph imports dependencies", "navigation call hierarchy callers references", "navigation symbol info quick documentation inspect", "navigation code inspections unused symbols lint analysis", "navigation project index imports files", "navigation project symbols", "navigation goto symbol ctrl t",
+    "navigation back alt left history previous", "navigation forward alt right history next", "navigation outline symbols current file", "navigation workspace health dashboard status diagnostics", "navigation todo todos fixme tasks", "navigation test explorer tests runner", "navigation related tests current file", "navigation import graph imports dependencies", "navigation call hierarchy callers references", "navigation symbol info quick documentation inspect", "navigation code inspections unused symbols lint analysis", "navigation project index imports files", "navigation project symbols", "navigation goto symbol ctrl t",
     "navigation goto line ctrl g", "navigation goto definition f12", "navigation find references shift f12", "navigation search word project", "navigation problems diagnostics errors warnings",
     "configuration compile settings compiler build", "configuration build profile debug", "configuration build profile release",
     "configuration theme dark", "configuration theme light", "configuration compiler select", "configuration compiler reset default",
@@ -3067,6 +3168,8 @@ function _perform_palette_command(st, id)
   if id == ID_EDIT_RENAME_SYMBOL then return _open_rename_symbol_window(st) end if
   if id == ID_EDIT_COMPLETE then return _autocomplete(st) end if
   if id == ID_EDIT_FORMAT then return _format_current(st) end if
+  if id == ID_NAV_BACK then return _navigate_back(st) end if
+  if id == ID_NAV_FORWARD then return _navigate_forward(st) end if
   if id == ID_NAV_OUTLINE then return _show_outline(st) end if
   if id == ID_NAV_WORKSPACE_HEALTH then return _show_workspace_health(st) end if
   if id == ID_NAV_TODOS then return _show_todos(st) end if
@@ -4166,6 +4269,7 @@ end function
 
 // Move the editor caret to line col.
 function _goto_line_col(st, line_no, col_no)
+  st = _record_navigation(st)
   st = _jump_to_line_col(st, line_no, col_no)
   return _set_log(st, "Go to line " + line_no + ", column " + col_no + ".")
 end function
@@ -4475,8 +4579,9 @@ function _goto_definition(st)
   index = symbols.build_index(st.project)
   sym = _find_symbol(index, word)
   if typeof(sym) != "struct" then return _set_log(st, "Definition not found: " + word) end if
+  st = _record_navigation(st)
   st = _open_file(st, sym.file)
-  st = _goto_line_number(st, sym.line + 1)
+  st = _jump_to_line_col(st, sym.line + 1, 1)
   return _set_log(st, "Definition: " + sym.name + " in " + _project_relative_path(st, sym.file) + ":" + (sym.line + 1))
 end function
 
@@ -4754,7 +4859,7 @@ function _create_state(root)
   win.set_control_font(btn_copy, font_ui)
   win.set_control_font(btn_paste, font_ui)
 
-  st = AppState(hwnd, menus[0], menus[1], menus[2], menus[3], menus[4], menus[5], toolbar_bg, tree_images, tree, tabbar, line_numbers, editor, editor, log, panel_title, result_list, autocomplete_list, status, btn_open, btn_save, btn_build, btn_run, btn_test, btn_reload, btn_cut, btn_copy, btn_paste, toolbar_icons, font_ui, font_code, p, compiler_path, build_keep_going, build_max_errors, build_subsystem, build_extra_args, build_profile, theme_mode, [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], -1, "", -1, 0, 0, "", "", -1, 0, 0, false, "", 0, "", -1, 0, false, 0, 0, array(256, 0), false, false, -1, "", 0, "", "log", [], [], [], [], "", void, "", false, "", 0, true)
+  st = AppState(hwnd, menus[0], menus[1], menus[2], menus[3], menus[4], menus[5], toolbar_bg, tree_images, tree, tabbar, line_numbers, editor, editor, log, panel_title, result_list, autocomplete_list, status, btn_open, btn_save, btn_build, btn_run, btn_test, btn_reload, btn_cut, btn_copy, btn_paste, toolbar_icons, font_ui, font_code, p, compiler_path, build_keep_going, build_max_errors, build_subsystem, build_extra_args, build_profile, theme_mode, [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], -1, "", -1, [], [], 0, 0, "", "", -1, 0, 0, false, "", 0, "", -1, 0, false, 0, 0, array(256, 0), false, false, -1, "", 0, "", "log", [], [], [], [], "", void, "", false, "", 0, true)
   st = _load_build_config(st)
   st = _populate_project_tree(st)
   st = _open_file(st, _entry_file(p))
@@ -4891,6 +4996,11 @@ end function
 // Return the shift down.
 function _shift_down()
   return win.key_down(win.VK_SHIFT)
+end function
+
+// Return the alt down.
+function _alt_down()
+  return win.key_down(win.VK_MENU)
 end function
 
 // Return the button hit.
@@ -5877,6 +5987,8 @@ function _perform_command(st, id)
   if id == ID_EDIT_RENAME_SYMBOL then return _open_rename_symbol_window(st) end if
   if id == ID_EDIT_COMPLETE then return _autocomplete(st) end if
   if id == ID_EDIT_FORMAT then return _format_current(st) end if
+  if id == ID_NAV_BACK then return _navigate_back(st) end if
+  if id == ID_NAV_FORWARD then return _navigate_forward(st) end if
   if id == ID_NAV_OUTLINE then return _show_outline(st) end if
   if id == ID_NAV_WORKSPACE_HEALTH then return _show_workspace_health(st) end if
   if id == ID_NAV_TODOS then return _show_todos(st) end if
@@ -6086,6 +6198,9 @@ end function
 function _handle_hotkeys(st)
   ctrl = _ctrl_down()
   shift = _shift_down()
+  alt = _alt_down()
+  if alt and _key_pressed(st, win.VK_LEFT) then return _navigate_back(st) end if
+  if alt and _key_pressed(st, win.VK_RIGHT) then return _navigate_forward(st) end if
   if ctrl and _key_pressed(st, win.VK_O) then return _open_project_dialog(st) end if
   if ctrl and _key_pressed(st, win.VK_E) then return _show_recent_files(st) end if
   if ctrl and _key_pressed(st, win.VK_S) then return _save_current(st) end if

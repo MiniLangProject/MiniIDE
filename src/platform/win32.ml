@@ -83,6 +83,7 @@ const VK_TAB = 0x09
 const VK_RETURN = 0x0D
 const VK_SHIFT = 0x10
 const VK_CONTROL = 0x11
+const VK_MENU = 0x12
 const VK_ESCAPE = 0x1B
 const VK_SPACE = 0x20
 const VK_PRIOR = 0x21
