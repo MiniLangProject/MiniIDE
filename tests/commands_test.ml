@@ -53,10 +53,12 @@ function main(args)
 
   quick_idx = _index_of(labels, "File: Quick Open File")
   current_test_idx = _index_of(labels, "Build: Run Current Test File")
+  definition_idx = _index_of(labels, "Navigation: Go to Definition")
   keep_idx = _index_of(labels, "Configuration: Toggle Keep-going")
   output_idx = _index_of(labels, "Output: Clear")
   if _assert_true("quick open label exists", quick_idx >= 0) == false then ok = false end if
   if _assert_true("current test label exists", current_test_idx >= 0) == false then ok = false end if
+  if _assert_true("definition label exists", definition_idx >= 0) == false then ok = false end if
   if _assert_true("keep-going label exists", keep_idx >= 0) == false then ok = false end if
   if _assert_true("output clear label exists", output_idx >= 0) == false then ok = false end if
 
@@ -66,9 +68,13 @@ function main(args)
   if quick_idx >= 0 then
     if _assert_true("pick finds quick open by shortcut alias", commands.pick(ids, labels, search_texts, "ctrl p", 0) == ids[quick_idx]) == false then ok = false end if
     if _assert_true("pick finds quick open by acronym", commands.pick(ids, labels, search_texts, "qof", 0) == ids[quick_idx]) == false then ok = false end if
+    if _assert_true("pick finds quick open by compact fuzzy query", commands.pick(ids, labels, search_texts, "qopen", 0) == ids[quick_idx]) == false then ok = false end if
   end if
   if current_test_idx >= 0 then
     if _assert_true("pick finds current test by acronym", commands.pick(ids, labels, search_texts, "rctf", 0) == ids[current_test_idx]) == false then ok = false end if
+  end if
+  if definition_idx >= 0 then
+    if _assert_true("pick finds definition by fuzzy query", commands.pick(ids, labels, search_texts, "gtd", 0) == ids[definition_idx]) == false then ok = false end if
   end if
   if output_idx >= 0 then
     if _assert_true("pick finds output clear by label", commands.pick(ids, labels, search_texts, "Output: Clear", 0) == ids[output_idx]) == false then ok = false end if

@@ -44,6 +44,31 @@ function _acronym(text)
   return result
 end function
 
+// Return text without spaces and punctuation, lower-cased for fuzzy matching.
+function _compact(text)
+  if typeof(text) != "string" then return "" end if
+  result = ""
+  for i = 0 to len(text) - 1
+    ch = text[i]
+    if _is_word_char(ch) then result = result + s.toLowerAscii(ch) end if
+  end for
+  return result
+end function
+
+// Return true when needle characters appear in order inside haystack.
+function _is_subsequence(haystack, needle)
+  if typeof(haystack) != "string" or typeof(needle) != "string" then return false end if
+  if needle == "" then return true end if
+  pos = 0
+  for i = 0 to len(haystack) - 1
+    if haystack[i] == needle[pos] then
+      pos = pos + 1
+      if pos >= len(needle) then return true end if
+    end if
+  end for
+  return false
+end function
+
 // Return the display labels exposed by the command palette.
 function labels()
   return [
@@ -74,18 +99,25 @@ function search_texts()
   ]
 end function
 
-// Return true when a command palette entry matches the query.
-function matches(labels, search_texts, idx, query)
-  if typeof(labels) != "array" or idx < 0 or idx >= len(labels) then return false end if
-  if typeof(query) != "string" or query == "" then return true end if
+// Return the match score for a command palette entry.
+function _match_score(labels, search_texts, idx, query)
+  if typeof(labels) != "array" or idx < 0 or idx >= len(labels) then return 0 end if
+  if typeof(query) != "string" or query == "" then return 3 end if
   extra = ""
   if typeof(search_texts) == "array" and idx < len(search_texts) then extra = search_texts[idx] end if
   q = s.toLowerAscii(s.trim(query))
-  if q == "" then return true end if
+  if q == "" then return 3 end if
   hay = s.toLowerAscii(labels[idx] + " " + extra)
-  if s.indexOf(hay, q, 0) >= 0 then return true end if
-  if s.indexOf(q, " ", 0) >= 0 then return false end if
-  return s.indexOf(_acronym(labels[idx]), q, 0) >= 0
+  if s.indexOf(hay, q, 0) >= 0 then return 3 end if
+  if s.indexOf(q, " ", 0) >= 0 then return 0 end if
+  if s.indexOf(_acronym(labels[idx]), q, 0) >= 0 then return 2 end if
+  if _is_subsequence(_compact(labels[idx]), _compact(q)) then return 1 end if
+  return 0
+end function
+
+// Return true when a command palette entry matches the query.
+function matches(labels, search_texts, idx, query)
+  return _match_score(labels, search_texts, idx, query) > 0
 end function
 
 // Return the command selected by query or list selection.
@@ -96,9 +128,16 @@ function pick(ids, labels, search_texts, query, selected)
   if query == "" and selected >= 0 and selected < len(ids) then return ids[selected] end if
   count = len(ids)
   if len(labels) < count then count = len(labels) end if
+  best_id = 0
+  best_score = 0
   for i = 0 to count - 1
-    if matches(labels, search_texts, i, query) then return ids[i] end if
+    score = _match_score(labels, search_texts, i, query)
+    if score > best_score then
+      best_score = score
+      best_id = ids[i]
+    end if
   end for
+  if best_id != 0 then return best_id end if
   if selected >= 0 and selected < len(ids) then return ids[selected] end if
   return 0
 end function
