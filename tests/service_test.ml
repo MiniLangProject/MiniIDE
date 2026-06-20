@@ -119,6 +119,17 @@ function _has_reference_line(items, line)
   return false
 end function
 
+// Return true when a rename preview item exists on the requested line.
+function _has_rename_preview(items, old_name, new_name, line)
+  if typeof(items) != "array" then return false end if
+  if len(items) <= 0 then return false end if
+  for i = 0 to len(items) - 1
+    item = items[i]
+    if typeof(item) == "struct" and item.old_name == old_name and item.new_name == new_name and item.line == line then return true end if
+  end for
+  return false
+end function
+
 // Return true when a diagnostic with a message fragment exists.
 function _has_diagnostic(items, fragment)
   if typeof(items) != "array" then return false end if
@@ -268,6 +279,12 @@ function main(args)
   if _assert_true("references include call and definition only", len(refs) == 2) == false then ok = false end if
   if _assert_true("references include call line", _has_reference_line(refs, 6)) == false then ok = false end if
   if _assert_true("references include definition line", _has_reference_line(refs, 8)) == false then ok = false end if
+
+  rename_items = service.rename_preview_items(snapshot, "modelValue", "renamedValue", 20)
+  if _assert_true("rename preview includes call", _has_rename_preview(rename_items, "modelValue", "renamedValue", 6)) == false then ok = false end if
+  if _assert_true("rename preview includes definition", _has_rename_preview(rename_items, "modelValue", "renamedValue", 8)) == false then ok = false end if
+  invalid_rename_items = service.rename_preview_items(snapshot, "modelValue", "bad-name", 20)
+  if _assert_true("rename preview rejects invalid new name", len(invalid_rename_items) == 0) == false then ok = false end if
 
   call_items = service.call_hierarchy_items(snapshot, "modelValue", 20)
   if _assert_true("call hierarchy includes call reference", _has_call_item(call_items, "reference", 6)) == false then ok = false end if

@@ -116,6 +116,7 @@ function Test-StaticWiring {
   $main = Get-Content -LiteralPath (Join-Path $Root "src\main.ml") -Raw
   $build = Get-Content -LiteralPath (Join-Path $Root "src\build\build_service.ml") -Raw
   $service = Get-Content -LiteralPath (Join-Path $Root "src\lang\service.ml") -Raw
+  $win32 = Get-Content -LiteralPath (Join-Path $Root "src\platform\win32.ml") -Raw
 
   $ids = [regex]::Matches($main, 'const\s+(ID_[A-Z0-9_]+)\s*=\s*(\d+)') |
     ForEach-Object { [pscustomobject]@{ Name = $_.Groups[1].Value; Value = [int]$_.Groups[2].Value } }
@@ -203,6 +204,14 @@ function Test-StaticWiring {
   Assert-True ($main.Contains("ctrl and _key_pressed(st, win.VK_T)")) "Ctrl+T hotkey wiring is missing."
   Assert-True ($main.Contains("ID_EDIT_FIND")) "Find command is missing."
   Assert-True ($main.Contains("ID_EDIT_FIND_NEXT")) "Find next command is missing."
+  Assert-True ($main.Contains("ID_EDIT_RENAME_SYMBOL")) "Rename Symbol command is missing."
+  Assert-True ($main.Contains('Rename &Symbol...\tF2')) "Rename Symbol menu item is missing."
+  Assert-True ($main.Contains("_open_rename_symbol_window")) "Rename Symbol dialog is missing."
+  Assert-True ($main.Contains("_show_rename_symbol_preview")) "Rename Symbol preview renderer is missing."
+  Assert-True ($main.Contains("lang_service.rename_preview_items")) "Rename Symbol must use the language service facade."
+  Assert-True ($service.Contains("rename_preview_items")) "Language service rename preview is missing."
+  Assert-True ($win32.Contains("VK_F2")) "F2 key constant is missing."
+  Assert-True ($main.Contains("win.VK_F2")) "F2 Rename Symbol hotkey wiring is missing."
   Assert-True ($main.Contains("ID_COMMAND_PALETTE")) "Command palette command is missing."
   Assert-True ($main.Contains('Command &Palette...\tCtrl+Shift+P')) "Command palette menu item is missing."
   Assert-True ($main.Contains("_open_command_palette")) "Command palette window is missing."
@@ -211,6 +220,7 @@ function Test-StaticWiring {
   Assert-True ($main.Contains("_command_palette_pick")) "Command palette selection helper is missing."
   Assert-True ($main.Contains("_perform_palette_command")) "Command palette dispatch helper is missing."
   Assert-True ($main.Contains("File: Quick Open File")) "Command palette must expose Quick Open."
+  Assert-True ($main.Contains("Edit: Rename Symbol Preview")) "Command palette must expose Rename Symbol."
   Assert-True ($main.Contains("Navigation: Workspace Health")) "Command palette must expose workspace health."
   Assert-True ($main.Contains("Navigation: TODOs")) "Command palette must expose TODOs."
   Assert-True ($main.Contains("Navigation: Test Explorer")) "Command palette must expose Test Explorer."

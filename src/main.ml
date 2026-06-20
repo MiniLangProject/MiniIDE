@@ -219,6 +219,7 @@ const ID_NAV_CALL_HIERARCHY = 1058
 const ID_NAV_SYMBOL_INFO = 1059
 const ID_NAV_CODE_INSPECTIONS = 1060
 const ID_NAV_RELATED_TESTS = 1061
+const ID_EDIT_RENAME_SYMBOL = 1062
 const ID_EDIT_COMPLETE = 1033
 const ID_EDIT_FORMAT = 1034
 const ID_HELP_WELCOME = 1035
@@ -272,6 +273,9 @@ const ID_COMMAND_CANCEL = 1564
 const ID_QUICK_OPEN_TEXT_EDIT = 1571
 const ID_QUICK_OPEN_OK = 1572
 const ID_QUICK_OPEN_CANCEL = 1573
+const ID_RENAME_SYMBOL_TEXT_EDIT = 1581
+const ID_RENAME_SYMBOL_OK = 1582
+const ID_RENAME_SYMBOL_CANCEL = 1583
 
 const ID_CTX_TAB_CLOSE = 1201
 const ID_CTX_TAB_CLOSE_OTHERS = 1202
@@ -1247,6 +1251,7 @@ function _create_menus()
   win.AppendMenuWId(edit_menu, win.MF_SEPARATOR, 0, "")
   win.AppendMenuWId(edit_menu, win.MF_STRING, ID_COMMAND_PALETTE, "Command &Palette...\tCtrl+Shift+P")
   win.AppendMenuWId(edit_menu, win.MF_SEPARATOR, 0, "")
+  win.AppendMenuWId(edit_menu, win.MF_STRING, ID_EDIT_RENAME_SYMBOL, "Rename &Symbol...\tF2")
   win.AppendMenuWId(edit_menu, win.MF_STRING, ID_EDIT_COMPLETE, "&Complete\tCtrl+Space")
   win.AppendMenuWId(edit_menu, win.MF_STRING, ID_EDIT_FORMAT, "Format &Document")
 
@@ -2209,6 +2214,7 @@ function _show_welcome(st)
   text = text + "- `F5` Build\n"
   text = text + "- `F6` Run\n"
   text = text + "- `F7` Run tests\n"
+  text = text + "- `F2` Rename symbol preview\n"
   text = text + "- `Ctrl+Space` Complete\n"
   text = text + "- `Navigation > Outline`, `Problems`, and `Search Word in Project`\n"
   return _open_virtual_tab(st, "miniide://MiniIDE Home.md", text)
@@ -2897,7 +2903,7 @@ function _command_palette_ids()
   return [
     ID_FILE_OPEN_PROJECT, ID_FILE_QUICK_OPEN, ID_FILE_NEW_PROJECT, ID_FILE_RELOAD, ID_FILE_SAVE,
     ID_FILE_CLEAN, ID_FILE_BUILD, ID_FILE_REBUILD, ID_FILE_RUN, ID_FILE_STOP, ID_FILE_TEST,
-    ID_EDIT_FIND, ID_EDIT_FIND_NEXT, ID_EDIT_COMPLETE, ID_EDIT_FORMAT,
+    ID_EDIT_FIND, ID_EDIT_FIND_NEXT, ID_EDIT_RENAME_SYMBOL, ID_EDIT_COMPLETE, ID_EDIT_FORMAT,
     ID_NAV_OUTLINE, ID_NAV_WORKSPACE_HEALTH, ID_NAV_TODOS, ID_NAV_TEST_EXPLORER, ID_NAV_RELATED_TESTS, ID_NAV_IMPORT_GRAPH, ID_NAV_CALL_HIERARCHY, ID_NAV_SYMBOL_INFO, ID_NAV_CODE_INSPECTIONS, ID_NAV_PROJECT_INDEX, ID_NAV_PROJECT_SYMBOLS, ID_NAV_GOTO_SYMBOL,
     ID_NAV_GOTO_LINE, ID_NAV_GOTO_DEFINITION, ID_NAV_FIND_REFERENCES, ID_NAV_SEARCH_WORD, ID_NAV_PROBLEMS,
     ID_CONFIG_COMPILE_SETTINGS, ID_CONFIG_PROFILE_DEBUG, ID_CONFIG_PROFILE_RELEASE,
@@ -2912,7 +2918,7 @@ function _command_palette_labels()
   return [
     "File: Open Project", "File: Quick Open File", "File: New Project", "File: Reload Project", "File: Save",
     "Build: Clean", "Build: Build", "Build: Rebuild", "Build: Run", "Build: Stop", "Build: Run Tests",
-    "Edit: Find", "Edit: Find Next", "Edit: Complete", "Edit: Format Document",
+    "Edit: Find", "Edit: Find Next", "Edit: Rename Symbol Preview", "Edit: Complete", "Edit: Format Document",
     "Navigation: Outline", "Navigation: Workspace Health", "Navigation: TODOs", "Navigation: Test Explorer", "Navigation: Related Tests", "Navigation: Import Graph", "Navigation: Call Hierarchy", "Navigation: Symbol Info", "Navigation: Code Inspections", "Navigation: Project Index", "Navigation: Project Symbols", "Navigation: Go to Symbol",
     "Navigation: Go to Line", "Navigation: Go to Definition", "Navigation: Find References", "Navigation: Search Word in Project", "Navigation: Problems",
     "Configuration: Compile Settings", "Configuration: Build Profile Debug", "Configuration: Build Profile Release",
@@ -2927,7 +2933,7 @@ function _command_palette_search_texts()
   return [
     "file open project workspace ctrl o", "file quick open find file ctrl p", "file new project create", "file reload project refresh", "file save ctrl s",
     "build clean", "build compile f5", "build rebuild clean compile", "build run execute f6", "build stop cancel", "build test tests f7",
-    "edit find search ctrl f", "edit find next f3", "edit complete autocomplete ctrl space", "edit format document",
+    "edit find search ctrl f", "edit find next f3", "edit rename symbol refactor f2 preview", "edit complete autocomplete ctrl space", "edit format document",
     "navigation outline symbols current file", "navigation workspace health dashboard status diagnostics", "navigation todo todos fixme tasks", "navigation test explorer tests runner", "navigation related tests current file", "navigation import graph imports dependencies", "navigation call hierarchy callers references", "navigation symbol info quick documentation inspect", "navigation code inspections unused symbols lint analysis", "navigation project index imports files", "navigation project symbols", "navigation goto symbol ctrl t",
     "navigation goto line ctrl g", "navigation goto definition f12", "navigation find references shift f12", "navigation search word project", "navigation problems diagnostics errors warnings",
     "configuration compile settings compiler build", "configuration build profile debug", "configuration build profile release",
@@ -2978,6 +2984,7 @@ function _perform_palette_command(st, id)
   if id == ID_FILE_RELOAD then return _reload_project(st) end if
   if id == ID_EDIT_FIND then return _open_find_window(st) end if
   if id == ID_EDIT_FIND_NEXT then return _find_next(st) end if
+  if id == ID_EDIT_RENAME_SYMBOL then return _open_rename_symbol_window(st) end if
   if id == ID_EDIT_COMPLETE then return _autocomplete(st) end if
   if id == ID_EDIT_FORMAT then return _format_current(st) end if
   if id == ID_NAV_OUTLINE then return _show_outline(st) end if
@@ -3732,6 +3739,132 @@ function _search_current_word(st)
   title = "Search: " + word
   if count >= 80 then title = title + " (first 80 matches)" end if
   return _show_result_panel(st, "search", title, rows, files, lines_out, cols)
+end function
+
+// Show a preview of the references that would be renamed.
+function _show_rename_symbol_preview(st, word, new_name)
+  if typeof(word) != "string" or word == "" then return _set_log(st, "No symbol under the cursor.") end if
+  if typeof(new_name) != "string" or s.trim(new_name) == "" then return _set_log(st, "Rename Symbol: no new name provided.") end if
+  new_name = s.trim(new_name)
+  if word == new_name then return _set_log(st, "Rename Symbol: name is unchanged.") end if
+
+  snapshot = lang_service.analyze_project(st.project)
+  items = lang_service.rename_preview_items(snapshot, word, new_name, 200)
+  if typeof(items) != "array" or len(items) <= 0 then return _set_log(st, "Rename Symbol: no safe rename targets for " + word) end if
+
+  rows = []
+  files = []
+  lines_out = []
+  cols = []
+  for i = 0 to len(items) - 1
+    item = items[i]
+    if typeof(item) != "struct" then continue end if
+    rows = rows + [item.old_name + " -> " + item.new_name + "  " + _project_relative_path(st, item.file) + ":" + item.line + ":" + item.col + "  " + item.text]
+    files = files + [item.file]
+    lines_out = lines_out + [item.line]
+    cols = cols + [item.col]
+  end for
+
+  title = "Rename Preview: " + word + " -> " + new_name
+  if len(items) >= 200 then title = title + " (first 200 matches)" end if
+  return _show_result_panel(st, "rename-preview", title, rows, files, lines_out, cols)
+end function
+
+// Open rename symbol preview window.
+function _open_rename_symbol_window(st)
+  // Run a local message loop so the modal UI stays responsive.
+  if st.active_tab < 0 or st.active_tab >= len(st.open_texts) then return _set_log(st, "No file is open.") end if
+  display_text = win.edit_get_text(st.editor)
+  sel = win.edit_getsel(st.editor)
+  word = _word_at_pos(display_text, sel[0])
+  if word == "" then return _set_log(st, "No symbol under the cursor.") end if
+
+  dlg = win.create_main_window("Rename Symbol Preview", 500, 180)
+  if dlg is void then return st end if
+  _settings_label(dlg, st.font_ui, "New name", 20, 28, 90, 24)
+  rename_edit = _settings_edit_id(dlg, st.font_ui, word, 116, 24, 340, 26, ID_RENAME_SYMBOL_TEXT_EDIT)
+  ok_btn = _settings_button(dlg, st.font_ui, "Preview", 244, 104, 94, 30, ID_RENAME_SYMBOL_OK)
+  cancel_btn = _settings_button(dlg, st.font_ui, "Cancel", 348, 104, 108, 30, ID_RENAME_SYMBOL_CANCEL)
+  win.edit_select_all(rename_edit)
+  win.SetFocus(rename_edit)
+
+  new_name = ""
+  accepted = false
+  done = false
+  while done == false and win.IsWindow(dlg)
+    msg = bytes(48, 0)
+    while win.PeekMessageW(msg, void, 0, 0, win.PM_REMOVE)
+      code = win.msg_message(msg)
+      hwnd = win.msg_hwnd(msg)
+      handled = false
+
+      if code == win.WM_QUIT then
+        st.running = false
+        done = true
+        handled = true
+      else if code == win.WM_CLOSE and hwnd == dlg then
+        done = true
+        win.DestroyWindow(dlg)
+        handled = true
+      else if code == win.WM_CLOSE and hwnd == st.hwnd then
+        st = _request_exit(st)
+        done = true
+        if win.IsWindow(dlg) then win.DestroyWindow(dlg) end if
+        handled = true
+      else if (code == win.WM_DESTROY or code == win.WM_NCDESTROY) and hwnd == dlg then
+        done = true
+        handled = true
+      else if code == win.WM_KEYDOWN then
+        key = win.msg_wparam_u32(msg)
+        if key == win.VK_ESCAPE then
+          done = true
+          win.DestroyWindow(dlg)
+          handled = true
+        else if key == win.VK_RETURN then
+          new_name = s.trim(win.get_control_text(rename_edit))
+          accepted = true
+          done = true
+          win.DestroyWindow(dlg)
+          handled = true
+        end if
+      else if code == win.WM_COMMAND and hwnd == dlg then
+        cid = win.msg_command_id(msg)
+        if cid == ID_RENAME_SYMBOL_CANCEL then
+          done = true
+          win.DestroyWindow(dlg)
+          handled = true
+        else if cid == ID_RENAME_SYMBOL_OK then
+          new_name = s.trim(win.get_control_text(rename_edit))
+          accepted = true
+          done = true
+          win.DestroyWindow(dlg)
+          handled = true
+        end if
+      else if code == win.WM_LBUTTONUP then
+        if hwnd == cancel_btn then
+          done = true
+          win.DestroyWindow(dlg)
+          handled = true
+        else if hwnd == ok_btn then
+          new_name = s.trim(win.get_control_text(rename_edit))
+          accepted = true
+          done = true
+          win.DestroyWindow(dlg)
+          handled = true
+        end if
+      end if
+
+      if handled == false then
+        win.TranslateMessage(msg)
+        win.DispatchMessageW(msg)
+      end if
+    end while
+    if done == false then win.Sleep(15) end if
+  end while
+
+  if accepted then return _show_rename_symbol_preview(st, word, new_name) end if
+  if st.running and win.IsWindow(st.hwnd) then win.SetFocus(st.editor) end if
+  return st
 end function
 
 // Find references for the current symbol-like word.
@@ -5467,6 +5600,7 @@ function _show_editor_context(st, mx, my)
   win.AppendMenuWId(menu, win.MF_STRING, ID_EDIT_FIND, "Find...")
   win.AppendMenuWId(menu, win.MF_STRING, ID_EDIT_FIND_NEXT, "Find Next")
   win.AppendMenuWId(menu, win.MF_STRING, ID_NAV_GOTO_DEFINITION, "Go to Definition")
+  win.AppendMenuWId(menu, win.MF_STRING, ID_EDIT_RENAME_SYMBOL, "Rename Symbol...")
   win.AppendMenuWId(menu, win.MF_SEPARATOR, 0, "")
   win.AppendMenuWId(menu, win.MF_STRING, ID_FILE_SAVE, "Save")
   win.AppendMenuWId(menu, win.MF_STRING, ID_FILE_BUILD, "Build")
@@ -5548,6 +5682,7 @@ function _perform_command(st, id)
   if id == ID_EDIT_FIND then return _open_find_window(st) end if
   if id == ID_EDIT_FIND_NEXT then return _find_next(st) end if
   if id == ID_COMMAND_PALETTE then return _open_command_palette(st) end if
+  if id == ID_EDIT_RENAME_SYMBOL then return _open_rename_symbol_window(st) end if
   if id == ID_EDIT_COMPLETE then return _autocomplete(st) end if
   if id == ID_EDIT_FORMAT then return _format_current(st) end if
   if id == ID_NAV_OUTLINE then return _show_outline(st) end if
@@ -5770,6 +5905,7 @@ function _handle_hotkeys(st)
   if ctrl and _key_pressed(st, win.VK_T) then return _open_goto_symbol_window(st) end if
   if ctrl and _key_pressed(st, win.VK_V) then return _edit_paste(st) end if
   if ctrl and _key_pressed(st, win.VK_SPACE) then return _autocomplete(st) end if
+  if _key_pressed(st, win.VK_F2) then return _open_rename_symbol_window(st) end if
   if _key_pressed(st, win.VK_F3) then return _find_next(st) end if
   if _key_pressed(st, win.VK_F5) then return _build_project(st) end if
   if _key_pressed(st, win.VK_F6) then return _run_project(st) end if

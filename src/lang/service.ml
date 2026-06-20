@@ -28,6 +28,15 @@ struct ReferenceItem
   text,
 end struct
 
+struct RenamePreviewItem
+  old_name,
+  new_name,
+  file,
+  line,
+  col,
+  text,
+end struct
+
 struct CallHierarchyItem
   name,
   kind,
@@ -119,6 +128,35 @@ function _is_word_char(ch)
   if len(b) <= 0 then return false end if
   c = b[0]
   return (c >= 65 and c <= 90) or (c >= 97 and c <= 122) or (c >= 48 and c <= 57)
+end function
+
+// Return true when a character can start a simple identifier.
+function _is_identifier_start(ch)
+  if typeof(ch) != "string" or ch == "" then return false end if
+  if ch == "_" then return true end if
+  b = bytes(ch)
+  if len(b) <= 0 then return false end if
+  c = b[0]
+  return (c >= 65 and c <= 90) or (c >= 97 and c <= 122)
+end function
+
+// Return true when a character can continue a simple identifier.
+function _is_identifier_char(ch)
+  if _is_identifier_start(ch) then return true end if
+  b = bytes(ch)
+  if len(b) <= 0 then return false end if
+  c = b[0]
+  return c >= 48 and c <= 57
+end function
+
+// Return true when the requested rename target is a simple MiniLang identifier.
+function _is_simple_identifier(name)
+  if typeof(name) != "string" or name == "" then return false end if
+  if _is_identifier_start(name[0]) == false then return false end if
+  for i = 1 to len(name) - 1
+    if _is_identifier_char(name[i]) == false then return false end if
+  end for
+  return true
 end function
 
 // Strip a simple line comment before lexical searches.
@@ -528,6 +566,25 @@ function references(snapshot, word, limit)
   end for
 
   return refs
+end function
+
+// Return the references that would be affected by a symbol rename.
+function rename_preview_items(snapshot, word, new_name, limit)
+  items = []
+  if typeof(word) != "string" or word == "" then return items end if
+  if typeof(new_name) != "string" then return items end if
+  new_name = s.trim(new_name)
+  if _is_simple_identifier(new_name) == false then return items end if
+  if word == new_name then return items end if
+  refs = references(snapshot, word, limit)
+  if typeof(refs) != "array" or len(refs) <= 0 then return items end if
+  for i = 0 to len(refs) - 1
+    ref = refs[i]
+    if typeof(ref) != "struct" then continue end if
+    items = items + [RenamePreviewItem(word, new_name, ref.file, ref.line, ref.col, ref.text)]
+    if typeof(limit) == "int" and limit > 0 and len(items) >= limit then return items end if
+  end for
+  return items
 end function
 
 // Return a simple call hierarchy for a symbol-like word.

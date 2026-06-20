@@ -105,6 +105,7 @@ const VK_V = 0x56
 const VK_X = 0x58
 const VK_Y = 0x59
 const VK_Z = 0x5A
+const VK_F2 = 0x71
 const VK_F3 = 0x72
 const VK_F5 = 0x74
 const VK_F6 = 0x75
