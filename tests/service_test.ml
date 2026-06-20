@@ -213,6 +213,7 @@ function _create_fixture(root)
     "end function\n")
 
   fs.writeAllText(project.path_join(root, "tests\\main_test.ml"),
+    "import \"..\\src\\main.ml\" as app\n" +
     "function test_model_lifecycle()\n" +
     "  return 0\n" +
     "end function\n")
@@ -276,7 +277,7 @@ function main(args)
 
   health = service.workspace_health_lines(snapshot)
   if _assert_true("workspace health counts files", _has_health_line(health, "Files: 3")) == false then ok = false end if
-  if _assert_true("workspace health counts imports", _has_health_line(health, "Imports: 2")) == false then ok = false end if
+  if _assert_true("workspace health counts imports", _has_health_line(health, "Imports: 3")) == false then ok = false end if
   if _assert_true("workspace health counts unresolved imports", _has_health_line(health, "Unresolved imports: 1")) == false then ok = false end if
   if _assert_true("workspace health counts diagnostics", _has_health_line(health, "Diagnostics: 1")) == false then ok = false end if
 
@@ -286,6 +287,10 @@ function main(args)
   tests = service.test_items(snapshot, 20)
   if _assert_true("test explorer includes configured entry", _has_test_item(tests, "Test Entry", "entry", "configured")) == false then ok = false end if
   if _assert_true("test explorer discovers test function", _has_test_item(tests, "test_model_lifecycle", "function", "discovered")) == false then ok = false end if
+
+  related_tests = service.related_test_items(snapshot, project.path_join(p.root, "src\\main.ml"), 20)
+  if _assert_true("related tests include importing test file", _has_test_item(related_tests, project.path_join(p.root, "tests\\main_test.ml"), "file", "related")) == false then ok = false end if
+  if _assert_true("related tests include importing test function", _has_test_item(related_tests, "test_model_lifecycle", "function", "related")) == false then ok = false end if
 
   if ok == false then return 1 end if
   print "Language service tests OK"

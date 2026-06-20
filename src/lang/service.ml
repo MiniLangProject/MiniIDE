@@ -457,6 +457,47 @@ function test_items(snapshot, limit)
   return items
 end function
 
+// Return tests related to the requested source file through imports.
+function related_test_items(snapshot, current_file, limit)
+  items = []
+  if typeof(limit) != "int" or limit <= 0 then limit = 200 end if
+  if typeof(current_file) != "string" or current_file == "" then return items end if
+
+  idx = void
+  if typeof(snapshot) == "struct" then idx = snapshot.project_index end if
+  if typeof(idx) != "struct" then return items end if
+
+  current_key = s.toLowerAscii(current_file)
+  if typeof(idx.imports) == "array" then
+    for ii = 0 to len(idx.imports) - 1
+      imp = idx.imports[ii]
+      if typeof(imp) != "struct" then continue end if
+      if imp.resolved == false then continue end if
+      if s.toLowerAscii(imp.resolved_path) != current_key then continue end if
+      if _is_test_path(imp.file) == false then continue end if
+      items = _add_test_item(items, imp.file, "file", imp.file, 1, "related")
+    end for
+  end if
+
+  if typeof(idx.symbols) == "array" and len(items) > 0 then
+    for si = 0 to len(idx.symbols) - 1
+      sym = idx.symbols[si]
+      if typeof(sym) != "struct" then continue end if
+      if sym.kind != "function" and sym.kind != "method" then continue end if
+      if _is_test_symbol(sym.name) == false then continue end if
+      for ti = 0 to len(items) - 1
+        test_file = items[ti].file
+        if s.toLowerAscii(sym.file) == s.toLowerAscii(test_file) then
+          items = _add_test_item(items, sym.name, sym.kind, sym.file, sym.line + 1, "related")
+          if len(items) >= limit then return items end if
+        end if
+      end for
+    end for
+  end if
+
+  return items
+end function
+
 // Return lexical references for a symbol-like word.
 function references(snapshot, word, limit)
   refs = []
