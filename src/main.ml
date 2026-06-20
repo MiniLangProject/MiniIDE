@@ -241,6 +241,7 @@ const ID_NAV_PREV_BOOKMARK = 1071
 const ID_NAV_FILE_STRUCTURE = 1072
 const ID_NAV_REVEAL_ACTIVE_FILE = 1073
 const ID_FILE_SAVE_ALL = 1074
+const ID_EDIT_SELECT_ALL = 1075
 const ID_EDIT_COMPLETE = 1033
 const ID_EDIT_FORMAT = 1034
 const ID_HELP_WELCOME = 1035
@@ -1431,6 +1432,7 @@ function _create_menus()
   win.AppendMenuWId(edit_menu, win.MF_STRING, ID_EDIT_CUT, "Cu&t\tCtrl+X")
   win.AppendMenuWId(edit_menu, win.MF_STRING, ID_EDIT_COPY, "&Copy\tCtrl+C")
   win.AppendMenuWId(edit_menu, win.MF_STRING, ID_EDIT_PASTE, "&Paste\tCtrl+V")
+  win.AppendMenuWId(edit_menu, win.MF_STRING, ID_EDIT_SELECT_ALL, "Select &All\tCtrl+A")
   win.AppendMenuWId(edit_menu, win.MF_SEPARATOR, 0, "")
   win.AppendMenuWId(edit_menu, win.MF_STRING, ID_EDIT_FIND, "&Find...\tCtrl+F")
   win.AppendMenuWId(edit_menu, win.MF_STRING, ID_EDIT_FIND_NEXT, "Find &Next\tF3")
@@ -3184,7 +3186,7 @@ function _command_palette_ids()
   return [
     ID_FILE_OPEN_PROJECT, ID_FILE_QUICK_OPEN, ID_FILE_RECENT_FILES, ID_FILE_NEW_PROJECT, ID_FILE_RELOAD, ID_FILE_SAVE, ID_FILE_SAVE_ALL,
     ID_FILE_CLEAN, ID_FILE_BUILD, ID_FILE_REBUILD, ID_FILE_RUN, ID_FILE_STOP, ID_FILE_TEST, ID_FILE_TEST_CURRENT, ID_FILE_TEST_RELATED,
-    ID_EDIT_FIND, ID_EDIT_FIND_NEXT, ID_EDIT_RENAME_SYMBOL, ID_EDIT_COMPLETE, ID_EDIT_FORMAT,
+    ID_EDIT_FIND, ID_EDIT_FIND_NEXT, ID_EDIT_SELECT_ALL, ID_EDIT_RENAME_SYMBOL, ID_EDIT_COMPLETE, ID_EDIT_FORMAT,
     ID_NAV_BACK, ID_NAV_FORWARD, ID_NAV_TOGGLE_BOOKMARK, ID_NAV_BOOKMARKS, ID_NAV_NEXT_BOOKMARK, ID_NAV_PREV_BOOKMARK, ID_NAV_REVEAL_ACTIVE_FILE, ID_NAV_OUTLINE, ID_NAV_FILE_STRUCTURE, ID_NAV_WORKSPACE_HEALTH, ID_NAV_TODOS, ID_NAV_TEST_EXPLORER, ID_NAV_RELATED_TESTS, ID_NAV_IMPORT_GRAPH, ID_NAV_CALL_HIERARCHY, ID_NAV_SYMBOL_INFO, ID_NAV_CODE_INSPECTIONS, ID_NAV_PROJECT_INDEX, ID_NAV_PROJECT_SYMBOLS, ID_NAV_GOTO_SYMBOL,
     ID_NAV_GOTO_LINE, ID_NAV_GOTO_DEFINITION, ID_NAV_FIND_REFERENCES, ID_NAV_SEARCH_WORD, ID_NAV_PROBLEMS,
     ID_CONFIG_COMPILE_SETTINGS, ID_CONFIG_PROFILE_DEBUG, ID_CONFIG_PROFILE_RELEASE,
@@ -3199,7 +3201,7 @@ function _command_palette_labels()
   return [
     "File: Open Project", "File: Quick Open File", "File: Recent Files", "File: New Project", "File: Reload Project", "File: Save", "File: Save All",
     "Build: Clean", "Build: Build", "Build: Rebuild", "Build: Run", "Build: Stop", "Build: Run Tests", "Build: Run Current Test File", "Build: Run Related Test File",
-    "Edit: Find", "Edit: Find Next", "Edit: Rename Symbol Preview", "Edit: Complete", "Edit: Format Document",
+    "Edit: Find", "Edit: Find Next", "Edit: Select All", "Edit: Rename Symbol Preview", "Edit: Complete", "Edit: Format Document",
     "Navigation: Back", "Navigation: Forward", "Navigation: Toggle Bookmark", "Navigation: Bookmarks", "Navigation: Next Bookmark", "Navigation: Previous Bookmark", "Navigation: Reveal Active File", "Navigation: Outline", "Navigation: File Structure", "Navigation: Workspace Health", "Navigation: TODOs", "Navigation: Test Explorer", "Navigation: Related Tests", "Navigation: Import Graph", "Navigation: Call Hierarchy", "Navigation: Symbol Info", "Navigation: Code Inspections", "Navigation: Project Index", "Navigation: Project Symbols", "Navigation: Go to Symbol",
     "Navigation: Go to Line", "Navigation: Go to Definition", "Navigation: Find References", "Navigation: Search Word in Project", "Navigation: Problems",
     "Configuration: Compile Settings", "Configuration: Build Profile Debug", "Configuration: Build Profile Release",
@@ -3214,7 +3216,7 @@ function _command_palette_search_texts()
   return [
     "file open project workspace ctrl o", "file quick open find file ctrl p", "file recent files switch ctrl e", "file new project create", "file reload project refresh", "file save ctrl s", "file save all ctrl shift s",
     "build clean", "build compile f5", "build rebuild clean compile", "build run execute f6", "build stop cancel", "build test tests f7", "build test current file ctrl f7", "build test related file ctrl shift f7",
-    "edit find search ctrl f", "edit find next f3", "edit rename symbol refactor f2 preview", "edit complete autocomplete ctrl space", "edit format document",
+    "edit find search ctrl f", "edit find next f3", "edit select all ctrl a", "edit rename symbol refactor f2 preview", "edit complete autocomplete ctrl space", "edit format document",
     "navigation back alt left history previous", "navigation forward alt right history next", "navigation toggle bookmark ctrl f2 marker favorite", "navigation bookmarks shift f2 markers favorites", "navigation next bookmark alt down marker favorite", "navigation previous bookmark alt up marker favorite", "navigation reveal active file project tree select alt f1", "navigation outline symbols current file", "navigation file structure ctrl f12 current symbols", "navigation workspace health dashboard status diagnostics", "navigation todo todos fixme tasks", "navigation test explorer tests runner", "navigation related tests current file", "navigation import graph imports dependencies", "navigation call hierarchy callers references", "navigation symbol info quick documentation inspect", "navigation code inspections unused symbols lint analysis", "navigation project index imports files", "navigation project symbols", "navigation goto symbol ctrl t",
     "navigation goto line ctrl g", "navigation goto definition f12", "navigation find references shift f12", "navigation search word project", "navigation problems diagnostics errors warnings",
     "configuration compile settings compiler build", "configuration build profile debug", "configuration build profile release",
@@ -3269,6 +3271,7 @@ function _perform_palette_command(st, id)
   if id == ID_FILE_RELOAD then return _reload_project(st) end if
   if id == ID_EDIT_FIND then return _open_find_window(st) end if
   if id == ID_EDIT_FIND_NEXT then return _find_next(st) end if
+  if id == ID_EDIT_SELECT_ALL then return _edit_select_all(st) end if
   if id == ID_EDIT_RENAME_SYMBOL then return _open_rename_symbol_window(st) end if
   if id == ID_EDIT_COMPLETE then return _autocomplete(st) end if
   if id == ID_EDIT_FORMAT then return _format_current(st) end if
@@ -6118,6 +6121,7 @@ function _perform_command(st, id)
   if id == ID_EDIT_PASTE then return _edit_paste(st) end if
   if id == ID_EDIT_FIND then return _open_find_window(st) end if
   if id == ID_EDIT_FIND_NEXT then return _find_next(st) end if
+  if id == ID_EDIT_SELECT_ALL then return _edit_select_all(st) end if
   if id == ID_COMMAND_PALETTE then return _open_command_palette(st) end if
   if id == ID_EDIT_RENAME_SYMBOL then return _open_rename_symbol_window(st) end if
   if id == ID_EDIT_COMPLETE then return _autocomplete(st) end if
@@ -6346,6 +6350,7 @@ function _handle_hotkeys(st)
   if alt and _key_pressed(st, win.VK_UP) then return _goto_bookmark(st, -1) end if
   if alt and _key_pressed(st, win.VK_F1) then return _reveal_active_file(st) end if
   if ctrl and _key_pressed(st, win.VK_O) then return _open_project_dialog(st) end if
+  if ctrl and _key_pressed(st, win.VK_A) then return _edit_select_all(st) end if
   if ctrl and _key_pressed(st, win.VK_E) then return _show_recent_files(st) end if
   if ctrl and shift and _key_pressed(st, win.VK_S) then return _save_all(st) end if
   if ctrl and _key_pressed(st, win.VK_S) then return _save_current(st) end if
