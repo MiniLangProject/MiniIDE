@@ -60,6 +60,14 @@ struct SymbolItem
   line,
 end struct
 
+struct SymbolInfoItem
+  name,
+  kind,
+  file,
+  line,
+  reference_count,
+end struct
+
 struct FileItem
   path,
   relative_path,
@@ -216,6 +224,27 @@ function symbol_items(snapshot, prefix, limit)
   end for
 
   return items
+end function
+
+// Return symbol details for an exact symbol name.
+function symbol_info(snapshot, name)
+  if typeof(name) != "string" or name == "" then return [] end if
+  idx = void
+  if typeof(snapshot) == "struct" then idx = snapshot.project_index end if
+  if typeof(idx) != "struct" or typeof(idx.symbols) != "array" then return [] end if
+
+  result = []
+  for si = 0 to len(idx.symbols) - 1
+    sym = idx.symbols[si]
+    if typeof(sym) != "struct" then continue end if
+    if sym.name != name then continue end if
+    refs = references(snapshot, name, 1000)
+    ref_count = 0
+    if typeof(refs) == "array" then ref_count = len(refs) end if
+    result = result + [SymbolInfoItem(sym.name, sym.kind, sym.file, sym.line + 1, ref_count)]
+    return result
+  end for
+  return result
 end function
 
 // Return project files from a snapshot.

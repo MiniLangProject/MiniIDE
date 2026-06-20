@@ -64,6 +64,17 @@ function _has_symbol_item(items, name, kind)
   return false
 end function
 
+// Return true when a symbol info item with name, kind, and references exists.
+function _has_symbol_info(items, name, kind, reference_count)
+  if typeof(items) != "array" then return false end if
+  if len(items) <= 0 then return false end if
+  for i = 0 to len(items) - 1
+    item = items[i]
+    if typeof(item) == "struct" and item.name == name and item.kind == kind and item.reference_count == reference_count then return true end if
+  end for
+  return false
+end function
+
 // Return true when a file item with a relative path exists.
 function _has_file_item(items, relative_path)
   if typeof(items) != "array" then return false end if
@@ -225,6 +236,9 @@ function main(args)
   project_symbols = service.symbol_items(snapshot, "mo", 20)
   if _assert_true("project symbols include filtered function", _has_symbol_item(project_symbols, "modelValue", "function")) == false then ok = false end if
   if _assert_true("project symbols include filtered struct", _has_symbol_item(project_symbols, "Model", "struct")) == false then ok = false end if
+
+  symbol_info = service.symbol_info(snapshot, "modelValue")
+  if _assert_true("symbol info includes reference count", _has_symbol_info(symbol_info, "modelValue", "function", 2)) == false then ok = false end if
 
   file_items = service.file_items(snapshot, "tests", 20)
   if _assert_true("quick open files include matching test file", _has_file_item(file_items, "tests\\main_test.ml")) == false then ok = false end if

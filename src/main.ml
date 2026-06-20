@@ -216,6 +216,7 @@ const ID_NAV_TODOS = 1054
 const ID_NAV_TEST_EXPLORER = 1055
 const ID_NAV_IMPORT_GRAPH = 1057
 const ID_NAV_CALL_HIERARCHY = 1058
+const ID_NAV_SYMBOL_INFO = 1059
 const ID_EDIT_COMPLETE = 1033
 const ID_EDIT_FORMAT = 1034
 const ID_HELP_WELCOME = 1035
@@ -1253,6 +1254,7 @@ function _create_menus()
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_TEST_EXPLORER, "Test &Explorer")
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_IMPORT_GRAPH, "Import &Graph")
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_CALL_HIERARCHY, "Call &Hierarchy")
+  win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_SYMBOL_INFO, "Symbol &Info")
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_PROJECT_INDEX, "Project &Index")
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_PROJECT_SYMBOLS, "Project &Symbols")
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_GOTO_SYMBOL, "Go to &Symbol...\tCtrl+T")
@@ -2892,7 +2894,7 @@ function _command_palette_ids()
     ID_FILE_OPEN_PROJECT, ID_FILE_QUICK_OPEN, ID_FILE_NEW_PROJECT, ID_FILE_RELOAD, ID_FILE_SAVE,
     ID_FILE_CLEAN, ID_FILE_BUILD, ID_FILE_REBUILD, ID_FILE_RUN, ID_FILE_STOP, ID_FILE_TEST,
     ID_EDIT_FIND, ID_EDIT_FIND_NEXT, ID_EDIT_COMPLETE, ID_EDIT_FORMAT,
-    ID_NAV_OUTLINE, ID_NAV_WORKSPACE_HEALTH, ID_NAV_TODOS, ID_NAV_TEST_EXPLORER, ID_NAV_IMPORT_GRAPH, ID_NAV_CALL_HIERARCHY, ID_NAV_PROJECT_INDEX, ID_NAV_PROJECT_SYMBOLS, ID_NAV_GOTO_SYMBOL,
+    ID_NAV_OUTLINE, ID_NAV_WORKSPACE_HEALTH, ID_NAV_TODOS, ID_NAV_TEST_EXPLORER, ID_NAV_IMPORT_GRAPH, ID_NAV_CALL_HIERARCHY, ID_NAV_SYMBOL_INFO, ID_NAV_PROJECT_INDEX, ID_NAV_PROJECT_SYMBOLS, ID_NAV_GOTO_SYMBOL,
     ID_NAV_GOTO_LINE, ID_NAV_GOTO_DEFINITION, ID_NAV_FIND_REFERENCES, ID_NAV_SEARCH_WORD, ID_NAV_PROBLEMS,
     ID_CONFIG_COMPILE_SETTINGS, ID_CONFIG_PROFILE_DEBUG, ID_CONFIG_PROFILE_RELEASE,
     ID_CONFIG_THEME_DARK, ID_CONFIG_THEME_LIGHT, ID_CONFIG_COMPILER_SELECT, ID_CONFIG_COMPILER_RESET,
@@ -2907,7 +2909,7 @@ function _command_palette_labels()
     "File: Open Project", "File: Quick Open File", "File: New Project", "File: Reload Project", "File: Save",
     "Build: Clean", "Build: Build", "Build: Rebuild", "Build: Run", "Build: Stop", "Build: Run Tests",
     "Edit: Find", "Edit: Find Next", "Edit: Complete", "Edit: Format Document",
-    "Navigation: Outline", "Navigation: Workspace Health", "Navigation: TODOs", "Navigation: Test Explorer", "Navigation: Import Graph", "Navigation: Call Hierarchy", "Navigation: Project Index", "Navigation: Project Symbols", "Navigation: Go to Symbol",
+    "Navigation: Outline", "Navigation: Workspace Health", "Navigation: TODOs", "Navigation: Test Explorer", "Navigation: Import Graph", "Navigation: Call Hierarchy", "Navigation: Symbol Info", "Navigation: Project Index", "Navigation: Project Symbols", "Navigation: Go to Symbol",
     "Navigation: Go to Line", "Navigation: Go to Definition", "Navigation: Find References", "Navigation: Search Word in Project", "Navigation: Problems",
     "Configuration: Compile Settings", "Configuration: Build Profile Debug", "Configuration: Build Profile Release",
     "Configuration: Theme Dark", "Configuration: Theme Light", "Configuration: Select Compiler", "Configuration: Reset Compiler",
@@ -2922,7 +2924,7 @@ function _command_palette_search_texts()
     "file open project workspace ctrl o", "file quick open find file ctrl p", "file new project create", "file reload project refresh", "file save ctrl s",
     "build clean", "build compile f5", "build rebuild clean compile", "build run execute f6", "build stop cancel", "build test tests f7",
     "edit find search ctrl f", "edit find next f3", "edit complete autocomplete ctrl space", "edit format document",
-    "navigation outline symbols current file", "navigation workspace health dashboard status diagnostics", "navigation todo todos fixme tasks", "navigation test explorer tests runner", "navigation import graph imports dependencies", "navigation call hierarchy callers references", "navigation project index imports files", "navigation project symbols", "navigation goto symbol ctrl t",
+    "navigation outline symbols current file", "navigation workspace health dashboard status diagnostics", "navigation todo todos fixme tasks", "navigation test explorer tests runner", "navigation import graph imports dependencies", "navigation call hierarchy callers references", "navigation symbol info quick documentation inspect", "navigation project index imports files", "navigation project symbols", "navigation goto symbol ctrl t",
     "navigation goto line ctrl g", "navigation goto definition f12", "navigation find references shift f12", "navigation search word project", "navigation problems diagnostics errors warnings",
     "configuration compile settings compiler build", "configuration build profile debug", "configuration build profile release",
     "configuration theme dark", "configuration theme light", "configuration compiler select", "configuration compiler reset default",
@@ -2980,6 +2982,7 @@ function _perform_palette_command(st, id)
   if id == ID_NAV_TEST_EXPLORER then return _show_test_explorer(st) end if
   if id == ID_NAV_IMPORT_GRAPH then return _show_import_graph(st) end if
   if id == ID_NAV_CALL_HIERARCHY then return _show_call_hierarchy(st) end if
+  if id == ID_NAV_SYMBOL_INFO then return _show_symbol_info(st) end if
   if id == ID_NAV_PROJECT_INDEX then return _show_project_index(st) end if
   if id == ID_NAV_PROJECT_SYMBOLS then return _show_project_symbols(st) end if
   if id == ID_NAV_GOTO_SYMBOL then return _open_goto_symbol_window(st) end if
@@ -3734,6 +3737,35 @@ function _show_call_hierarchy(st)
   title = "Call Hierarchy: " + word
   if len(items) >= 120 then title = title + " (first 120 entries)" end if
   return _show_result_panel(st, "call-hierarchy", title, rows, files, lines_out, cols)
+end function
+
+// Show symbol info for the current symbol-like word.
+function _show_symbol_info(st)
+  // Walk collections defensively because project data can be partially populated.
+  if st.active_tab < 0 or st.active_tab >= len(st.open_texts) then return _set_log(st, "No file is open.") end if
+  display_text = win.edit_get_text(st.editor)
+  sel = win.edit_getsel(st.editor)
+  word = _word_at_pos(display_text, sel[0])
+  if word == "" then return _set_log(st, "No symbol under the cursor.") end if
+
+  snapshot = lang_service.analyze_project(st.project)
+  items = lang_service.symbol_info(snapshot, word)
+  if typeof(items) != "array" or len(items) <= 0 then return _set_log(st, "Symbol Info: no indexed symbol found for " + word) end if
+
+  rows = []
+  files = []
+  lines_out = []
+  cols = []
+  for i = 0 to len(items) - 1
+    item = items[i]
+    if typeof(item) != "struct" then continue end if
+    rows = rows + [item.kind + "  " + item.name + "  " + _project_relative_path(st, item.file) + ":" + item.line + "  references: " + item.reference_count]
+    files = files + [item.file]
+    lines_out = lines_out + [item.line]
+    cols = cols + [1]
+  end for
+
+  return _show_result_panel(st, "symbol-info", "Symbol Info: " + word, rows, files, lines_out, cols)
 end function
 
 // Move the editor caret to line col.
@@ -5467,6 +5499,7 @@ function _perform_command(st, id)
   if id == ID_NAV_TEST_EXPLORER then return _show_test_explorer(st) end if
   if id == ID_NAV_IMPORT_GRAPH then return _show_import_graph(st) end if
   if id == ID_NAV_CALL_HIERARCHY then return _show_call_hierarchy(st) end if
+  if id == ID_NAV_SYMBOL_INFO then return _show_symbol_info(st) end if
   if id == ID_NAV_PROJECT_INDEX then return _show_project_index(st) end if
   if id == ID_NAV_PROJECT_SYMBOLS then return _show_project_symbols(st) end if
   if id == ID_NAV_GOTO_SYMBOL then return _open_goto_symbol_window(st) end if
