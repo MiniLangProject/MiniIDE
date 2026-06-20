@@ -23,6 +23,7 @@ import "help/language.ml" as help_lang
 import "ui/theme.ml" as theme
 import "ui/markdown.ml" as markdown
 import "lang/symbols.ml" as symbols
+import "lang/index.ml" as lang_index
 
 struct AppState
   hwnd,
@@ -1916,7 +1917,7 @@ function _reload_project(st)
   entry = _entry_file(st.project)
   st = _open_file(st, entry)
   st = _refresh_tabs(st)
-  st = _set_log(st, "Reloaded project " + st.project.name)
+  st = _set_log(st, "Reloaded project " + st.project.name + "\r\n" + _project_index_summary(st))
   st = _apply_theme(st)
   return st
 end function
@@ -1971,7 +1972,7 @@ function _open_project_file(st, path)
   end if
   st = entry_open
   st = _refresh_tabs(st)
-  st = _set_log(st, "Opened project " + st.project.name)
+  st = _set_log(st, "Opened project " + st.project.name + "\r\n" + _project_index_summary(st))
   st = _apply_theme(st)
   return st
 end function
@@ -2019,6 +2020,14 @@ function _new_project_create_from_dialog(dlg, name_edit, parent_edit, kind_combo
     return ""
   end if
   return created
+end function
+
+// Return a compact project index summary.
+function _project_index_summary(st)
+  if typeof(st.project) != "struct" then return "Project index unavailable." end if
+  idx = try(lang_index.build_project_index(st.project))
+  if typeof(idx) == "error" then return "Project index failed: " + idx.message end if
+  return lang_index.summary(idx)
 end function
 
 // Create standard project.

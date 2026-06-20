@@ -1,5 +1,6 @@
-build/
-**/build/
+/build/
+/examples/**/build/
+/projects/**/build/
 
 MiniLangCompilerML/
 .miniide.cfg

@@ -214,6 +214,7 @@ function Test-StaticWiring {
   Assert-True ($markdown.Contains("win.rich_set_format(st.editor, span.start_pos, span.end_pos")) "Markdown inline styles must use RichEdit's native character positions."
   Assert-True (-not $markdown.Contains("_md_display_pos(doc.text")) "Markdown styles must not over-shift ranges for CRLF."
   Assert-True ($main.Contains('import "ui/theme.ml" as theme')) "Theme module import is missing."
+  Assert-True ($main.Contains('import "lang/index.ml" as lang_index')) "Project index module import is missing."
   $theme = Get-Content -LiteralPath (Join-Path $Root "src\ui\theme.ml") -Raw
   Assert-True ($theme.Contains("function syntax_color")) "Theme module must provide syntax colors."
   Assert-True ($markdown.Contains('import "ui/theme.ml" as theme')) "Markdown module must use shared theme colors."
@@ -341,6 +342,27 @@ function Test-ProjectLoader {
   & $out
   $exit = $LASTEXITCODE
   Assert-True ($exit -eq 0) "Project loader regression test failed."
+}
+
+# Compile and run focused project index regression tests.
+function Test-ProjectIndex {
+  $fixture = Join-Path $Root "build\IndexTestProject"
+  if (Test-Path -LiteralPath $fixture) {
+    Remove-Item -LiteralPath $fixture -Recurse -Force
+  }
+  $out = Join-Path $Root "build\index_test.exe"
+  if (Test-Path -LiteralPath $out) { Remove-Item -LiteralPath $out -Force }
+  $args = @(
+    ".\tests\index_test.ml",
+    ".\build\index_test.exe",
+    "-I", ".\src",
+    "-I", ".\MiniLangCompilerML",
+    "--keep-going", "--max-errors", "80", "--subsystem", "console"
+  )
+  Invoke-Checked $Compiler $args $Root | Out-Null
+  & $out
+  $exit = $LASTEXITCODE
+  Assert-True ($exit -eq 0) "Project index regression test failed."
 }
 
 # Create a small sample project used by the UI build smoke test.
@@ -639,6 +661,7 @@ try {
   Step "static wiring" { Test-StaticWiring }
   Step "markdown renderer" { Test-MarkdownRenderer }
   Step "project loader" { Test-ProjectLoader }
+  Step "project index" { Test-ProjectIndex }
   Step "compile MiniIDE to temp" { Test-CompileMiniIde }
   if (-not $SkipUi) {
     Step "UI background compile smoke" { Test-UiBuildSmoke }
