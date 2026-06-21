@@ -252,6 +252,8 @@ function Test-StaticWiring {
   Assert-True ($main.Contains("ID_NAV_FIND_REFERENCES")) "Find references command is missing."
   Assert-True ($main.Contains("ID_NAV_PROBLEMS")) "Problems command is missing."
   Assert-True ($main.Contains("lang_service.diagnostics")) "Problems must include language service diagnostics."
+  Assert-True ($service.Contains("Project entry not found")) "Language service diagnostics must report missing project entry files."
+  Assert-True ($service.Contains("Project test entry not found")) "Language service diagnostics must report missing test entry files."
   Assert-True ($main.Contains("ID_RESULT_LIST")) "Clickable result panel is missing."
   Assert-True ($main.Contains("_open_result_selection")) "Result panel double-click handler is missing."
   Assert-True ($main.Contains("_goto_line_col")) "Result navigation must jump to line and column."

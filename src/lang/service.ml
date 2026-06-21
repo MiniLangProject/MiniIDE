@@ -421,6 +421,19 @@ end function
 // Return project-analysis diagnostics.
 function diagnostics(snapshot)
   items = []
+  project = void
+  if typeof(snapshot) == "struct" then project = snapshot.project end if
+  if typeof(project) == "struct" then
+    entry_path = _join_path(project.root, project.entry)
+    if typeof(project.entry) == "string" and project.entry != "" and fs.exists(entry_path) == false then
+      items = items + [DiagnosticItem("error", "Project entry not found: " + project.entry, entry_path, 1, 1)]
+    end if
+    test_entry_path = _join_path(project.root, project.test_entry)
+    if typeof(project.test_entry) == "string" and project.test_entry != "" and fs.exists(test_entry_path) == false then
+      items = items + [DiagnosticItem("warning", "Project test entry not found: " + project.test_entry, test_entry_path, 1, 1)]
+    end if
+  end if
+
   idx = void
   if typeof(snapshot) == "struct" then idx = snapshot.project_index end if
   if typeof(idx) != "struct" or typeof(idx.unresolved_imports) != "array" then return items end if
