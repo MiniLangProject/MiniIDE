@@ -3432,7 +3432,7 @@ function _quick_open_query(st, query)
     return _set_log(st, "Quick Open: no matches for " + query)
   end if
 
-  if query != "" then return _open_file(st, items[0].path) end if
+  if query != "" and len(items) == 1 then return _open_file(st, items[0].path) end if
 
   rows = []
   files = []
@@ -3448,6 +3448,8 @@ function _quick_open_query(st, query)
   end for
 
   title = "Quick Open Files"
+  if query != "" then title = "Quick Open: " + query + " (" + len(rows) + " matches)" end if
+  if query == "" then title = title + " (" + len(rows) + " files)" end if
   if len(items) >= 300 then title = title + " (first 300)" end if
   return _show_result_panel(st, "quick-open", title, rows, files, lines_out, cols)
 end function

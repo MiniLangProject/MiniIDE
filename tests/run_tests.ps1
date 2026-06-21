@@ -172,6 +172,8 @@ function Test-StaticWiring {
   Assert-True ($main.Contains("_open_quick_open_window")) "Quick Open dialog is missing."
   Assert-True ($main.Contains("_quick_open_query")) "Quick Open query helper is missing."
   Assert-True ($main.Contains("lang_service.file_items")) "Quick Open must use the language service facade."
+  Assert-True ($main.Contains('if query != "" and len(items) == 1 then return _open_file(st, items[0].path) end if')) "Quick Open should only auto-open a single filtered match."
+  Assert-True ($main.Contains('"Quick Open: " + query + " (" + len(rows) + " matches)"')) "Quick Open result title must summarize filtered match count."
   Assert-True ($main.Contains("ID_FILE_RECENT_FILES")) "Recent Files command is missing."
   Assert-True ($main.Contains('Recent Fil&es\tCtrl+E')) "Recent Files menu item is missing."
   Assert-True ($main.Contains("_show_recent_files")) "Recent Files renderer is missing."

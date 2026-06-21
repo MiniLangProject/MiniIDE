@@ -285,6 +285,9 @@ File menu:
 
 - `New Project...`: create a standard MiniLang project.
 - `Open Project...`: open a `.mlproj` file or project directory.
+- `Quick Open File...` / `Ctrl+P`: find project files with ranked matches; a
+  single filtered match opens directly, while multiple matches stay selectable
+  in the results panel.
 - `Close Tab`: close the active editor tab.
 - `Save`: save the active editor tab.
 - `Save All` / `Ctrl+Shift+S`: save all dirty editable tabs.
