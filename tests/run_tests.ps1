@@ -301,6 +301,7 @@ function Test-StaticWiring {
   Assert-True ($main.Contains('"Import Graph (" + resolved_import_count + " resolved, " + unresolved_import_count + " unresolved)"')) "Import Graph title must summarize resolved and unresolved imports."
   Assert-True ($main.Contains("_show_call_hierarchy")) "Call Hierarchy renderer is missing."
   Assert-True ($main.Contains("lang_service.call_hierarchy_items")) "Call Hierarchy must use the language service facade."
+  Assert-True ($main.Contains('" (" + call_definition_count + " definitions, " + call_reference_count + " references)"')) "Call Hierarchy title must summarize definitions and references."
   Assert-True ($main.Contains("_show_symbol_info")) "Symbol Info renderer is missing."
   Assert-True ($main.Contains("lang_service.symbol_info")) "Symbol Info must use the language service facade."
   Assert-True ($main.Contains("_show_code_inspections")) "Code Inspections renderer is missing."
@@ -796,6 +797,7 @@ public static class MiniIdeUiSmoke {
     }
     Assert-True ($children.Count -eq 0) "Compiler child process did not finish in time."
     $childPids = @()
+    Start-Sleep -Milliseconds 1000
 
     Assert-True (Test-Path -LiteralPath $buildLog) "Build log missing."
     Assert-True (Test-Path -LiteralPath $outputExe) "Output exe missing."

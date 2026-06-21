@@ -4354,16 +4354,20 @@ function _show_call_hierarchy(st)
   files = []
   lines_out = []
   cols = []
+  call_definition_count = 0
+  call_reference_count = 0
   for i = 0 to len(items) - 1
     item = items[i]
     if typeof(item) != "struct" then continue end if
+    if item.kind == "definition" then call_definition_count = call_definition_count + 1 end if
+    if item.kind == "reference" then call_reference_count = call_reference_count + 1 end if
     rows = rows + [item.kind + "  " + _project_relative_path(st, item.file) + ":" + item.line + ":" + item.col + "  " + item.text]
     files = files + [item.file]
     lines_out = lines_out + [item.line]
     cols = cols + [item.col]
   end for
 
-  title = "Call Hierarchy: " + word
+  title = "Call Hierarchy: " + word + " (" + call_definition_count + " definitions, " + call_reference_count + " references)"
   if len(items) >= 120 then title = title + " (first 120 entries)" end if
   return _show_result_panel(st, "call-hierarchy", title, rows, files, lines_out, cols)
 end function

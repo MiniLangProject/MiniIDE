@@ -342,6 +342,8 @@ Navigation menu:
   file and symbol totals in the panel title.
 - `Import Graph`: list project imports with resolved and unresolved totals in
   the panel title.
+- `Call Hierarchy`: list definitions and references for the current symbol,
+  with definition and reference totals in the panel title.
 - `Code Inspections`: list lightweight project findings such as duplicate
   declarations, unused import aliases, and possibly unused symbols, with
   severity totals in the panel title.
