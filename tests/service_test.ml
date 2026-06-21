@@ -370,6 +370,7 @@ function main(args)
   if _assert_true("code inspections skip used import alias", _has_inspection(inspections, "Unused import alias: util") == false) == false then ok = false end if
 
   health = service.workspace_health_lines(snapshot)
+  if _assert_true("workspace health summarizes status", _has_health_line(health, "Status: Warnings")) == false then ok = false end if
   if _assert_true("workspace health counts files", _has_health_line(health, "Files: 4")) == false then ok = false end if
   if _assert_true("workspace health counts imports", _has_health_line(health, "Imports: 3")) == false then ok = false end if
   if _assert_true("workspace health counts unresolved imports", _has_health_line(health, "Unresolved imports: 1")) == false then ok = false end if

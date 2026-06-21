@@ -561,7 +561,12 @@ function workspace_health_lines(snapshot)
       if item.severity == "info" then info_count = info_count + 1 end if
     end for
   end if
+  health_status = "Clean"
+  if info_count > 0 then health_status = "Info" end if
+  if warning_count > 0 then health_status = "Warnings" end if
+  if error_count > 0 then health_status = "Errors" end if
   return [
+    "Status: " + health_status,
     "Files: " + file_count,
     "Symbols: " + symbol_count,
     "Imports: " + import_count,
