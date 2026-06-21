@@ -274,8 +274,9 @@ the compiler command for advanced flags such as heap or tracing options.
 
 ## Main Commands
 
-The command palette supports label, alias, shortcut, acronym, and fuzzy
-subsequence searches such as `qof` or `qopen` for `Quick Open File`.
+The command palette filters results as you type and supports label, alias,
+shortcut, acronym, and fuzzy subsequence searches such as `qof` or `qopen` for
+`Quick Open File`.
 
 File menu:
 

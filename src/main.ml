@@ -3204,6 +3204,28 @@ function _perform_palette_command(st, id)
   return _perform_command(st, id)
 end function
 
+// Refresh the visible command palette list and return visible command IDs.
+function _refresh_command_palette_list(command_list, ids, labels, search_texts, query)
+  visible_ids = []
+  win.listbox_reset(command_list)
+  count = len(ids)
+  if len(labels) < count then count = len(labels) end if
+  for i = 0 to count - 1
+    if commands.matches(labels, search_texts, i, query) then
+      win.listbox_add(command_list, labels[i])
+      visible_ids = visible_ids + [ids[i]]
+    end if
+  end for
+  if len(visible_ids) > 0 then win.listbox_setsel(command_list, 0) end if
+  return visible_ids
+end function
+
+// Return the selected command ID from a filtered command palette list.
+function _selected_command_palette_id(visible_ids, selected)
+  if typeof(visible_ids) != "array" or selected < 0 or selected >= len(visible_ids) then return 0 end if
+  return visible_ids[selected]
+end function
+
 // Open command palette window.
 function _open_command_palette(st)
   // Run a local message loop so the modal UI stays responsive.
@@ -3218,10 +3240,7 @@ function _open_command_palette(st)
   list_style = win.WS_TABSTOP | win.WS_VSCROLL | win.LBS_NOTIFY | win.LBS_HASSTRINGS | win.LBS_NOINTEGRALHEIGHT
   command_list = win.create_child_id(dlg, "LISTBOX", "", 0, list_style, 20, 62, 556, 270, ID_COMMAND_LIST)
   win.set_control_font(command_list, st.font_ui)
-  for i = 0 to len(labels) - 1
-    win.listbox_add(command_list, labels[i])
-  end for
-  if len(labels) > 0 then win.listbox_setsel(command_list, 0) end if
+  visible_ids = _refresh_command_palette_list(command_list, ids, labels, search_texts, "")
   run_btn = _settings_button(dlg, st.font_ui, "Run", 382, 352, 86, 30, ID_COMMAND_RUN)
   cancel_btn = _settings_button(dlg, st.font_ui, "Cancel", 480, 352, 96, 30, ID_COMMAND_CANCEL)
   win.SetFocus(command_edit)
@@ -3259,7 +3278,8 @@ function _open_command_palette(st)
           handled = true
         else if key == win.VK_RETURN then
           query = win.get_control_text(command_edit)
-          selected_id = commands.pick(ids, labels, search_texts, query, win.listbox_getsel(command_list))
+          selected_id = _selected_command_palette_id(visible_ids, win.listbox_getsel(command_list))
+          if selected_id == 0 then selected_id = commands.pick(ids, labels, search_texts, query, -1) end if
           done = true
           win.DestroyWindow(dlg)
           handled = true
@@ -3267,18 +3287,23 @@ function _open_command_palette(st)
       else if code == win.WM_COMMAND and hwnd == dlg then
         cid = win.msg_command_id(msg)
         notify = win.msg_command_notify(msg)
-        if cid == ID_COMMAND_CANCEL then
+        if cid == ID_COMMAND_SEARCH_TEXT_EDIT and notify == win.EN_CHANGE then
+          query = win.get_control_text(command_edit)
+          visible_ids = _refresh_command_palette_list(command_list, ids, labels, search_texts, query)
+          handled = true
+        else if cid == ID_COMMAND_CANCEL then
           done = true
           win.DestroyWindow(dlg)
           handled = true
         else if cid == ID_COMMAND_RUN then
           query = win.get_control_text(command_edit)
-          selected_id = commands.pick(ids, labels, search_texts, query, win.listbox_getsel(command_list))
+          selected_id = _selected_command_palette_id(visible_ids, win.listbox_getsel(command_list))
+          if selected_id == 0 then selected_id = commands.pick(ids, labels, search_texts, query, -1) end if
           done = true
           win.DestroyWindow(dlg)
           handled = true
         else if cid == ID_COMMAND_LIST and notify == win.LBN_DBLCLK then
-          selected_id = commands.pick(ids, labels, search_texts, "", win.listbox_getsel(command_list))
+          selected_id = _selected_command_palette_id(visible_ids, win.listbox_getsel(command_list))
           done = true
           win.DestroyWindow(dlg)
           handled = true
@@ -3290,7 +3315,8 @@ function _open_command_palette(st)
           handled = true
         else if hwnd == run_btn then
           query = win.get_control_text(command_edit)
-          selected_id = commands.pick(ids, labels, search_texts, query, win.listbox_getsel(command_list))
+          selected_id = _selected_command_palette_id(visible_ids, win.listbox_getsel(command_list))
+          if selected_id == 0 then selected_id = commands.pick(ids, labels, search_texts, query, -1) end if
           done = true
           win.DestroyWindow(dlg)
           handled = true
