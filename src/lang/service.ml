@@ -214,6 +214,44 @@ function _matches_prefix(label, prefix)
   return s.startsWith(s.toLowerAscii(label), s.toLowerAscii(prefix))
 end function
 
+// Return compact lower-case text for fuzzy matching.
+function _compact_query_text(value)
+  if typeof(value) != "string" then return "" end if
+  value = s.toLowerAscii(value)
+  compacted = ""
+  for i = 0 to len(value) - 1
+    if _is_identifier_char(value[i]) then compacted = compacted + value[i] end if
+  end for
+  return compacted
+end function
+
+// Return true when needle appears as an ordered compact subsequence.
+function _is_query_subsequence(haystack, needle)
+  if typeof(haystack) != "string" or typeof(needle) != "string" then return false end if
+  if needle == "" then return true end if
+  pos = 0
+  for i = 0 to len(haystack) - 1
+    if haystack[i] == needle[pos] then
+      pos = pos + 1
+      if pos >= len(needle) then return true end if
+    end if
+  end for
+  return false
+end function
+
+// Return a match score for ranked project navigation.
+function _query_score(label, query)
+  if typeof(label) != "string" or label == "" then return 0 end if
+  if typeof(query) != "string" then query = "" end if
+  query = s.toLowerAscii(s.trim(query))
+  if query == "" then return 3 end if
+  hay = s.toLowerAscii(label)
+  if s.startsWith(hay, query) then return 3 end if
+  if s.indexOf(hay, query, 0) >= 0 then return 2 end if
+  if _is_query_subsequence(_compact_query_text(hay), _compact_query_text(query)) then return 1 end if
+  return 0
+end function
+
 // Add a completion item.
 function _add_completion(items, label, insert_text, kind, file, line, prefix, limit)
   if len(items) >= limit then return items end if
@@ -262,6 +300,8 @@ end function
 // Return project symbols from a snapshot.
 function symbol_items(snapshot, prefix, limit)
   if typeof(limit) != "int" or limit <= 0 then limit = 200 end if
+  if typeof(prefix) != "string" then prefix = "" end if
+  prefix = s.trim(prefix)
   items = []
 
   idx = void
@@ -271,7 +311,21 @@ function symbol_items(snapshot, prefix, limit)
   for si = 0 to len(idx.symbols) - 1
     sym = idx.symbols[si]
     if typeof(sym) != "struct" then continue end if
-    if _matches_prefix(sym.name, prefix) == false then continue end if
+    if _query_score(sym.name, prefix) != 3 then continue end if
+    items = items + [SymbolItem(sym.name, sym.kind, sym.file, sym.line)]
+    if len(items) >= limit then return items end if
+  end for
+  for si = 0 to len(idx.symbols) - 1
+    sym = idx.symbols[si]
+    if typeof(sym) != "struct" then continue end if
+    if _query_score(sym.name, prefix) != 2 then continue end if
+    items = items + [SymbolItem(sym.name, sym.kind, sym.file, sym.line)]
+    if len(items) >= limit then return items end if
+  end for
+  for si = 0 to len(idx.symbols) - 1
+    sym = idx.symbols[si]
+    if typeof(sym) != "struct" then continue end if
+    if _query_score(sym.name, prefix) != 1 then continue end if
     items = items + [SymbolItem(sym.name, sym.kind, sym.file, sym.line)]
     if len(items) >= limit then return items end if
   end for
@@ -304,7 +358,7 @@ end function
 function file_items(snapshot, query, limit)
   if typeof(limit) != "int" or limit <= 0 then limit = 200 end if
   if typeof(query) != "string" then query = "" end if
-  query = s.toLowerAscii(s.trim(query))
+  query = s.trim(query)
   items = []
 
   idx = void
@@ -315,7 +369,23 @@ function file_items(snapshot, query, limit)
     file_info = idx.files[fi]
     if typeof(file_info) != "struct" then continue end if
     rel = file_info.relative_path
-    if query != "" and s.indexOf(s.toLowerAscii(rel), query, 0) < 0 then continue end if
+    if _query_score(rel, query) != 3 then continue end if
+    items = items + [FileItem(file_info.path, rel, file_info.line_count)]
+    if len(items) >= limit then return items end if
+  end for
+  for fi = 0 to len(idx.files) - 1
+    file_info = idx.files[fi]
+    if typeof(file_info) != "struct" then continue end if
+    rel = file_info.relative_path
+    if _query_score(rel, query) != 2 then continue end if
+    items = items + [FileItem(file_info.path, rel, file_info.line_count)]
+    if len(items) >= limit then return items end if
+  end for
+  for fi = 0 to len(idx.files) - 1
+    file_info = idx.files[fi]
+    if typeof(file_info) != "struct" then continue end if
+    rel = file_info.relative_path
+    if _query_score(rel, query) != 1 then continue end if
     items = items + [FileItem(file_info.path, rel, file_info.line_count)]
     if len(items) >= limit then return items end if
   end for

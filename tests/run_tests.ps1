@@ -282,6 +282,8 @@ function Test-StaticWiring {
   Assert-True ($main.Contains("_open_goto_symbol_window")) "Go to symbol dialog is missing."
   Assert-True ($main.Contains("ID_SYMBOL_SEARCH_TEXT_EDIT")) "Go to symbol dialog edit control is missing."
   Assert-True ($main.Contains("lang_service.symbol_items")) "Project symbols must use the language service facade."
+  Assert-True ($service.Contains("_query_score")) "Language service ranked query scoring is missing."
+  Assert-True ($service.Contains("_is_query_subsequence")) "Language service fuzzy query matching is missing."
   Assert-True ($main.Contains("_find_references")) "Find references renderer is missing."
   Assert-True ($main.Contains("lang_service.references")) "Find references must use the language service facade."
   Assert-True ($main.Contains("Shift+F12")) "Find references shortcut text is missing."

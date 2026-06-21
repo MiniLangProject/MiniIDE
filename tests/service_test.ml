@@ -273,12 +273,19 @@ function main(args)
   project_symbols = service.symbol_items(snapshot, "mo", 20)
   if _assert_true("project symbols include filtered function", _has_symbol_item(project_symbols, "modelValue", "function")) == false then ok = false end if
   if _assert_true("project symbols include filtered struct", _has_symbol_item(project_symbols, "Model", "struct")) == false then ok = false end if
+  substring_symbols = service.symbol_items(snapshot, "ValueExtra", 20)
+  if _assert_true("project symbols include substring match", _has_symbol_item(substring_symbols, "modelValueExtra", "function")) == false then ok = false end if
+  fuzzy_symbols = service.symbol_items(snapshot, "mve", 20)
+  if _assert_true("project symbols include fuzzy match", _has_symbol_item(fuzzy_symbols, "modelValue", "function")) == false then ok = false end if
 
   symbol_info = service.symbol_info(snapshot, "modelValue")
   if _assert_true("symbol info includes reference count", _has_symbol_info(symbol_info, "modelValue", "function", 2)) == false then ok = false end if
 
   file_items = service.file_items(snapshot, "tests", 20)
   if _assert_true("quick open files include matching test file", _has_file_item(file_items, "tests\\main_test.ml")) == false then ok = false end if
+  fuzzy_file_items = service.file_items(snapshot, "mtest", 20)
+  if _assert_true("quick open files include fuzzy test file", _has_file_item(fuzzy_file_items, "tests\\main_test.ml")) == false then ok = false end if
+  if _assert_true("quick open ranks fuzzy test file first", len(fuzzy_file_items) > 0 and fuzzy_file_items[0].relative_path == "tests\\main_test.ml") == false then ok = false end if
 
   import_items = service.import_items(snapshot, "missing", 20)
   if _assert_true("import graph includes unresolved import", _has_import_item(import_items, "missing\\nope.ml", false)) == false then ok = false end if

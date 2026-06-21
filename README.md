@@ -322,8 +322,8 @@ Navigation menu:
   project tree.
 - `Outline`: show package/function/struct/const symbols for the active file.
 - `File Structure` / `Ctrl+F12`: show symbols in the active file.
-- `Project Symbols` and `Go to Symbol...` / `Ctrl+T`: browse or filter symbols
-  across the project.
+- `Project Symbols` and `Go to Symbol...` / `Ctrl+T`: browse or ranked-filter
+  symbols across the project with prefix, substring, and fuzzy matches.
 - `Go to Line...` / `Ctrl+G`: jump to a line in the active editor tab.
 - `Go to Definition` / `F12`: jump to a matching project symbol.
 - `Find References` / `Shift+F12`: list project references for the current
@@ -345,6 +345,10 @@ search results are displayed in the bottom results panel.
 
 Problems open on selection. Compiler-log diagnostics open on click. Other
 result lists open with a double-click.
+
+Quick Open and project symbol search rank exact/prefix matches ahead of
+substring and compact fuzzy matches, so short queries such as `mtest` can find
+`tests\main_test.ml` without typing the full path.
 
 ## Markdown Help
 
