@@ -3122,7 +3122,7 @@ function _show_autocomplete_popup(st, items, prefix)
   st.autocomplete_prefix = prefix
   win.listbox_reset(st.autocomplete_list)
   for i = 0 to len(items) - 1
-    win.listbox_add(st.autocomplete_list, items[i])
+    win.listbox_add(st.autocomplete_list, _completion_display_text(items[i]))
   end for
   win.listbox_setsel(st.autocomplete_list, 0)
   sel = win.edit_getsel(st.editor)
@@ -3140,14 +3140,36 @@ function _show_autocomplete_popup(st, items, prefix)
   return st
 end function
 
+// Return the user-facing label for a completion item.
+function _completion_item_label(item)
+  if typeof(item) == "struct" then
+    if typeof(item.label) == "string" and item.label != "" then return item.label end if
+    if typeof(item.insert_text) == "string" then return item.insert_text end if
+    return ""
+  end if
+  if typeof(item) == "string" then return item end if
+  return ""
+end function
+
+// Return the popup display text for a completion item.
+function _completion_display_text(item)
+  label = _completion_item_label(item)
+  if typeof(item) == "struct" and typeof(item.kind) == "string" and item.kind != "" then
+    return label + "  " + item.kind
+  end if
+  return label
+end function
+
 // Return the text to insert for a completion item.
 function _completion_insert_text(item, prefix)
-  if typeof(item) != "string" then return "" end if
+  item_text = _completion_item_label(item)
+  if typeof(item) == "struct" and typeof(item.insert_text) == "string" and item.insert_text != "" then item_text = item.insert_text end if
+  if item_text == "" then return "" end if
   if typeof(prefix) != "string" then prefix = "" end if
-  if prefix != "" and len(item) >= len(prefix) and s.startsWith(s.toLowerAscii(item), s.toLowerAscii(prefix)) then
-    return s.substr(item, len(prefix), len(item) - len(prefix))
+  if prefix != "" and len(item_text) >= len(prefix) and s.startsWith(s.toLowerAscii(item_text), s.toLowerAscii(prefix)) then
+    return s.substr(item_text, len(prefix), len(item_text) - len(prefix))
   end if
-  return item
+  return item_text
 end function
 
 // Select the current prefix when a fuzzy completion replaces it.
@@ -3167,14 +3189,15 @@ function _accept_autocomplete(st)
   item = st.autocomplete_items[idx]
   prefix = st.autocomplete_prefix
   if typeof(prefix) != "string" then prefix = "" end if
+  label = _completion_item_label(item)
   insert_text = _completion_insert_text(item, prefix)
-  if insert_text == item then _select_completion_prefix(st.editor, prefix) end if
+  if insert_text == label then _select_completion_prefix(st.editor, prefix) end if
   win.SetFocus(st.editor)
   win.edit_replace_sel(st.editor, insert_text)
   st = _record_edit_activity(st)
   st = _sync_active_tab(st)
   st = _hide_autocomplete(st)
-  return _set_log(st, "Completed: " + item)
+  return _set_log(st, "Completed: " + label)
 end function
 
 // Return the autocomplete.
@@ -3184,7 +3207,7 @@ function _autocomplete(st)
   sel = win.edit_getsel(st.editor)
   prefix = _word_prefix_before(display_text, sel[0])
   snapshot = lang_service.analyze_project(st.project)
-  items = lang_service.completion_labels(snapshot, prefix, 24)
+  items = lang_service.completion_items(snapshot, prefix, 24)
   if typeof(items) != "array" or len(items) <= 0 then
     if prefix == "" then return _set_log(st, "No completions found.") end if
     return _set_log(st, "No completions for: " + prefix)
@@ -3192,12 +3215,13 @@ function _autocomplete(st)
 
   if len(items) == 1 and prefix != "" then
     item = items[0]
+    label = _completion_item_label(item)
     insert_text = _completion_insert_text(item, prefix)
-    if insert_text == item then _select_completion_prefix(st.editor, prefix) end if
+    if insert_text == label then _select_completion_prefix(st.editor, prefix) end if
     win.edit_replace_sel(st.editor, insert_text)
     st = _record_edit_activity(st)
     st = _sync_active_tab(st)
-    return _set_log(st, "Completed: " + item)
+    return _set_log(st, "Completed: " + label)
   end if
 
   return _show_autocomplete_popup(st, items, prefix)

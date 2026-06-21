@@ -303,7 +303,7 @@ Edit menu:
 - `Undo`, `Redo`, `Cut`, `Copy`, and `Paste` are available from the menu,
   editor context menu, and command palette.
 - `Complete` / `Ctrl+Space`: show MiniLang keyword and project-symbol
-  completions with prefix, substring, and fuzzy matches.
+  completions with symbol-kind labels plus prefix, substring, and fuzzy matches.
 - `Format Document`: trim trailing whitespace and collapse excessive blank
   lines.
 - `Window: Close Other Tabs` and `Window: Close All Tabs` are available from
