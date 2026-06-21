@@ -374,6 +374,7 @@ function main(args)
   if _assert_true("workspace health counts imports", _has_health_line(health, "Imports: 3")) == false then ok = false end if
   if _assert_true("workspace health counts unresolved imports", _has_health_line(health, "Unresolved imports: 1")) == false then ok = false end if
   if _assert_true("workspace health counts tests", _has_health_line(health, "Tests: 3")) == false then ok = false end if
+  if _assert_true("workspace health counts inspections", _has_health_line(health, "Inspections: 6")) == false then ok = false end if
   if _assert_true("workspace health counts diagnostics", _has_health_line(health, "Diagnostics: 1")) == false then ok = false end if
 
   todos = service.todo_items(snapshot, 20)

@@ -536,6 +536,7 @@ function workspace_health_lines(snapshot)
   if typeof(idx.imports) == "array" then import_count = len(idx.imports) end if
   if typeof(idx.unresolved_imports) == "array" then unresolved_count = len(idx.unresolved_imports) end if
   test_count = len(test_items(snapshot, 1000))
+  inspection_count = len(code_inspection_items(snapshot, 1000))
   diagnostic_count = len(diagnostics(snapshot))
   return [
     "Files: " + file_count,
@@ -543,6 +544,7 @@ function workspace_health_lines(snapshot)
     "Imports: " + import_count,
     "Unresolved imports: " + unresolved_count,
     "Tests: " + test_count,
+    "Inspections: " + inspection_count,
     "Diagnostics: " + diagnostic_count,
   ]
 end function
