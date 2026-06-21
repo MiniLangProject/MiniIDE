@@ -298,6 +298,7 @@ function Test-StaticWiring {
   Assert-True ($service.Contains('current_stem + "_test"')) "Related Tests must match foo.ml to foo_test.ml."
   Assert-True ($main.Contains("_show_import_graph")) "Import Graph renderer is missing."
   Assert-True ($main.Contains("lang_service.import_items")) "Import Graph must use the language service facade."
+  Assert-True ($main.Contains('"Import Graph (" + resolved_import_count + " resolved, " + unresolved_import_count + " unresolved)"')) "Import Graph title must summarize resolved and unresolved imports."
   Assert-True ($main.Contains("_show_call_hierarchy")) "Call Hierarchy renderer is missing."
   Assert-True ($main.Contains("lang_service.call_hierarchy_items")) "Call Hierarchy must use the language service facade."
   Assert-True ($main.Contains("_show_symbol_info")) "Symbol Info renderer is missing."

@@ -340,6 +340,8 @@ Navigation menu:
 - `Related Tests`: find tests that import the active source file or match the
   `foo.ml` to `foo_test.ml` / `test_foo.ml` naming convention, with related
   file and symbol totals in the panel title.
+- `Import Graph`: list project imports with resolved and unresolved totals in
+  the panel title.
 - `Code Inspections`: list lightweight project findings such as duplicate
   declarations, unused import aliases, and possibly unused symbols, with
   severity totals in the panel title.

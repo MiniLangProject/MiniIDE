@@ -3876,14 +3876,19 @@ function _show_import_graph(st)
   files = []
   lines_out = []
   cols = []
+  resolved_import_count = 0
+  unresolved_import_count = 0
   for i = 0 to len(items) - 1
     item = items[i]
     if typeof(item) != "struct" then continue end if
     status = "unresolved"
     target = item.target
     if item.resolved then
+      resolved_import_count = resolved_import_count + 1
       status = "resolved"
       target = _project_relative_path(st, item.resolved_path)
+    else
+      unresolved_import_count = unresolved_import_count + 1
     end if
     alias = ""
     if item.alias != "" then alias = " as " + item.alias end if
@@ -3893,7 +3898,7 @@ function _show_import_graph(st)
     cols = cols + [1]
   end for
 
-  title = "Import Graph"
+  title = "Import Graph (" + resolved_import_count + " resolved, " + unresolved_import_count + " unresolved)"
   if len(items) >= 500 then title = title + " (first 500)" end if
   return _show_result_panel(st, "import-graph", title, rows, files, lines_out, cols)
 end function
