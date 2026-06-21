@@ -4012,16 +4012,22 @@ function _show_code_inspections(st)
   files = []
   lines_out = []
   cols = []
+  inspection_error_count = 0
+  inspection_warning_count = 0
+  inspection_info_count = 0
   for i = 0 to len(items) - 1
     item = items[i]
     if typeof(item) != "struct" then continue end if
+    if item.severity == "error" then inspection_error_count = inspection_error_count + 1 end if
+    if item.severity == "warning" then inspection_warning_count = inspection_warning_count + 1 end if
+    if item.severity == "info" then inspection_info_count = inspection_info_count + 1 end if
     rows = rows + [item.severity + "  " + _project_relative_path(st, item.file) + ":" + item.line + ":" + item.col + "  " + item.message]
     files = files + [item.file]
     lines_out = lines_out + [item.line]
     cols = cols + [item.col]
   end for
 
-  title = "Code Inspections"
+  title = "Code Inspections (" + inspection_error_count + " errors, " + inspection_warning_count + " warnings, " + inspection_info_count + " info)"
   if len(items) >= 300 then title = title + " (first 300)" end if
   return _show_result_panel(st, "code-inspections", title, rows, files, lines_out, cols)
 end function
