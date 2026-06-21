@@ -322,7 +322,8 @@ Navigation menu:
   through bookmarked locations.
 - `Reveal Active File` / `Alt+F1`: select the active editor file in the
   project tree.
-- `Outline`: show package/function/struct/const symbols for the active file.
+- `Outline`: show package/function/struct/const symbols for the active file,
+  with function, type, constant, and scope totals in the panel title.
 - `File Structure` / `Ctrl+F12`: show symbols in the active file.
 - `Workspace Health`: summarize indexed files, symbols, imports, tests,
   inspections, diagnostics, severity totals, and an overall status.

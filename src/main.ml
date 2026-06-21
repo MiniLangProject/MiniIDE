@@ -3560,10 +3560,18 @@ function _show_outline(st)
   files = []
   lines_out = []
   cols = []
+  outline_function_count = 0
+  outline_type_count = 0
+  outline_const_count = 0
+  outline_scope_count = 0
   for i = 0 to len(index.symbols) - 1
     sym = index.symbols[i]
     if typeof(sym) != "struct" then continue end if
     if current != "" and s.toLowerAscii(sym.file) != current_key then continue end if
+    if sym.kind == "function" or sym.kind == "method" then outline_function_count = outline_function_count + 1 end if
+    if sym.kind == "struct" or sym.kind == "enum" then outline_type_count = outline_type_count + 1 end if
+    if sym.kind == "const" then outline_const_count = outline_const_count + 1 end if
+    if sym.kind == "package" or sym.kind == "namespace" then outline_scope_count = outline_scope_count + 1 end if
     rows = rows + ["" + (sym.line + 1) + "  " + sym.kind + "  " + sym.name]
     files = files + [sym.file]
     lines_out = lines_out + [sym.line + 1]
@@ -3572,6 +3580,7 @@ function _show_outline(st)
   if len(rows) <= 0 and current != "" then return _set_log(st, "Outline: no symbols found in " + _basename(current) + ".") end if
   title = "Outline"
   if current != "" then title = "Outline: " + _basename(current) end if
+  title = title + " (" + outline_function_count + " functions, " + outline_type_count + " types, " + outline_const_count + " constants, " + outline_scope_count + " scopes)"
   return _show_result_panel(st, "outline", title, rows, files, lines_out, cols)
 end function
 

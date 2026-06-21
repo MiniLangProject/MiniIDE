@@ -195,6 +195,7 @@ function Test-StaticWiring {
   Assert-True ($main.Contains("if id == ID_CTX_TAB_CLOSE_ALL then return _close_all_tabs(st)")) "Command palette must dispatch Close All Tabs."
   Assert-True ($main.Contains("ID_FILE_NEW_PROJECT")) "New standard project command is missing."
   Assert-True ($main.Contains("ID_NAV_OUTLINE")) "Outline command is missing."
+  Assert-True ($main.Contains('" functions, " + outline_type_count + " types, " + outline_const_count + " constants, " + outline_scope_count + " scopes)"')) "Outline title must summarize symbol kinds."
   Assert-True ($main.Contains("ID_NAV_BACK")) "Navigation Back command is missing."
   Assert-True ($main.Contains("ID_NAV_FORWARD")) "Navigation Forward command is missing."
   Assert-True ($main.Contains("ID_NAV_TOGGLE_BOOKMARK")) "Toggle Bookmark command is missing."
