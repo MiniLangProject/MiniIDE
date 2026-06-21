@@ -54,6 +54,9 @@ function main(args)
   quick_idx = _index_of(labels, "File: Quick Open File")
   current_test_idx = _index_of(labels, "Build: Run Current Test File")
   definition_idx = _index_of(labels, "Navigation: Go to Definition")
+  cut_idx = _index_of(labels, "Edit: Cut")
+  copy_idx = _index_of(labels, "Edit: Copy")
+  paste_idx = _index_of(labels, "Edit: Paste")
   keep_idx = _index_of(labels, "Configuration: Toggle Keep-going")
   max_errors_idx = _index_of(labels, "Configuration: Toggle Max Errors")
   subsystem_idx = _index_of(labels, "Configuration: Toggle Subsystem")
@@ -61,6 +64,9 @@ function main(args)
   if _assert_true("quick open label exists", quick_idx >= 0) == false then ok = false end if
   if _assert_true("current test label exists", current_test_idx >= 0) == false then ok = false end if
   if _assert_true("definition label exists", definition_idx >= 0) == false then ok = false end if
+  if _assert_true("cut label exists", cut_idx >= 0) == false then ok = false end if
+  if _assert_true("copy label exists", copy_idx >= 0) == false then ok = false end if
+  if _assert_true("paste label exists", paste_idx >= 0) == false then ok = false end if
   if _assert_true("keep-going label exists", keep_idx >= 0) == false then ok = false end if
   if _assert_true("max errors label exists", max_errors_idx >= 0) == false then ok = false end if
   if _assert_true("subsystem label exists", subsystem_idx >= 0) == false then ok = false end if
@@ -86,6 +92,15 @@ function main(args)
   end if
   if definition_idx >= 0 then
     if _assert_true("pick finds definition by fuzzy query", commands.pick(ids, labels, search_texts, "gtd", 0) == ids[definition_idx]) == false then ok = false end if
+  end if
+  if cut_idx >= 0 then
+    if _assert_true("pick finds cut by shortcut alias", commands.pick(ids, labels, search_texts, "ctrl x", 0) == ids[cut_idx]) == false then ok = false end if
+  end if
+  if copy_idx >= 0 then
+    if _assert_true("pick finds copy by shortcut alias", commands.pick(ids, labels, search_texts, "ctrl c", 0) == ids[copy_idx]) == false then ok = false end if
+  end if
+  if paste_idx >= 0 then
+    if _assert_true("pick finds paste by shortcut alias", commands.pick(ids, labels, search_texts, "ctrl v", 0) == ids[paste_idx]) == false then ok = false end if
   end if
   if output_idx >= 0 then
     if _assert_true("pick finds output clear by label", commands.pick(ids, labels, search_texts, "Output: Clear", 0) == ids[output_idx]) == false then ok = false end if

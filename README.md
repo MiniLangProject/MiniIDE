@@ -298,8 +298,8 @@ Edit menu:
 - `Find...` / `Ctrl+F`: search within the active editor tab.
 - `Find Next` / `F3`: repeat the last search.
 - `Select All` / `Ctrl+A`: select all text in the active editor tab.
-- `Undo` and `Redo` are available from the menu, editor context menu, and
-  command palette.
+- `Undo`, `Redo`, `Cut`, `Copy`, and `Paste` are available from the menu,
+  editor context menu, and command palette.
 - `Complete` / `Ctrl+Space`: show MiniLang keywords and project symbols.
 - `Format Document`: trim trailing whitespace and collapse excessive blank
   lines.
