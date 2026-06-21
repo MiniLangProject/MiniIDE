@@ -321,6 +321,7 @@ function Test-StaticWiring {
   Assert-True ($main.Contains("commands.search_texts()")) "Command palette search registry module call is missing."
   Assert-True ($main.Contains("commands.pick")) "Command palette selection helper module call is missing."
   Assert-True ($main.Contains("_perform_palette_command")) "Command palette dispatch helper is missing."
+  Assert-True ($main.Contains("return _perform_command(st, id)")) "Command palette must delegate to the normal command dispatcher."
   Assert-True ($commands.Contains("function labels")) "Command palette labels helper is missing."
   Assert-True ($commands.Contains("function search_texts")) "Command palette search helper is missing."
   Assert-True ($commands.Contains("function pick")) "Command palette pick helper is missing."

@@ -3199,77 +3199,9 @@ function _command_palette_ids()
   ]
 end function
 
-// Dispatch a command selected through the command palette without recursing into the palette command.
+// Dispatch a command selected through the command palette through the normal command path.
 function _perform_palette_command(st, id)
-  if id == ID_FILE_OPEN_PROJECT then return _open_project_dialog(st) end if
-  if id == ID_FILE_QUICK_OPEN then return _open_quick_open_window(st) end if
-  if id == ID_FILE_RECENT_FILES then return _show_recent_files(st) end if
-  if id == ID_FILE_NEW_PROJECT then return _new_standard_project(st) end if
-  if id == ID_FILE_SAVE then return _save_current(st) end if
-  if id == ID_FILE_SAVE_ALL then return _save_all(st) end if
-  if id == ID_FILE_CLEAN then return _clean_project(st) end if
-  if id == ID_FILE_BUILD then return _build_project(st) end if
-  if id == ID_FILE_REBUILD then return _rebuild_project(st) end if
-  if id == ID_FILE_RUN then return _run_project(st) end if
-  if id == ID_FILE_STOP then return _stop_build_job(st) end if
-  if id == ID_FILE_TEST then return _run_tests(st) end if
-  if id == ID_FILE_TEST_CURRENT then return _run_current_test_file(st) end if
-  if id == ID_FILE_TEST_RELATED then return _run_related_test_file(st) end if
-  if id == ID_FILE_RELOAD then return _reload_project(st) end if
-  if id == ID_FILE_CLOSE_TAB then return _close_current_tab(st) end if
-  if id == ID_CTX_TAB_CLOSE_OTHERS then return _close_other_tabs(st) end if
-  if id == ID_CTX_TAB_CLOSE_ALL then return _close_all_tabs(st) end if
-  if id == ID_CTX_LOG_COPY then return _log_copy(st) end if
-  if id == ID_CTX_LOG_SELECT_ALL then return _log_select_all(st) end if
-  if id == ID_CTX_LOG_CLEAR then return _log_clear(st) end if
-  if id == ID_EDIT_UNDO then return _edit_undo(st) end if
-  if id == ID_EDIT_REDO then return _edit_redo(st) end if
-  if id == ID_EDIT_FIND then return _open_find_window(st) end if
-  if id == ID_EDIT_FIND_NEXT then return _find_next(st) end if
-  if id == ID_EDIT_SELECT_ALL then return _edit_select_all(st) end if
-  if id == ID_EDIT_RENAME_SYMBOL then return _open_rename_symbol_window(st) end if
-  if id == ID_EDIT_COMPLETE then return _autocomplete(st) end if
-  if id == ID_EDIT_FORMAT then return _format_current(st) end if
-  if id == ID_NAV_BACK then return _navigate_back(st) end if
-  if id == ID_NAV_FORWARD then return _navigate_forward(st) end if
-  if id == ID_NAV_TOGGLE_BOOKMARK then return _toggle_bookmark(st) end if
-  if id == ID_NAV_BOOKMARKS then return _show_bookmarks(st) end if
-  if id == ID_NAV_NEXT_BOOKMARK then return _goto_bookmark(st, 1) end if
-  if id == ID_NAV_PREV_BOOKMARK then return _goto_bookmark(st, -1) end if
-  if id == ID_NAV_REVEAL_ACTIVE_FILE then return _reveal_active_file(st) end if
-  if id == ID_NAV_OUTLINE then return _show_outline(st) end if
-  if id == ID_NAV_FILE_STRUCTURE then return _open_file_structure_window(st) end if
-  if id == ID_NAV_WORKSPACE_HEALTH then return _show_workspace_health(st) end if
-  if id == ID_NAV_TODOS then return _show_todos(st) end if
-  if id == ID_NAV_TEST_EXPLORER then return _show_test_explorer(st) end if
-  if id == ID_NAV_RELATED_TESTS then return _show_related_tests(st) end if
-  if id == ID_NAV_IMPORT_GRAPH then return _show_import_graph(st) end if
-  if id == ID_NAV_CALL_HIERARCHY then return _show_call_hierarchy(st) end if
-  if id == ID_NAV_SYMBOL_INFO then return _show_symbol_info(st) end if
-  if id == ID_NAV_CODE_INSPECTIONS then return _show_code_inspections(st) end if
-  if id == ID_NAV_PROJECT_INDEX then return _show_project_index(st) end if
-  if id == ID_NAV_PROJECT_SYMBOLS then return _show_project_symbols(st) end if
-  if id == ID_NAV_GOTO_SYMBOL then return _open_goto_symbol_window(st) end if
-  if id == ID_NAV_GOTO_LINE then return _open_goto_line_window(st) end if
-  if id == ID_NAV_GOTO_DEFINITION then return _goto_definition(st) end if
-  if id == ID_NAV_FIND_REFERENCES then return _find_references(st) end if
-  if id == ID_NAV_SEARCH_WORD then return _search_current_word(st) end if
-  if id == ID_NAV_PROBLEMS then return _show_problems(st) end if
-  if id == ID_CONFIG_COMPILE_SETTINGS then return _open_compile_settings_window(st) end if
-  if id == ID_CONFIG_PROFILE_DEBUG then return _select_build_profile(st, "debug") end if
-  if id == ID_CONFIG_PROFILE_RELEASE then return _select_build_profile(st, "release") end if
-  if id == ID_CONFIG_THEME_DARK then return _select_theme(st, "dark") end if
-  if id == ID_CONFIG_THEME_LIGHT then return _select_theme(st, "light") end if
-  if id == ID_CONFIG_COMPILER_SELECT then return _select_compiler(st) end if
-  if id == ID_CONFIG_COMPILER_RESET then return _reset_compiler(st) end if
-  if id == ID_CONFIG_TOGGLE_KEEP_GOING then return _toggle_keep_going(st) end if
-  if id == ID_CONFIG_RELOAD then return _reload_config(st) end if
-  if id == ID_CONFIG_SHOW then return _show_config(st) end if
-  if id == ID_HELP_WELCOME then return _show_welcome(st) end if
-  if id == ID_HELP_LANGUAGE then return _open_language_help(st) end if
-  if id == ID_HELP_LANGUAGE_SEARCH then return _open_language_help_search(st) end if
-  if id == ID_HELP_ABOUT then return _about(st) end if
-  return st
+  return _perform_command(st, id)
 end function
 
 // Open command palette window.
