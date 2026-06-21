@@ -3956,6 +3956,18 @@ function _show_problems(st)
     end for
   end if
 
+  problem_inspection_items = lang_service.code_inspection_items(snapshot, 300)
+  if typeof(problem_inspection_items) == "array" and len(problem_inspection_items) > 0 then
+    for ii = 0 to len(problem_inspection_items) - 1
+      item = problem_inspection_items[ii]
+      if typeof(item) != "struct" then continue end if
+      rows = rows + [item.severity + "  " + _project_relative_path(st, item.file) + ":" + item.line + ":" + item.col + "  " + item.message]
+      files = files + [item.file]
+      lines_out = lines_out + [item.line]
+      cols = cols + [item.col]
+    end for
+  end if
+
   items = build.parse_diagnostics(st.build_last_log)
   if typeof(items) == "array" and len(items) > 0 then
     for i = 0 to len(items) - 1
@@ -3972,7 +3984,7 @@ function _show_problems(st)
     end for
   end if
 
-  if len(rows) <= 0 then return _set_log(st, "Problems: no entries in project analysis or the last build log.") end if
+  if len(rows) <= 0 then return _set_log(st, "Problems: no entries in project analysis, code inspections, or the last build log.") end if
   return _show_result_panel(st, "problems", "Problems", rows, files, lines_out, cols)
 end function
 

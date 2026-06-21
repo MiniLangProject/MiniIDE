@@ -30,7 +30,8 @@ Win32 APIs and RichEdit.
 - Background compiler and process execution without `cmd.exe`.
 - Automatic compile-before-run when the target executable is missing or stale.
 - Captured stdout/stderr in the bottom log view.
-- Compiler diagnostics parsed into a clickable Problems/results panel.
+- Compiler diagnostics, project diagnostics, and code inspections parsed into a
+  clickable Problems/results panel.
 - Project-wide symbol outline and search.
 - Go to line and go to definition.
 - Find, find-next, and basic completion.
@@ -336,9 +337,9 @@ Navigation menu:
 - `Code Inspections`: list lightweight project findings such as duplicate
   declarations, unused import aliases, and possibly unused symbols.
 - `Search Word in Project`: search the current word across project `.ml` files.
-- `Problems`: show diagnostics from project analysis, missing configured entry
-  files, missing working directories, missing import paths, duplicate import
-  aliases, and the last build log.
+- `Problems`: show diagnostics from project analysis, code inspections, missing
+  configured entry files, missing working directories, missing import paths,
+  duplicate import aliases, and the last build log.
 
 Help menu:
 
