@@ -3806,16 +3806,22 @@ function _show_test_explorer(st)
   files = []
   lines_out = []
   cols = []
+  configured_count = 0
+  discovered_count = 0
+  missing_count = 0
   for i = 0 to len(items) - 1
     item = items[i]
     if typeof(item) != "struct" then continue end if
+    if item.status == "configured" then configured_count = configured_count + 1 end if
+    if item.status == "discovered" then discovered_count = discovered_count + 1 end if
+    if item.status == "missing" then missing_count = missing_count + 1 end if
     rows = rows + [item.kind + "  " + item.name + "  " + item.status + "  " + _project_relative_path(st, item.file) + ":" + item.line]
     files = files + [item.file]
     lines_out = lines_out + [item.line]
     cols = cols + [1]
   end for
 
-  title = "Test Explorer"
+  title = "Test Explorer (" + configured_count + " configured, " + discovered_count + " discovered, " + missing_count + " missing)"
   if len(items) >= 300 then title = title + " (first 300)" end if
   return _show_result_panel(st, "test-explorer", title, rows, files, lines_out, cols)
 end function

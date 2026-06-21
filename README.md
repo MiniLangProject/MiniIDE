@@ -328,6 +328,8 @@ Navigation menu:
   inspections, diagnostics, severity totals, and an overall status.
 - `TODOs`: list TODO/FIXME comments across project source files, with TODO and
   FIXME totals in the panel title.
+- `Test Explorer`: list the configured test entry and discovered test-like
+  functions, with configured, discovered, and missing totals in the panel title.
 - `Project Symbols` and `Go to Symbol...` / `Ctrl+T`: browse or ranked-filter
   symbols across the project with prefix, substring, and fuzzy matches.
 - `Go to Line...` / `Ctrl+G`: jump to a line in the active editor tab.
