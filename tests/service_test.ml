@@ -376,6 +376,9 @@ function main(args)
   if _assert_true("workspace health counts tests", _has_health_line(health, "Tests: 3")) == false then ok = false end if
   if _assert_true("workspace health counts inspections", _has_health_line(health, "Inspections: 6")) == false then ok = false end if
   if _assert_true("workspace health counts diagnostics", _has_health_line(health, "Diagnostics: 1")) == false then ok = false end if
+  if _assert_true("workspace health counts errors", _has_health_line(health, "Errors: 0")) == false then ok = false end if
+  if _assert_true("workspace health counts warnings", _has_health_line(health, "Warnings: 2")) == false then ok = false end if
+  if _assert_true("workspace health counts info", _has_health_line(health, "Info: 5")) == false then ok = false end if
 
   todos = service.todo_items(snapshot, 20)
   if _assert_true("TODO explorer finds project task", _has_todo(todos, "TODO", "revisit model lifecycle")) == false then ok = false end if

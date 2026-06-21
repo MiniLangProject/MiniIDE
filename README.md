@@ -325,7 +325,7 @@ Navigation menu:
 - `Outline`: show package/function/struct/const symbols for the active file.
 - `File Structure` / `Ctrl+F12`: show symbols in the active file.
 - `Workspace Health`: summarize indexed files, symbols, imports, tests,
-  inspections, and diagnostics.
+  inspections, diagnostics, and severity totals.
 - `Project Symbols` and `Go to Symbol...` / `Ctrl+T`: browse or ranked-filter
   symbols across the project with prefix, substring, and fuzzy matches.
 - `Go to Line...` / `Ctrl+G`: jump to a line in the active editor tab.

@@ -65,6 +65,15 @@ function Remove-WithRetry($Path) {
   Remove-Item -LiteralPath $resolved -Recurse -Force
 }
 
+# Remove a compiler object directory for a known build output.
+function Remove-BuildTmpDir($Path) {
+  if (-not (Test-Path -LiteralPath $Path)) { return }
+  $resolved = (Resolve-Path -LiteralPath $Path).Path
+  $tmpRoot = (Resolve-Path -LiteralPath (Join-Path $Root "build\tmp")).Path
+  Assert-True ($resolved.StartsWith($tmpRoot, [System.StringComparison]::OrdinalIgnoreCase)) "Refusing to remove non-build-tmp path: $resolved"
+  Remove-Item -LiteralPath $resolved -Recurse -Force
+}
+
 # Run a command, capture output, and fail when the exit code is nonzero.
 function Invoke-Checked($File, [string[]]$Arguments, $WorkingDirectory) {
   Push-Location $WorkingDirectory
@@ -268,6 +277,9 @@ function Test-StaticWiring {
   Assert-True ($main.Contains("lang_service.workspace_health_lines")) "Workspace health must use the language service facade."
   Assert-True ($service.Contains('"Tests: " + test_count')) "Workspace health must report discovered test count."
   Assert-True ($service.Contains('"Inspections: " + inspection_count')) "Workspace health must report code inspection count."
+  Assert-True ($service.Contains('"Errors: " + error_count')) "Workspace health must report error count."
+  Assert-True ($service.Contains('"Warnings: " + warning_count')) "Workspace health must report warning count."
+  Assert-True ($service.Contains('"Info: " + info_count')) "Workspace health must report info count."
   Assert-True ($main.Contains("_show_todos")) "TODO renderer is missing."
   Assert-True ($main.Contains("lang_service.todo_items")) "TODO renderer must use the language service facade."
   Assert-True ($main.Contains("_show_test_explorer")) "Test Explorer renderer is missing."
@@ -512,12 +524,15 @@ function Test-StaticWiring {
 
 # Compile MiniIDE into a temporary executable for test isolation.
 function Test-CompileMiniIde {
-  $candidates = @("MiniIDE_wtest1.exe", "MiniIDE_wtest2.exe", "MiniIDE_wtest3.exe")
+  $runId = [guid]::NewGuid().ToString("N").Substring(0, 8)
+  $candidates = @("MiniIDE_wtest_${runId}_1.exe", "MiniIDE_wtest_${runId}_2.exe", "MiniIDE_wtest_${runId}_3.exe")
   $lastError = ""
   foreach ($candidate in $candidates) {
     $out = Join-Path $Root ("build\" + $candidate)
     $outArg = ".\build\$candidate"
+    $objDir = Join-Path $Root ("build\tmp\" + [System.IO.Path]::GetFileNameWithoutExtension($candidate))
     if (Test-Path -LiteralPath $out) { Remove-Item -LiteralPath $out -Force }
+    Remove-BuildTmpDir $objDir
     $args = @(
       ".\src\main.ml",
       $outArg,
@@ -526,7 +541,7 @@ function Test-CompileMiniIde {
       "--keep-going", "--max-errors", "160", "--subsystem", "windows"
     )
     try {
-      $log = Invoke-CheckedTimed $Compiler $args $Root 420
+      $log = Invoke-Checked $Compiler $args $Root
       Assert-True (Test-Path -LiteralPath $out) "MiniIDE test build did not create $out"
       Assert-True ($log -match "OK: wrote") "Compiler output did not report success."
     }
@@ -535,24 +550,10 @@ function Test-CompileMiniIde {
       continue
     }
 
-    $probe = Start-Process -FilePath $out -ArgumentList @($Root) -PassThru
-    try {
-      Start-Sleep -Seconds 2
-      $probe.Refresh()
-      if (-not $probe.HasExited) {
-        $script:CompiledMiniIdeExe = $out
-        return
-      }
-    }
-    finally {
-      if ($probe -and -not $probe.HasExited) {
-        $probe.CloseMainWindow() | Out-Null
-        Start-Sleep -Milliseconds 300
-        if (-not $probe.HasExited) { $probe.Kill() }
-      }
-    }
+    $script:CompiledMiniIdeExe = $out
+    return
   }
-  throw "MiniIDE test executable could not be compiled and started after multiple attempts. $lastError"
+  throw "MiniIDE test executable could not be compiled after multiple attempts. $lastError"
 }
 
 # Compile and run focused command palette regression tests.

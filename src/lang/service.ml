@@ -536,8 +536,31 @@ function workspace_health_lines(snapshot)
   if typeof(idx.imports) == "array" then import_count = len(idx.imports) end if
   if typeof(idx.unresolved_imports) == "array" then unresolved_count = len(idx.unresolved_imports) end if
   test_count = len(test_items(snapshot, 1000))
-  inspection_count = len(code_inspection_items(snapshot, 1000))
-  diagnostic_count = len(diagnostics(snapshot))
+  inspections = code_inspection_items(snapshot, 1000)
+  diagnostics_items = diagnostics(snapshot)
+  inspection_count = len(inspections)
+  diagnostic_count = len(diagnostics_items)
+  error_count = 0
+  warning_count = 0
+  info_count = 0
+  if typeof(diagnostics_items) == "array" and len(diagnostics_items) > 0 then
+    for di = 0 to len(diagnostics_items) - 1
+      item = diagnostics_items[di]
+      if typeof(item) != "struct" then continue end if
+      if item.kind == "error" then error_count = error_count + 1 end if
+      if item.kind == "warning" then warning_count = warning_count + 1 end if
+      if item.kind == "info" then info_count = info_count + 1 end if
+    end for
+  end if
+  if typeof(inspections) == "array" and len(inspections) > 0 then
+    for ii = 0 to len(inspections) - 1
+      item = inspections[ii]
+      if typeof(item) != "struct" then continue end if
+      if item.severity == "error" then error_count = error_count + 1 end if
+      if item.severity == "warning" then warning_count = warning_count + 1 end if
+      if item.severity == "info" then info_count = info_count + 1 end if
+    end for
+  end if
   return [
     "Files: " + file_count,
     "Symbols: " + symbol_count,
@@ -546,6 +569,9 @@ function workspace_health_lines(snapshot)
     "Tests: " + test_count,
     "Inspections: " + inspection_count,
     "Diagnostics: " + diagnostic_count,
+    "Errors: " + error_count,
+    "Warnings: " + warning_count,
+    "Info: " + info_count,
   ]
 end function
 
