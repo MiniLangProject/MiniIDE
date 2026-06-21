@@ -16,10 +16,12 @@ import std.fs as fs
 import std.string as s
 import "platform/win32.ml" as win
 import "project/project.ml" as project
+import "project/config.ml" as project_config
 import "project/templates.ml" as templates
 import "build/build_service.ml" as build
 import "lang/syntax.ml" as syntax
 import "help/language.ml" as help_lang
+import "ai/assistant.ml" as assistant
 import "ui/theme.ml" as theme
 import "ui/markdown.ml" as markdown
 import "ui/commands.ml" as commands
@@ -131,18 +133,6 @@ struct AppState
   live_diagnostics_key,
   last_live_diagnostics_ms,
   running,
-end struct
-
-struct AssistantConfig
-  enabled,
-  provider,
-  base_url,
-  api_key_env,
-  model,
-  tool_mode,
-  include_tabs,
-  include_project,
-  include_help,
 end struct
 
 struct FoldRange
@@ -655,65 +645,9 @@ function _assistant_append(st, role, text)
   return st
 end function
 
-// Return a compact list of open tabs for assistant context.
-function _assistant_open_tabs_text(st)
-  text = "open_tabs:\n"
-  if typeof(st.open_files) != "array" or len(st.open_files) <= 0 then return text + "- none\n" end if
-  for i = 0 to len(st.open_files) - 1
-    marker = " "
-    if i == st.active_tab then marker = "*" end if
-    dirty = ""
-    if i < len(st.open_dirty) and st.open_dirty[i] then dirty = " dirty" end if
-    text = text + "- " + marker + " " + _project_relative_path(st, st.open_files[i]) + dirty + "\n"
-  end for
-  return text
-end function
-
-// Return active file metadata and current unsaved editor text length.
-function _assistant_active_file_text(st)
-  if typeof(st.current_file) != "string" or st.current_file == "" then return "active_file: none\n" end if
-  text_len = 0
-  if st.active_tab >= 0 and st.active_tab < len(st.open_texts) then text_len = len(st.open_texts[st.active_tab]) end if
-  return "active_file: " + _project_relative_path(st, st.current_file) + "\nactive_text_length: " + text_len + "\n"
-end function
-
-// Return indexed project files for assistant context.
-function _assistant_project_files_text(st, limit)
-  if typeof(limit) != "int" or limit <= 0 then limit = 80 end if
-  text = "project_files:\n"
-  count = 0
-  if typeof(st.project.files) != "array" or len(st.project.files) <= 0 then return text + "- none\n" end if
-  for i = 0 to len(st.project.files) - 1
-    if count >= limit then break end if
-    f = st.project.files[i]
-    if typeof(f) != "struct" or f.is_dir then continue end if
-    text = text + "- " + _project_relative_path(st, f.path) + "\n"
-    count = count + 1
-  end for
-  if count >= limit then text = text + "- ...\n" end if
-  return text
-end function
-
-// Return MiniLang help availability for assistant context.
-function _assistant_help_text(st)
-  loaded = help_lang.read_reference(st.project.root, _effective_compiler(st))
-  if loaded[2] != "" then return "minilang_help: unavailable (" + loaded[2] + ")\n" end if
-  return "minilang_help: " + loaded[0] + " (" + len(loaded[1]) + " chars)\n"
-end function
-
-// Return assistant read-only tool context.
+// Return the current assistant tool context assembled by the AI module.
 function _assistant_tool_context(st)
-  text = "MiniIDE assistant tool context\n"
-  text = text + "project: " + st.project.name + "\n"
-  text = text + "provider: " + st.assistant_config.provider + "\n"
-  text = text + "model: " + st.assistant_config.model + "\n"
-  text = text + "tool_mode: " + st.assistant_config.tool_mode + "\n"
-  text = text + "enabled: " + st.assistant_config.enabled + "\n\n"
-  text = text + _assistant_active_file_text(st) + "\n"
-  if st.assistant_config.include_tabs then text = text + _assistant_open_tabs_text(st) + "\n" end if
-  if st.assistant_config.include_project then text = text + _assistant_project_files_text(st, 80) + "\n" end if
-  if st.assistant_config.include_help then text = text + _assistant_help_text(st) + "\n" end if
-  return text
+  return assistant.tool_context(st.project, _effective_compiler(st), st.assistant_config, st.current_file, st.open_files, st.open_dirty, st.active_tab, st.open_texts)
 end function
 
 // Show the assistant panel.
@@ -1060,7 +994,7 @@ function _fold_end_kind(line)
   return ""
 end function
 
-// Find fold end.
+// Find the matching end line for a fold starting at start_line.
 function _find_fold_end(lines, start_line)
   if typeof(lines) != "array" or start_line < 0 or start_line >= len(lines) then return -1 end if
   kind = _fold_start_kind(lines[start_line])
@@ -1080,7 +1014,7 @@ function _find_fold_end(lines, start_line)
   return -1
 end function
 
-// Return the visible text from source.
+// Return source text with folded line ranges collapsed.
 function _visible_text_from_source(text, folds)
   text = _normalize_editor_text(text)
   if typeof(folds) != "array" or len(folds) <= 0 then return text end if
@@ -1101,7 +1035,7 @@ function _visible_text_from_source(text, folds)
   return visible_text
 end function
 
-// Return the display to source line.
+// Map a visible editor line back to its original source line.
 function _display_to_source_line(text, folds, display_line)
   text = _normalize_editor_text(text)
   if display_line <= 0 then return 0 end if
@@ -1122,7 +1056,7 @@ function _display_to_source_line(text, folds, display_line)
   return len(lines) - 1
 end function
 
-// Return the source line to display line.
+// Map an original source line to its visible editor line.
 function _source_line_to_display_line(text, folds, source_line)
   text = _normalize_editor_text(text)
   lines = s.split(text, "\n")
@@ -1142,12 +1076,12 @@ function _source_line_to_display_line(text, folds, source_line)
   return visible
 end function
 
-// Read editor.
+// Read the active editor, routing Markdown tabs through their cached source.
 function _read_editor(st)
   return _normalize_editor_text(win.edit_get_text(st.editor))
 end function
 
-// Write editor.
+// Write text to the active editor control without changing tab metadata.
 function _write_editor(st, text)
   win.edit_set_readonly(st.editor, false)
   win.set_window_text(st.editor, _editor_display_text(text))
@@ -1298,7 +1232,7 @@ function _apply_syntax_highlight(st)
   return st
 end function
 
-// Set title.
+// Refresh the window title with project, active file, and dirty marker.
 function _set_title(st)
   name = "MiniIDE"
   if typeof(st.project) == "struct" then name = st.project.name end if
@@ -1311,70 +1245,16 @@ function _set_title(st)
   end if
 end function
 
-// Return the configuration path.
-function _config_path(p)
-  root = "."
-  if typeof(p) == "struct" then root = p.root end if
-  return project.path_join(root, ".miniide.cfg")
-end function
-
-// Load configuration value.
-function _load_config_value(p, wanted_key, default_value)
-  // Walk collections defensively because project data can be partially populated.
-  cfg = _config_path(p)
-  if fs.exists(cfg) == false then return default_value end if
-  text = fs.readAllText(cfg)
-  if typeof(text) != "string" then return default_value end if
-  lines = s.split(s.replaceAll(text, "\r\n", "\n"), "\n")
-  if typeof(lines) != "array" then return default_value end if
-  if len(lines) <= 0 then return default_value end if
-  for i = 0 to len(lines) - 1
-    line = s.trim(lines[i])
-    if line == "" or s.startsWith(line, "#") or s.startsWith(line, "//") then continue end if
-    eq = s.indexOf(line, "=", 0)
-    if eq < 0 then continue end if
-    key = s.trim(s.substr(line, 0, eq))
-    value = s.trim(s.substr(line, eq + 1, len(line) - eq - 1))
-    if key == wanted_key then return value end if
-  end for
-  return default_value
-end function
-
-// Return the boolean from text.
-function _bool_from_text(value, default_value)
-  value = s.toLowerAscii(value)
-  if value == "true" or value == "1" or value == "yes" or value == "on" then return true end if
-  if value == "false" or value == "0" or value == "no" or value == "off" then return false end if
-  return default_value
-end function
-
-// Return the integer from text.
-function _int_from_text(value, default_value)
-  n = toNumber(value)
-  if typeof(n) == "int" then return n end if
-  return default_value
-end function
-
-// Load configuration boolean.
-function _load_config_bool(p, key, default_value)
-  return _bool_from_text(_load_config_value(p, key, ""), default_value)
-end function
-
-// Load configuration integer.
-function _load_config_int(p, key, default_value)
-  return _int_from_text(_load_config_value(p, key, ""), default_value)
-end function
-
 // Load build profile.
 function _load_build_profile(p)
-  value = s.toLowerAscii(_load_config_value(p, "profile", "debug"))
+  value = s.toLowerAscii(project_config.load_value(p, "profile", "debug"))
   if value == "release" then return "release" end if
   return "debug"
 end function
 
 // Load theme mode.
 function _load_theme_mode(p)
-  value = s.toLowerAscii(_load_config_value(p, "theme", "dark"))
+  value = s.toLowerAscii(project_config.load_value(p, "theme", "dark"))
   if value == "light" then return "light" end if
   return "dark"
 end function
@@ -1382,67 +1262,63 @@ end function
 // Return the profile config value.
 function _profile_config_value(p, profile, key, default_value)
   if typeof(profile) != "string" or profile == "" then return default_value end if
-  value = _load_config_value(p, profile + "." + key, "")
+  value = project_config.load_value(p, profile + "." + key, "")
   if value != "" then return value end if
   return default_value
 end function
 
 // Load compiler path.
 function _load_compiler_path(p)
-  return _load_config_value(p, "compiler", "")
+  return project_config.load_value(p, "compiler", "")
 end function
 
 // Load build keep going.
 function _load_build_keep_going(p)
-  return _load_config_bool(p, "keepGoing", true)
+  return project_config.load_bool(p, "keepGoing", true)
 end function
 
 // Load build max errors.
 function _load_build_max_errors(p)
-  n = _load_config_int(p, "maxErrors", 20)
+  n = project_config.load_int(p, "maxErrors", 20)
   if n < 1 then n = 1 end if
   return n
 end function
 
 // Load build subsystem.
 function _load_build_subsystem(p)
-  value = s.toLowerAscii(_load_config_value(p, "subsystem", "windows"))
+  value = s.toLowerAscii(project_config.load_value(p, "subsystem", "windows"))
   if value == "console" or value == "cui" then return "console" end if
   return "windows"
 end function
 
 // Load build extra args.
 function _load_build_extra_args(p)
-  return _load_config_value(p, "extraArgs", "")
+  return project_config.load_value(p, "extraArgs", "")
 end function
 
 // Load assistant provider.
 function _load_assistant_provider(p)
-  value = s.toLowerAscii(_load_config_value(p, "ai.provider", "openai"))
-  if value == "openai-compatible" or value == "compatible" then return "openai-compatible" end if
-  return "openai"
+  return assistant.normalize_provider(project_config.load_value(p, "ai.provider", "openai"))
 end function
 
 // Load assistant base URL.
 function _load_assistant_base_url(p)
-  return _load_config_value(p, "ai.baseUrl", "https://api.openai.com/v1")
+  return project_config.load_value(p, "ai.baseUrl", "https://api.openai.com/v1")
 end function
 
 // Load assistant API key environment variable name.
 function _load_assistant_api_key_env(p)
-  return _load_config_value(p, "ai.apiKeyEnv", "OPENAI_API_KEY")
+  return project_config.load_value(p, "ai.apiKeyEnv", "OPENAI_API_KEY")
 end function
 
 // Load assistant model.
 function _load_assistant_model(p)
-  return _load_config_value(p, "ai.model", "gpt-5.1")
+  return project_config.load_value(p, "ai.model", "gpt-5.1")
 end function
 
 // Load assistant tool mode.
 function _load_assistant_tool_mode(p)
-  value = s.toLowerAscii(_load_config_value(p, "ai.toolMode", "read-only"))
-  if value == "confirm-writes" or value == "confirm" then return "confirm-writes" end if
-  return "read-only"
+  return assistant.normalize_tool_mode(project_config.load_value(p, "ai.toolMode", "read-only"))
 end function
 
 // Load build configuration.
@@ -1455,8 +1331,8 @@ function _load_build_config(st)
   st.build_max_errors = _load_build_max_errors(st.project)
   st.build_subsystem = _load_build_subsystem(st.project)
   st.build_extra_args = _load_build_extra_args(st.project)
-  st.build_keep_going = _bool_from_text(_profile_config_value(st.project, profile, "keepGoing", ""), st.build_keep_going)
-  st.build_max_errors = _int_from_text(_profile_config_value(st.project, profile, "maxErrors", ""), st.build_max_errors)
+  st.build_keep_going = project_config.bool_from_text(_profile_config_value(st.project, profile, "keepGoing", ""), st.build_keep_going)
+  st.build_max_errors = project_config.int_from_text(_profile_config_value(st.project, profile, "maxErrors", ""), st.build_max_errors)
   if st.build_max_errors < 1 then st.build_max_errors = 1 end if
   prof_subsystem = s.toLowerAscii(_profile_config_value(st.project, profile, "subsystem", ""))
   if prof_subsystem == "console" or prof_subsystem == "cui" then
@@ -1465,22 +1341,22 @@ function _load_build_config(st)
     st.build_subsystem = "windows"
   end if
   st.build_extra_args = _profile_config_value(st.project, profile, "extraArgs", st.build_extra_args)
-  st.assistant_config = AssistantConfig(
-    _load_config_bool(st.project, "ai.enabled", false),
+  st.assistant_config = assistant.AssistantConfig(
+    project_config.load_bool(st.project, "ai.enabled", false),
     _load_assistant_provider(st.project),
     _load_assistant_base_url(st.project),
     _load_assistant_api_key_env(st.project),
     _load_assistant_model(st.project),
     _load_assistant_tool_mode(st.project),
-    _load_config_bool(st.project, "ai.includeOpenTabs", true),
-    _load_config_bool(st.project, "ai.includeProjectFiles", true),
-    _load_config_bool(st.project, "ai.includeMiniLangHelp", true))
+    project_config.load_bool(st.project, "ai.includeOpenTabs", true),
+    project_config.load_bool(st.project, "ai.includeProjectFiles", true),
+    project_config.load_bool(st.project, "ai.includeMiniLangHelp", true))
   return st
 end function
 
 // Save configuration.
 function _save_config(st)
-  cfg = _config_path(st.project)
+  cfg = project_config.path(st.project)
   text = "# MiniIDE project configuration\n"
   text = text + "# Build options are used by File > Build.\n"
   text = text + "profile=" + st.build_profile + "\n"
@@ -2741,7 +2617,7 @@ end function
 function _reload_config(st)
   st = _load_build_config(st)
   st = _apply_theme(st)
-  return _set_log(st, "Configuration reloaded: " + _config_path(st.project))
+  return _set_log(st, "Configuration reloaded: " + project_config.path(st.project))
 end function
 
 // Toggle keep going.
@@ -2776,7 +2652,7 @@ end function
 // Show configuration.
 function _show_config(st)
   msg = "Project: " + st.project.name + "\n"
-  msg = msg + "Config: " + _config_path(st.project) + "\n"
+  msg = msg + "Config: " + project_config.path(st.project) + "\n"
   msg = msg + "Compiler: " + _effective_compiler(st) + "\n"
   msg = msg + "Entry: " + st.project.entry + "\n"
   msg = msg + "Output: " + st.project.output + "\n"
@@ -2802,14 +2678,14 @@ function _show_config(st)
   return st
 end function
 
-// Return the settings label.
+// Create a static label for settings dialogs.
 function _settings_label(parent, font, text, x, y, w, h)
   hwnd = win.create_child(parent, "STATIC", text, 0, win.SS_NOPREFIX, x, y, w, h)
   win.set_control_font(hwnd, font)
   return hwnd
 end function
 
-// Return the settings edit.
+// Create a standard settings edit control.
 function _settings_edit(parent, font, text, x, y, w, h)
   style = win.WS_TABSTOP | win.ES_AUTOHSCROLL
   hwnd = win.create_child(parent, "EDIT", text, win.WS_EX_CLIENTEDGE, style, x, y, w, h)
@@ -2817,7 +2693,7 @@ function _settings_edit(parent, font, text, x, y, w, h)
   return hwnd
 end function
 
-// Return the settings edit identifier.
+// Create a settings edit control with a stable command ID.
 function _settings_edit_id(parent, font, text, x, y, w, h, control_id)
   style = win.WS_TABSTOP | win.ES_AUTOHSCROLL
   hwnd = win.create_child_id(parent, "EDIT", text, win.WS_EX_CLIENTEDGE, style, x, y, w, h, control_id)
@@ -2833,7 +2709,7 @@ function _settings_button(parent, font, text, x, y, w, h, control_id)
   return hwnd
 end function
 
-// Return the on off.
+// Return a compact On/Off label for toggle buttons.
 function _on_off(value)
   if value then return "On" end if
   return "Off"
@@ -2853,29 +2729,15 @@ function _refresh_assistant_settings_buttons(enabled_btn, tabs_btn, project_btn,
   win.set_window_text(help_btn, "MiniLang help: " + _on_off(include_help))
 end function
 
-// Normalize assistant provider.
-function _normalize_assistant_provider(value)
-  value = s.toLowerAscii(s.trim(value))
-  if value == "openai-compatible" or value == "compatible" then return "openai-compatible" end if
-  return "openai"
-end function
-
-// Normalize assistant tool mode.
-function _normalize_assistant_tool_mode(value)
-  value = s.toLowerAscii(s.trim(value))
-  if value == "confirm-writes" or value == "confirm" then return "confirm-writes" end if
-  return "read-only"
-end function
-
 // Read assistant settings from controls.
 function _read_assistant_dialog_config(provider_edit, base_url_edit, key_env_edit, model_edit, tool_mode_edit, enabled, include_tabs, include_project, include_help)
-  return AssistantConfig(
+  return assistant.AssistantConfig(
     enabled,
-    _normalize_assistant_provider(win.get_control_text(provider_edit)),
+    assistant.normalize_provider(win.get_control_text(provider_edit)),
     s.trim(win.get_control_text(base_url_edit)),
     s.trim(win.get_control_text(key_env_edit)),
     s.trim(win.get_control_text(model_edit)),
-    _normalize_assistant_tool_mode(win.get_control_text(tool_mode_edit)),
+    assistant.normalize_tool_mode(win.get_control_text(tool_mode_edit)),
     include_tabs,
     include_project,
     include_help)
@@ -5361,16 +5223,16 @@ function _create_state(root)
   build_extra_args = _load_build_extra_args(p)
   build_profile = _load_build_profile(p)
   theme_mode = _load_theme_mode(p)
-  assistant_enabled = _load_config_bool(p, "ai.enabled", false)
+  assistant_enabled = project_config.load_bool(p, "ai.enabled", false)
   assistant_provider = _load_assistant_provider(p)
   assistant_base_url = _load_assistant_base_url(p)
   assistant_api_key_env = _load_assistant_api_key_env(p)
   assistant_model = _load_assistant_model(p)
   assistant_tool_mode = _load_assistant_tool_mode(p)
-  assistant_include_tabs = _load_config_bool(p, "ai.includeOpenTabs", true)
-  assistant_include_project = _load_config_bool(p, "ai.includeProjectFiles", true)
-  assistant_include_help = _load_config_bool(p, "ai.includeMiniLangHelp", true)
-  assistant_config = AssistantConfig(assistant_enabled, assistant_provider, assistant_base_url, assistant_api_key_env, assistant_model, assistant_tool_mode, assistant_include_tabs, assistant_include_project, assistant_include_help)
+  assistant_include_tabs = project_config.load_bool(p, "ai.includeOpenTabs", true)
+  assistant_include_project = project_config.load_bool(p, "ai.includeProjectFiles", true)
+  assistant_include_help = project_config.load_bool(p, "ai.includeMiniLangHelp", true)
+  assistant_config = assistant.AssistantConfig(assistant_enabled, assistant_provider, assistant_base_url, assistant_api_key_env, assistant_model, assistant_tool_mode, assistant_include_tabs, assistant_include_project, assistant_include_help)
   win.init_common_controls()
   hwnd = win.create_main_window("MiniIDE", 1180, 760)
   menus = _create_menus()
@@ -5595,7 +5457,7 @@ function _alt_down()
   return win.key_down(win.VK_MENU)
 end function
 
-// Return the button hit.
+// Return the toolbar command at a mouse position.
 function _button_hit(st, mx, my)
   if my < 0 or my > 32 then return 0 end if
   size = win.client_size(st.hwnd)

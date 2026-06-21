@@ -126,6 +126,8 @@ function Test-StaticWiring {
   $build = Get-Content -LiteralPath (Join-Path $Root "src\build\build_service.ml") -Raw
   $service = Get-Content -LiteralPath (Join-Path $Root "src\lang\service.ml") -Raw
   $commands = Get-Content -LiteralPath (Join-Path $Root "src\ui\commands.ml") -Raw
+  $assistant = Get-Content -LiteralPath (Join-Path $Root "src\ai\assistant.ml") -Raw
+  $projectConfig = Get-Content -LiteralPath (Join-Path $Root "src\project\config.ml") -Raw
   $win32 = Get-Content -LiteralPath (Join-Path $Root "src\platform\win32.ml") -Raw
 
   $ids = [regex]::Matches($main, 'const\s+(ID_[A-Z0-9_]+)\s*=\s*(\d+)') |
@@ -268,11 +270,14 @@ function Test-StaticWiring {
   Assert-True ($main.Contains("ID_ASSISTANT_PANEL")) "Assistant panel command is missing."
   Assert-True ($main.Contains("ID_CONFIG_ASSISTANT_SETTINGS")) "Assistant settings command is missing."
   Assert-True ($main.Contains("_open_assistant_settings_window")) "Assistant settings window is missing."
-  Assert-True ($main.Contains("_assistant_tool_context")) "Assistant read-only tool context is missing."
-  Assert-True ($main.Contains("_assistant_open_tabs_text")) "Assistant must expose open-tab context."
-  Assert-True ($main.Contains("_assistant_project_files_text")) "Assistant must expose project-file context."
-  Assert-True ($main.Contains("help_lang.read_reference")) "Assistant must expose MiniLang help context."
+  Assert-True ($main.Contains('import "ai/assistant.ml" as assistant')) "Assistant module import is missing."
+  Assert-True ($main.Contains("assistant.tool_context")) "Assistant read-only tool context must be delegated to the AI module."
+  Assert-True ($assistant.Contains("function open_tabs_text")) "Assistant must expose open-tab context."
+  Assert-True ($assistant.Contains("function project_files_text")) "Assistant must expose project-file context."
+  Assert-True ($assistant.Contains("help_lang.read_reference")) "Assistant must expose MiniLang help context."
   Assert-True ($main.Contains("ai.apiKeyEnv")) "Assistant config must store an API key environment variable name."
+  Assert-True ($projectConfig.Contains("function load_value")) "Project configuration parser module is missing."
+  Assert-True ($main.Contains("project_config.load_value")) "Main must use the project configuration module."
   Assert-True ($commands.Contains("Assistant: Chat Panel")) "Command palette must expose the assistant panel."
   Assert-True ($commands.Contains("Configuration: AI Assistant Settings")) "Command palette must expose assistant settings."
   Assert-True ($main.Contains("lang_service.diagnostics")) "Problems must include language service diagnostics."
