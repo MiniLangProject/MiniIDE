@@ -3236,6 +3236,14 @@ function _move_command_palette_selection(command_list, visible_ids, delta)
   win.listbox_setsel(command_list, selected)
 end function
 
+// Set the selected command palette row.
+function _set_command_palette_selection(command_list, visible_ids, selected)
+  if typeof(visible_ids) != "array" or len(visible_ids) <= 0 then return end if
+  if selected < 0 then selected = 0 end if
+  if selected >= len(visible_ids) then selected = len(visible_ids) - 1 end if
+  win.listbox_setsel(command_list, selected)
+end function
+
 // Open command palette window.
 function _open_command_palette(st)
   // Run a local message loop so the modal UI stays responsive.
@@ -3291,6 +3299,18 @@ function _open_command_palette(st)
           handled = true
         else if key == win.VK_UP then
           _move_command_palette_selection(command_list, visible_ids, -1)
+          handled = true
+        else if key == win.VK_NEXT then
+          _move_command_palette_selection(command_list, visible_ids, 8)
+          handled = true
+        else if key == win.VK_PRIOR then
+          _move_command_palette_selection(command_list, visible_ids, -8)
+          handled = true
+        else if key == win.VK_HOME then
+          _set_command_palette_selection(command_list, visible_ids, 0)
+          handled = true
+        else if key == win.VK_END then
+          _set_command_palette_selection(command_list, visible_ids, len(visible_ids) - 1)
           handled = true
         else if key == win.VK_RETURN then
           query = win.get_control_text(command_edit)

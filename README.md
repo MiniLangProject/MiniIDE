@@ -276,7 +276,8 @@ the compiler command for advanced flags such as heap or tracing options.
 
 The command palette filters results as you type and supports label, alias,
 shortcut, acronym, and fuzzy subsequence searches such as `qof` or `qopen` for
-`Quick Open File`. Use the arrow keys to move through filtered results.
+`Quick Open File`. Use the arrow keys, Page Up/Down, Home, and End to move
+through filtered results.
 
 File menu:
 
