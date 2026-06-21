@@ -32,6 +32,8 @@ Win32 APIs and RichEdit.
 - Captured stdout/stderr in the bottom log view.
 - Compiler diagnostics, project diagnostics, and code inspections parsed into a
   clickable Problems/results panel.
+- Lightweight active-file live diagnostics summary in the status bar after
+  editor idle.
 - Project-wide symbol outline and search.
 - Go to line and go to definition.
 - Find, find-next, and basic completion.
@@ -373,6 +375,11 @@ search results are displayed in the bottom results panel.
 
 Problems open on selection. Compiler-log diagnostics open on click. Other
 result lists open with a double-click.
+
+The status bar refreshes lightweight active-file diagnostics after editor idle.
+It checks the saved active file for missing imports, duplicate import aliases,
+and TODO/FIXME hints. Unsaved tabs are marked as stale because current analysis
+is based on saved project files.
 
 Quick Open and project symbol search rank exact/prefix matches ahead of
 substring and compact fuzzy matches, so short queries such as `mtest` can find

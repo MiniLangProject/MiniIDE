@@ -122,6 +122,9 @@ struct AppState
   build_running,
   build_last_log,
   build_last_poll_ms,
+  live_diagnostics_text,
+  live_diagnostics_key,
+  last_live_diagnostics_ms,
   running,
 end struct
 
@@ -172,6 +175,7 @@ const MAX_UNDO = 80
 const UNDO_GROUP_MS = 900
 const EDIT_SYNC_IDLE_MS = 260
 const HIGHLIGHT_IDLE_MS = 450
+const LIVE_DIAGNOSTICS_IDLE_MS = 850
 const HIGHLIGHT_VISIBLE_LINES = 90
 const SCROLL_IDLE_MS = 180
 const CONTEXT_SUPPRESS_MS = 650
@@ -5047,7 +5051,7 @@ function _create_state(root)
   win.set_control_font(btn_copy, font_ui)
   win.set_control_font(btn_paste, font_ui)
 
-  st = AppState(hwnd, menus[0], menus[1], menus[2], menus[3], menus[4], menus[5], toolbar_bg, tree_images, tree, tabbar, line_numbers, editor, editor, log, panel_title, result_list, autocomplete_list, status, btn_open, btn_save, btn_build, btn_run, btn_test, btn_reload, btn_cut, btn_copy, btn_paste, toolbar_icons, font_ui, font_code, p, compiler_path, build_keep_going, build_max_errors, build_subsystem, build_extra_args, build_profile, theme_mode, [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], -1, "", -1, [], [], [], 0, 0, "", "", -1, 0, 0, false, "", 0, "", -1, 0, false, 0, 0, array(256, 0), false, false, -1, "", 0, "", "log", [], [], [], [], "", void, "", false, "", 0, true)
+  st = AppState(hwnd, menus[0], menus[1], menus[2], menus[3], menus[4], menus[5], toolbar_bg, tree_images, tree, tabbar, line_numbers, editor, editor, log, panel_title, result_list, autocomplete_list, status, btn_open, btn_save, btn_build, btn_run, btn_test, btn_reload, btn_cut, btn_copy, btn_paste, toolbar_icons, font_ui, font_code, p, compiler_path, build_keep_going, build_max_errors, build_subsystem, build_extra_args, build_profile, theme_mode, [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], -1, "", -1, [], [], [], 0, 0, "", "", -1, 0, 0, false, "", 0, "", -1, 0, false, 0, 0, array(256, 0), false, false, -1, "", 0, "", "log", [], [], [], [], "", void, "", false, "", 0, "", "", 0, true)
   st = _load_build_config(st)
   st = _populate_project_tree(st)
   st = _open_file(st, _entry_file(p))
@@ -5956,6 +5960,88 @@ function _caret_status_text(st)
   return "Line " + (source_line + 1) + ", Column " + col
 end function
 
+// Return a key that invalidates the active-file live diagnostics cache.
+function _live_diagnostics_key(st)
+  if st.active_tab < 0 or st.active_tab >= len(st.open_files) then return "" end if
+  text = ""
+  if st.active_tab < len(st.open_texts) then text = st.open_texts[st.active_tab] end if
+  dirty = "clean"
+  if _active_dirty(st) then dirty = "dirty" end if
+  return st.open_files[st.active_tab] + "|" + dirty + "|" + len(text) + "|" + text
+end function
+
+// Count lightweight diagnostics for the active file.
+function _active_live_diagnostics_text(st)
+  if st.active_tab < 0 or st.active_tab >= len(st.open_files) then return "" end if
+  if _active_is_markdown(st) then return "" end if
+  if _active_dirty(st) then return "Live: unsaved changes; analysis uses saved files" end if
+
+  current = st.open_files[st.active_tab]
+  error_count = 0
+  warning_count = 0
+  info_count = 0
+
+  if fs.exists(current) == false then
+    error_count = error_count + 1
+  else
+    text = fs.readAllText(current)
+    if typeof(text) != "string" then
+      error_count = error_count + 1
+    else
+      refs = lang_index._scan_imports(st.project.root, current, st.project.import_paths, text)
+      seen_aliases = []
+      if typeof(refs) == "array" and len(refs) > 0 then
+        for i = 0 to len(refs) - 1
+          item = refs[i]
+          if typeof(item) != "struct" then continue end if
+          if item.resolved == false then warning_count = warning_count + 1 end if
+          if typeof(item.alias) == "string" and item.alias != "" then
+            alias_key = s.toLowerAscii(item.alias)
+            duplicate = false
+            if len(seen_aliases) > 0 then
+              for ai = 0 to len(seen_aliases) - 1
+                if seen_aliases[ai] == alias_key then duplicate = true end if
+              end for
+            end if
+            if duplicate then
+              warning_count = warning_count + 1
+            else
+              seen_aliases = seen_aliases + [alias_key]
+            end if
+          end if
+        end for
+      end if
+
+      lines = s.split(s.replaceAll(text, "\r\n", "\n"), "\n")
+      if typeof(lines) == "array" and len(lines) > 0 then
+        for li = 0 to len(lines) - 1
+          lower_line = s.toLowerAscii(lines[li])
+          if s.indexOf(lower_line, "todo", 0) >= 0 or s.indexOf(lower_line, "fixme", 0) >= 0 then info_count = info_count + 1 end if
+        end for
+      end if
+    end if
+  end if
+
+  if error_count <= 0 and warning_count <= 0 and info_count <= 0 then return "Live: active file clean" end if
+  return "Live: " + error_count + " errors, " + warning_count + " warnings, " + info_count + " info"
+end function
+
+// Refresh cached active-file live diagnostics after editor idle.
+function _update_live_diagnostics(st, now)
+  key = _live_diagnostics_key(st)
+  if key == "" then
+    st.live_diagnostics_text = ""
+    st.live_diagnostics_key = ""
+    return st
+  end if
+  if key == st.live_diagnostics_key then return st end if
+  if _active_dirty(st) == false and now - st.last_edit_ms < LIVE_DIAGNOSTICS_IDLE_MS then return st end if
+  st.live_diagnostics_text = _active_live_diagnostics_text(st)
+  st.live_diagnostics_key = key
+  st.last_live_diagnostics_ms = now
+  return st
+end function
+
 // Update editor aux.
 function _update_editor_aux(st)
   now = win.GetTickCount()
@@ -5971,7 +6057,9 @@ function _update_editor_aux(st)
   if st.highlight_pending and editor_modified == false and now - st.last_edit_ms >= HIGHLIGHT_IDLE_MS and now - st.last_scroll_ms >= SCROLL_IDLE_MS then
     st = _apply_syntax_highlight(st)
   end if
+  st = _update_live_diagnostics(st, now)
   status = _caret_status_text(st)
+  if st.live_diagnostics_text != "" then status = status + " | " + st.live_diagnostics_text end if
   if status != st.last_status_text then
     win.set_window_text(st.status, status)
     st.last_status_text = status
