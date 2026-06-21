@@ -288,6 +288,8 @@ File menu:
 - `Quick Open File...` / `Ctrl+P`: find project files with ranked matches; a
   single filtered match opens directly, while multiple matches stay selectable
   in the results panel.
+- `Recent Files` / `Ctrl+E`: list open editor tabs with open-file count and the
+  active file in the panel title.
 - `Close Tab`: close the active editor tab.
 - `Save`: save the active editor tab.
 - `Save All` / `Ctrl+Shift+S`: save all dirty editable tabs.

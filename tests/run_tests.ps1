@@ -178,6 +178,8 @@ function Test-StaticWiring {
   Assert-True ($main.Contains('Recent Fil&es\tCtrl+E')) "Recent Files menu item is missing."
   Assert-True ($main.Contains("_show_recent_files")) "Recent Files renderer is missing."
   Assert-True ($main.Contains('"recent-files"')) "Recent Files result mode is missing."
+  Assert-True ($main.Contains('"Recent Files (" + len(rows) + " open)"')) "Recent Files title must summarize open file count."
+  Assert-True ($main.Contains('if active_label != "" then title = title + ": " + active_label end if')) "Recent Files title must show the active file."
   Assert-True ($main.Contains("ctrl and _key_pressed(st, win.VK_E)")) "Ctrl+E Recent Files hotkey wiring is missing."
   Assert-True ($commands.Contains("File: Recent Files")) "Command palette must expose Recent Files."
   Assert-True ($win32.Contains("VK_E")) "E key constant is missing."

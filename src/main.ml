@@ -3462,6 +3462,7 @@ function _show_recent_files(st)
   files = []
   lines_out = []
   cols = []
+  active_label = ""
   i = len(st.open_files) - 1
   while i >= 0
     file = st.open_files[i]
@@ -3470,6 +3471,7 @@ function _show_recent_files(st)
       if i == st.active_tab then marker = "* " end if
       label = _project_relative_path(st, file)
       if _is_generated_editor_path(file) then label = _basename(file) end if
+      if i == st.active_tab then active_label = label end if
       rows = rows + [marker + label]
       files = files + [file]
       lines_out = lines_out + [1]
@@ -3479,7 +3481,9 @@ function _show_recent_files(st)
   end while
 
   if len(rows) <= 0 then return _set_log(st, "Recent Files: no files are open.") end if
-  return _show_result_panel(st, "recent-files", "Recent Files", rows, files, lines_out, cols)
+  title = "Recent Files (" + len(rows) + " open)"
+  if active_label != "" then title = title + ": " + active_label end if
+  return _show_result_panel(st, "recent-files", title, rows, files, lines_out, cols)
 end function
 
 // Open quick file window.
