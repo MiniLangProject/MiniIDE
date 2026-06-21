@@ -127,6 +127,7 @@ function Test-StaticWiring {
   $service = Get-Content -LiteralPath (Join-Path $Root "src\lang\service.ml") -Raw
   $commands = Get-Content -LiteralPath (Join-Path $Root "src\ui\commands.ml") -Raw
   $assistant = Get-Content -LiteralPath (Join-Path $Root "src\ai\assistant.ml") -Raw
+  $provider = Get-Content -LiteralPath (Join-Path $Root "src\ai\provider.ml") -Raw
   $projectConfig = Get-Content -LiteralPath (Join-Path $Root "src\project\config.ml") -Raw
   $win32 = Get-Content -LiteralPath (Join-Path $Root "src\platform\win32.ml") -Raw
 
@@ -272,10 +273,17 @@ function Test-StaticWiring {
   Assert-True ($main.Contains("ID_CONFIG_ASSISTANT_SETTINGS")) "Assistant settings command is missing."
   Assert-True ($main.Contains("_open_assistant_settings_window")) "Assistant settings window is missing."
   Assert-True ($main.Contains('import "ai/assistant.ml" as assistant')) "Assistant module import is missing."
+  Assert-True ($main.Contains('import "ai/provider.ml" as ai_provider')) "Assistant provider module import is missing."
   Assert-True ($main.Contains("assistant.tool_context")) "Assistant read-only tool context must be delegated to the AI module."
+  Assert-True ($main.Contains("ai_provider.chat_completion")) "Assistant provider calls must be wired to the send action."
   Assert-True ($assistant.Contains("function open_tabs_text")) "Assistant must expose open-tab context."
+  Assert-True ($assistant.Contains("function open_tab_contents_text")) "Assistant must expose open-tab contents."
   Assert-True ($assistant.Contains("function project_files_text")) "Assistant must expose project-file context."
+  Assert-True ($assistant.Contains("function build_log_text")) "Assistant must expose the latest build log."
   Assert-True ($assistant.Contains("help_lang.read_reference")) "Assistant must expose MiniLang help context."
+  Assert-True ($provider.Contains("function chat_completion")) "OpenAI-compatible provider call helper is missing."
+  Assert-True ($provider.Contains("/chat/completions")) "Provider call must use the OpenAI-compatible chat completions endpoint."
+  Assert-True ($provider.Contains("[Environment]::GetEnvironmentVariable")) "Provider call must read the API key from an environment variable."
   Assert-True ($main.Contains("ai.apiKeyEnv")) "Assistant config must store an API key environment variable name."
   Assert-True ($projectConfig.Contains("function load_value")) "Project configuration parser module is missing."
   Assert-True ($main.Contains("project_config.load_value")) "Main must use the project configuration module."

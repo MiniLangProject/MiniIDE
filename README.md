@@ -279,11 +279,12 @@ file, output file, import paths, and build options. `extraArgs` is appended to
 the compiler command for advanced flags such as heap or tracing options.
 
 Use `Configuration > AI Assistant Settings...` to configure the optional coding
-assistant. The first assistant slice is local and read-only: it can show the
-active file, open tabs, indexed project files, and MiniLang help availability in
-the Assistant panel. Provider calls are prepared for OpenAI and
-OpenAI-compatible endpoints, but keys are referenced through an environment
-variable name such as `OPENAI_API_KEY`; MiniIDE does not store the secret itself.
+assistant. When enabled, MiniIDE sends the user prompt plus read-only local
+tool context to an OpenAI-compatible chat-completions endpoint. The context can
+include the active file excerpt, open tab excerpts, indexed project files, the
+latest build log, and a MiniLang language-reference excerpt. API keys are
+referenced through an environment variable name such as `OPENAI_API_KEY`;
+MiniIDE does not store the secret itself.
 
 ```ini
 ai.enabled=false

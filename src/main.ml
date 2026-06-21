@@ -22,6 +22,7 @@ import "build/build_service.ml" as build
 import "lang/syntax.ml" as syntax
 import "help/language.ml" as help_lang
 import "ai/assistant.ml" as assistant
+import "ai/provider.ml" as ai_provider
 import "ui/theme.ml" as theme
 import "ui/markdown.ml" as markdown
 import "ui/commands.ml" as commands
@@ -647,7 +648,7 @@ end function
 
 // Return the current assistant tool context assembled by the AI module.
 function _assistant_tool_context(st)
-  return assistant.tool_context(st.project, _effective_compiler(st), st.assistant_config, st.current_file, st.open_files, st.open_dirty, st.active_tab, st.open_texts)
+  return assistant.tool_context(st.project, _effective_compiler(st), st.assistant_config, st.current_file, st.open_files, st.open_dirty, st.active_tab, st.open_texts, st.build_last_log)
 end function
 
 // Show the assistant panel.
@@ -662,7 +663,7 @@ function _show_assistant_panel(st)
   win.ShowWindow(st.assistant_send, win.SW_SHOW)
   win.set_window_text(st.panel_title, "Assistant")
   if typeof(st.assistant_transcript) != "string" or st.assistant_transcript == "" then
-    st.assistant_transcript = "Assistant:\r\nConfigured local read-only tooling is ready. Provider calls are not enabled in this build yet."
+    st.assistant_transcript = "Assistant:\r\nConfigured local read-only tooling is ready. Enable provider calls in Configuration > AI Assistant Settings."
   end if
   win.set_window_text(st.assistant_output, st.assistant_transcript)
   win.edit_set_background(st.assistant_output, theme.panel_bg(st))
@@ -683,8 +684,15 @@ function _assistant_send(st)
     st = _assistant_append(st, "Assistant", "AI provider calls are disabled. Open Configuration > AI Assistant Settings to enable the assistant. Local tool context is available through Assistant > Show Tool Context.")
     return _show_assistant_panel(st)
   end if
-  response = "Provider calls are not wired yet. Current local read-only tool context:\r\n\r\n" + _assistant_tool_context(st)
-  st = _assistant_append(st, "Assistant", response)
+  context = _assistant_tool_context(st)
+  result = ai_provider.chat_completion(st.project.root, st.assistant_config, prompt, context, st.assistant_transcript)
+  if typeof(result) != "struct" then
+    st = _assistant_append(st, "Assistant", "Assistant provider call failed.")
+  else if result.ok == false then
+    st = _assistant_append(st, "Assistant", "Assistant provider call failed:\r\n\r\n" + result.text)
+  else
+    st = _assistant_append(st, "Assistant", result.text)
+  end if
   return _show_assistant_panel(st)
 end function
 

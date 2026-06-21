@@ -475,6 +475,51 @@ function start_compile_with_compiler(project, compiler_override)
   return start_compile_with_options(project, compiler_override, true, 20, "windows", "")
 end function
 
+// Start an arbitrary hidden process with stdout/stderr redirected to a log file.
+function start_hidden_command(root, command_line, log_path, label)
+  if typeof(root) != "string" or root == "" then root = "." end if
+  if typeof(command_line) != "string" or command_line == "" then
+    return _failed_job(log_path, "", label, "Process start failed: command line is empty.")
+  end if
+  if typeof(log_path) != "string" or log_path == "" then log_path = _path_join(root, "build\\last_process.log") end if
+  if typeof(label) != "string" then label = "" end if
+  out_dir = _dirname(log_path)
+  _ensure_dir(out_dir)
+
+  wr = fs.writeAllText(log_path, "")
+  if typeof(wr) == "error" then
+    return _failed_job(log_path, command_line, label, "Process start failed: cannot write log file " + log_path)
+  end if
+
+  sa = bytes(24, 0)
+  _write_u32(sa, 0, 24)
+  _write_ptr(sa, 8, 0)
+  _write_u32(sa, 16, 1)
+
+  log_handle = CreateFileWInherit(log_path, GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, sa, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, void)
+  if log_handle == INVALID_HANDLE_VALUE then
+    return _failed_job(log_path, command_line, label, "Process start failed: cannot open log file " + log_path)
+  end if
+
+  si = bytes(104, 0)
+  _write_u32(si, 0, 104)
+  _write_u32(si, 60, STARTF_USESHOWWINDOW | STARTF_USESTDHANDLES)
+  _write_u16(si, 64, SW_HIDE)
+  _write_ptr(si, 88, log_handle)
+  _write_ptr(si, 96, log_handle)
+
+  pi = bytes(24, 0)
+  ok = CreateProcessW(void, command_line, void, void, true, CREATE_NO_WINDOW, void, root, si, pi)
+  CloseHandle(log_handle)
+  if ok == false then
+    return _failed_job(log_path, command_line, label, "Process start failed: CreateProcessW failed.\r\nCommand: " + command_line)
+  end if
+
+  process = _read_ptr(pi, 0)
+  thread = _read_ptr(pi, 8)
+  return BuildJob(process, thread, STILL_ACTIVE, log_path, "", command_line, label, true)
+end function
+
 // Build the executable and log paths used by a run job.
 function _run_paths(project)
   root = "."
@@ -929,6 +974,12 @@ function compile_with_options(project, compiler_override, keep_going, max_errors
   log_text = job_log(job)
   job = close_job(job)
   return BuildResult(rc, job.log_path, log_text, parse_diagnostics(log_text))
+end function
+
+// Sleep for a short polling interval.
+function sleep_ms(ms)
+  if typeof(ms) != "int" or ms < 0 then ms = 0 end if
+  Sleep(ms)
 end function
 
 // Run a compile job synchronously with an explicit compiler path.
