@@ -266,9 +266,16 @@ function main(args)
 
   keyword_items = service.completion_items(snapshot, "fun", 20)
   if _assert_true("keyword completion includes function", _has_item(keyword_items, "function", "keyword")) == false then ok = false end if
+  keyword_substring_items = service.completion_items(snapshot, "ction", 20)
+  if _assert_true("keyword completion includes substring match", _has_item(keyword_substring_items, "function", "keyword")) == false then ok = false end if
 
   symbol_items = service.completion_items(snapshot, "main", 20)
   if _assert_true("symbol completion keeps function kind", _has_item(symbol_items, "main", "function")) == false then ok = false end if
+  substring_completion_items = service.completion_items(snapshot, "ValueExtra", 20)
+  if _assert_true("symbol completion includes substring match", _has_item(substring_completion_items, "modelValueExtra", "function")) == false then ok = false end if
+  fuzzy_labels = service.completion_labels(snapshot, "mve", 20)
+  if _assert_true("symbol completion includes fuzzy match", _has_label(fuzzy_labels, "modelValue")) == false then ok = false end if
+  if _assert_true("symbol completion keeps first fuzzy symbol stable", len(fuzzy_labels) > 0 and fuzzy_labels[0] == "modelValue") == false then ok = false end if
 
   project_symbols = service.symbol_items(snapshot, "mo", 20)
   if _assert_true("project symbols include filtered function", _has_symbol_item(project_symbols, "modelValue", "function")) == false then ok = false end if

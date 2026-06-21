@@ -255,7 +255,7 @@ end function
 // Add a completion item.
 function _add_completion(items, label, insert_text, kind, file, line, prefix, limit)
   if len(items) >= limit then return items end if
-  if _matches_prefix(label, prefix) == false then return items end if
+  if _query_score(label, prefix) <= 0 then return items end if
   if _has_completion(items, label) then return items end if
   return items + [CompletionItem(label, insert_text, kind, file, line)]
 end function
@@ -263,6 +263,8 @@ end function
 // Return rich completion items from a snapshot.
 function completion_items(snapshot, prefix, limit)
   if typeof(limit) != "int" or limit <= 0 then limit = 24 end if
+  if typeof(prefix) != "string" then prefix = "" end if
+  prefix = s.trim(prefix)
   items = []
 
   kws = syntax.keywords()

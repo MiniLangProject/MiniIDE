@@ -3140,6 +3140,25 @@ function _show_autocomplete_popup(st, items, prefix)
   return st
 end function
 
+// Return the text to insert for a completion item.
+function _completion_insert_text(item, prefix)
+  if typeof(item) != "string" then return "" end if
+  if typeof(prefix) != "string" then prefix = "" end if
+  if prefix != "" and len(item) >= len(prefix) and s.startsWith(s.toLowerAscii(item), s.toLowerAscii(prefix)) then
+    return s.substr(item, len(prefix), len(item) - len(prefix))
+  end if
+  return item
+end function
+
+// Select the current prefix when a fuzzy completion replaces it.
+function _select_completion_prefix(editor, prefix)
+  if typeof(prefix) != "string" or prefix == "" then return end if
+  sel = win.edit_getsel(editor)
+  if typeof(sel) != "array" or len(sel) < 2 then return end if
+  if sel[0] < len(prefix) then return end if
+  win.edit_setsel(editor, sel[0] - len(prefix), sel[0])
+end function
+
 // Accept autocomplete.
 function _accept_autocomplete(st)
   idx = win.listbox_getsel(st.autocomplete_list)
@@ -3148,10 +3167,8 @@ function _accept_autocomplete(st)
   item = st.autocomplete_items[idx]
   prefix = st.autocomplete_prefix
   if typeof(prefix) != "string" then prefix = "" end if
-  insert_text = item
-  if prefix != "" and len(item) >= len(prefix) and s.startsWith(s.toLowerAscii(item), s.toLowerAscii(prefix)) then
-    insert_text = s.substr(item, len(prefix), len(item) - len(prefix))
-  end if
+  insert_text = _completion_insert_text(item, prefix)
+  if insert_text == item then _select_completion_prefix(st.editor, prefix) end if
   win.SetFocus(st.editor)
   win.edit_replace_sel(st.editor, insert_text)
   st = _record_edit_activity(st)
@@ -3173,12 +3190,14 @@ function _autocomplete(st)
     return _set_log(st, "No completions for: " + prefix)
   end if
 
-  if len(items) == 1 and prefix != "" and len(items[0]) > len(prefix) then
-    suffix = s.substr(items[0], len(prefix), len(items[0]) - len(prefix))
-    win.edit_replace_sel(st.editor, suffix)
+  if len(items) == 1 and prefix != "" then
+    item = items[0]
+    insert_text = _completion_insert_text(item, prefix)
+    if insert_text == item then _select_completion_prefix(st.editor, prefix) end if
+    win.edit_replace_sel(st.editor, insert_text)
     st = _record_edit_activity(st)
     st = _sync_active_tab(st)
-    return _set_log(st, "Completed: " + items[0])
+    return _set_log(st, "Completed: " + item)
   end if
 
   return _show_autocomplete_popup(st, items, prefix)
