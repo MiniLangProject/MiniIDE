@@ -83,6 +83,11 @@ function main(args)
     if _assert_true("pick finds subsystem by console alias", commands.pick(ids, labels, search_texts, "console", 0) == ids[subsystem_idx]) == false then ok = false end if
   end if
   if quick_idx >= 0 then
+    ranked = commands.ranked_indices(labels, search_texts, "qopen")
+    if _assert_true("ranked search returns quick open first", len(ranked) > 0 and ranked[0] == quick_idx) == false then ok = false end if
+    if _assert_true("quick open label match has top score", commands.match_score(labels, search_texts, quick_idx, "quick") == 3) == false then ok = false end if
+    if _assert_true("quick open acronym match has middle score", commands.match_score(labels, search_texts, quick_idx, "qof") == 2) == false then ok = false end if
+    if _assert_true("quick open fuzzy match has low score", commands.match_score(labels, search_texts, quick_idx, "qopen") == 1) == false then ok = false end if
     if _assert_true("pick finds quick open by shortcut alias", commands.pick(ids, labels, search_texts, "ctrl p", 0) == ids[quick_idx]) == false then ok = false end if
     if _assert_true("pick finds quick open by acronym", commands.pick(ids, labels, search_texts, "qof", 0) == ids[quick_idx]) == false then ok = false end if
     if _assert_true("pick finds quick open by compact fuzzy query", commands.pick(ids, labels, search_texts, "qopen", 0) == ids[quick_idx]) == false then ok = false end if
@@ -110,6 +115,8 @@ function main(args)
   if _assert_true("missing query falls back to selected item", commands.pick(ids, labels, search_texts, "definitely missing", 4) == ids[4]) == false then ok = false end if
   if _assert_true("bad selected item returns zero", commands.pick(ids, labels, search_texts, "definitely missing", -1) == 0) == false then ok = false end if
   if _assert_true("invalid match index is false", commands.matches(labels, search_texts, -1, "") == false) == false then ok = false end if
+  if _assert_true("invalid match index has zero score", commands.match_score(labels, search_texts, -1, "") == 0) == false then ok = false end if
+  if _assert_true("invalid ranked search is empty", len(commands.ranked_indices("bad", search_texts, "quick")) == 0) == false then ok = false end if
 
   if ok then
     print "Command palette tests OK"

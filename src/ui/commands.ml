@@ -100,7 +100,7 @@ function search_texts()
 end function
 
 // Return the match score for a command palette entry.
-function _match_score(labels, search_texts, idx, query)
+function match_score(labels, search_texts, idx, query)
   if typeof(labels) != "array" or idx < 0 or idx >= len(labels) then return 0 end if
   if typeof(query) != "string" or query == "" then return 3 end if
   extra = ""
@@ -117,7 +117,24 @@ end function
 
 // Return true when a command palette entry matches the query.
 function matches(labels, search_texts, idx, query)
-  return _match_score(labels, search_texts, idx, query) > 0
+  return match_score(labels, search_texts, idx, query) > 0
+end function
+
+// Return matching command indices ordered by match strength.
+function ranked_indices(labels, search_texts, query)
+  result = []
+  if typeof(labels) != "array" then return result end if
+  count = len(labels)
+  for i = 0 to count - 1
+    if match_score(labels, search_texts, i, query) == 3 then result = result + [i] end if
+  end for
+  for i = 0 to count - 1
+    if match_score(labels, search_texts, i, query) == 2 then result = result + [i] end if
+  end for
+  for i = 0 to count - 1
+    if match_score(labels, search_texts, i, query) == 1 then result = result + [i] end if
+  end for
+  return result
 end function
 
 // Return the command selected by query or list selection.
@@ -131,7 +148,7 @@ function pick(ids, labels, search_texts, query, selected)
   best_id = 0
   best_score = 0
   for i = 0 to count - 1
-    score = _match_score(labels, search_texts, i, query)
+    score = match_score(labels, search_texts, i, query)
     if score > best_score then
       best_score = score
       best_id = ids[i]

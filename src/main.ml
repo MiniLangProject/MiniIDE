@@ -3210,12 +3210,16 @@ function _refresh_command_palette_list(command_list, ids, labels, search_texts, 
   win.listbox_reset(command_list)
   count = len(ids)
   if len(labels) < count then count = len(labels) end if
-  for i = 0 to count - 1
-    if commands.matches(labels, search_texts, i, query) then
-      win.listbox_add(command_list, labels[i])
-      visible_ids = visible_ids + [ids[i]]
-    end if
-  end for
+  ranked = commands.ranked_indices(labels, search_texts, query)
+  if len(ranked) > 0 then
+    for pos = 0 to len(ranked) - 1
+      i = ranked[pos]
+      if i >= 0 and i < count then
+        win.listbox_add(command_list, labels[i])
+        visible_ids = visible_ids + [ids[i]]
+      end if
+    end for
+  end if
   if len(visible_ids) > 0 then win.listbox_setsel(command_list, 0) end if
   return visible_ids
 end function
