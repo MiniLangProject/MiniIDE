@@ -143,6 +143,7 @@ function Test-StaticWiring {
   Assert-True ($missing.Count -eq 0) ("Menu IDs without _perform_command dispatch: " + ($missing -join ", "))
 
   Assert-True ($main.Contains("start_compile_with_options")) "Build command does not use configurable build options."
+  Assert-True ($main.Contains("Diagnostics are also available through Navigation > Problems.")) "Failed background builds must keep console output visible."
   Assert-True ($main.Contains("ID_FILE_RUN")) "Run command is missing."
   Assert-True ($main.Contains("ID_FILE_TEST")) "Test command is missing."
   Assert-True ($main.Contains("ID_FILE_TEST_CURRENT")) "Run Current Test File command is missing."

@@ -2287,7 +2287,8 @@ function _poll_build(st)
     end if
     if exit_code != 0 then
       if finished_mode == "compile" or finished_mode == "compile-run" or finished_mode == "rebuild" or finished_mode == "test-compile" or finished_mode == "test-current-compile" or finished_mode == "test-related-compile" then
-        return _show_problems(st)
+        st.build_last_log = st.build_last_log + "\r\n\r\nDiagnostics are also available through Navigation > Problems."
+        return _set_log(st, st.build_last_log)
       end if
     end if
   end if
