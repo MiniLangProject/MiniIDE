@@ -3122,7 +3122,7 @@ function _show_autocomplete_popup(st, items, prefix)
   st.autocomplete_prefix = prefix
   win.listbox_reset(st.autocomplete_list)
   for i = 0 to len(items) - 1
-    win.listbox_add(st.autocomplete_list, _completion_display_text(items[i]))
+    win.listbox_add(st.autocomplete_list, _completion_display_text(st, items[i]))
   end for
   win.listbox_setsel(st.autocomplete_list, 0)
   sel = win.edit_getsel(st.editor)
@@ -3152,10 +3152,12 @@ function _completion_item_label(item)
 end function
 
 // Return the popup display text for a completion item.
-function _completion_display_text(item)
+function _completion_display_text(st, item)
   label = _completion_item_label(item)
   if typeof(item) == "struct" and typeof(item.kind) == "string" and item.kind != "" then
-    return label + "  " + item.kind
+    display = label + "  " + item.kind
+    if typeof(item.file) == "string" and item.file != "" then display = display + "  " + _project_relative_path(st, item.file) end if
+    return display
   end if
   return label
 end function

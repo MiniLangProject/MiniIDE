@@ -420,6 +420,7 @@ function Test-StaticWiring {
   Assert-True ($main.Contains("lang_service.completion_items(snapshot, prefix, 24)")) "Autocomplete must use rich language service completion items."
   Assert-True ($main.Contains("_accept_autocomplete")) "Autocomplete accept handler is missing."
   Assert-True ($main.Contains("_completion_display_text")) "Autocomplete popup must render rich completion display text."
+  Assert-True ($main.Contains("_project_relative_path(st, item.file)")) "Autocomplete popup must show symbol source locations."
   Assert-True ($main.Contains("_completion_insert_text")) "Autocomplete insert helper is missing."
   Assert-True ($main.Contains("item.insert_text")) "Autocomplete insert helper must use rich completion insert text."
   Assert-True ($main.Contains("_select_completion_prefix")) "Autocomplete fuzzy prefix selection helper is missing."
