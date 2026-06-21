@@ -331,7 +331,7 @@ Navigation menu:
   symbol.
 - `Search Word in Project`: search the current word across project `.ml` files.
 - `Problems`: show diagnostics from project analysis, missing configured entry
-  files, and the last build log.
+  files, missing import paths, and the last build log.
 
 Help menu:
 

@@ -432,6 +432,16 @@ function diagnostics(snapshot)
     if typeof(project.test_entry) == "string" and project.test_entry != "" and fs.exists(test_entry_path) == false then
       items = items + [DiagnosticItem("warning", "Project test entry not found: " + project.test_entry, test_entry_path, 1, 1)]
     end if
+    if typeof(project.import_paths) == "array" and len(project.import_paths) > 0 then
+      for ip = 0 to len(project.import_paths) - 1
+        import_path = project.import_paths[ip]
+        if typeof(import_path) != "string" or import_path == "" then continue end if
+        resolved_import_path = _join_path(project.root, import_path)
+        if fs.exists(resolved_import_path) == false then
+          items = items + [DiagnosticItem("warning", "Import path not found: " + import_path, resolved_import_path, 1, 1)]
+        end if
+      end for
+    end if
   end if
 
   idx = void

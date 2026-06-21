@@ -321,6 +321,19 @@ function main(args)
   broken_diagnostics = service.diagnostics(service.analyze_project(broken_project))
   if _assert_true("project diagnostics include missing entry", _has_diagnostic(broken_diagnostics, "Project entry not found: src\\missing_entry.ml")) == false then ok = false end if
   if _assert_true("project diagnostics include missing test entry", _has_diagnostic(broken_diagnostics, "Project test entry not found: tests\\missing_test.ml")) == false then ok = false end if
+  fs.writeAllText(project.path_join(root, "BrokenImportPath.mlproj"),
+    "name=BrokenImportPath\n" +
+    "type=console\n" +
+    "entry=src\\main.ml\n" +
+    "output=build\\BrokenImportPath.exe\n" +
+    "testEntry=tests\\main_test.ml\n" +
+    "runArgs=\n" +
+    "workingDir=.\n" +
+    "importPath=src\n" +
+    "importPath=missing_imports\n")
+  broken_import_project = project.load_project_file(project.path_join(root, "BrokenImportPath.mlproj"))
+  broken_import_diagnostics = service.diagnostics(service.analyze_project(broken_import_project))
+  if _assert_true("project diagnostics include missing import path", _has_diagnostic(broken_import_diagnostics, "Import path not found: missing_imports")) == false then ok = false end if
 
   inspections = service.code_inspection_items(snapshot, 50)
   if _assert_true("code inspections include unused helper", _has_inspection(inspections, "Possibly unused function: lonely_helper")) == false then ok = false end if
