@@ -4323,16 +4323,18 @@ function _find_references(st)
   files = []
   lines_out = []
   cols = []
+  reference_count = 0
   for i = 0 to len(refs) - 1
     ref = refs[i]
     if typeof(ref) != "struct" then continue end if
+    reference_count = reference_count + 1
     rows = rows + [_project_relative_path(st, ref.file) + ":" + ref.line + ":" + ref.col + "  " + ref.text]
     files = files + [ref.file]
     lines_out = lines_out + [ref.line]
     cols = cols + [ref.col]
   end for
 
-  title = "References: " + word
+  title = "References: " + word + " (" + reference_count + " matches)"
   if len(refs) >= 100 then title = title + " (first 100 matches)" end if
   return _show_result_panel(st, "references", title, rows, files, lines_out, cols)
 end function

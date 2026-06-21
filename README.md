@@ -336,7 +336,7 @@ Navigation menu:
 - `Go to Line...` / `Ctrl+G`: jump to a line in the active editor tab.
 - `Go to Definition` / `F12`: jump to a matching project symbol.
 - `Find References` / `Shift+F12`: list project references for the current
-  symbol.
+  symbol, with match totals in the panel title.
 - `Related Tests`: find tests that import the active source file or match the
   `foo.ml` to `foo_test.ml` / `test_foo.ml` naming convention, with related
   file and symbol totals in the panel title.

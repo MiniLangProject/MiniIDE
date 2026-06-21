@@ -322,6 +322,7 @@ function Test-StaticWiring {
   Assert-True ($service.Contains("_is_query_subsequence")) "Language service fuzzy query matching is missing."
   Assert-True ($main.Contains("_find_references")) "Find references renderer is missing."
   Assert-True ($main.Contains("lang_service.references")) "Find references must use the language service facade."
+  Assert-True ($main.Contains('"References: " + word + " (" + reference_count + " matches)"')) "Find References title must summarize match count."
   Assert-True ($main.Contains("Shift+F12")) "Find references shortcut text is missing."
   Assert-True ($main.Contains("shift and _key_pressed(st, win.VK_F12)")) "Shift+F12 hotkey wiring is missing."
   Assert-True ($main.Contains("Ctrl+T")) "Go to symbol shortcut text is missing."
