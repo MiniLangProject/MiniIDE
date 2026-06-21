@@ -69,6 +69,14 @@ struct InspectionItem
   col,
 end struct
 
+struct DeclarationItem
+  name,
+  kind,
+  file,
+  line,
+  col,
+end struct
+
 struct CompletionItem
   label,
   insert_text,
@@ -172,6 +180,30 @@ function _strip_line_comment(line)
   pos = s.indexOf(line, "//", 0)
   if pos < 0 then return line end if
   return s.substr(line, 0, pos)
+end function
+
+// Read an identifier-like word at the requested position.
+function _take_word(text, start)
+  if typeof(text) != "string" then return "" end if
+  if typeof(start) != "int" or start < 0 then start = 0 end if
+  i = start
+  while i < len(text) and (text[i] == " " or text[i] == "\t")
+    i = i + 1
+  end while
+  begin = i
+  while i < len(text) and _is_word_char(text[i])
+    i = i + 1
+  end while
+  if i <= begin then return "" end if
+  return s.substr(text, begin, i - begin)
+end function
+
+// Return a 1-based column for a declaration name.
+function _declaration_col(raw, name)
+  if typeof(raw) != "string" or typeof(name) != "string" or name == "" then return 1 end if
+  pos = s.indexOf(raw, name, 0)
+  if pos < 0 then return 1 end if
+  return pos + 1
 end function
 
 // Find the next whole-word occurrence in a line.
@@ -910,6 +942,106 @@ function _import_alias_used(file, alias, import_line)
   return false
 end function
 
+// Return declaration-like symbols from a source file for inspections.
+function _declarations_for_file(file)
+  items = []
+  if typeof(file) != "string" or file == "" then return items end if
+  text = fs.readAllText(file)
+  if typeof(text) != "string" then return items end if
+  lines = s.split(s.replaceAll(text, "\r\n", "\n"), "\n")
+  if typeof(lines) != "array" then return items end if
+  if len(lines) <= 0 then return items end if
+
+  current_struct = ""
+  for li = 0 to len(lines) - 1
+    raw = lines[li]
+    clean = s.trim(_strip_line_comment(raw))
+    if clean == "" then continue end if
+
+    if s.startsWith(clean, "end struct") then
+      current_struct = ""
+      continue
+    end if
+
+    if s.startsWith(clean, "struct ") then
+      name_struct = _take_word(clean, len("struct "))
+      if name_struct != "" then
+        current_struct = name_struct
+        items = items + [DeclarationItem(name_struct, "struct", file, li + 1, _declaration_col(raw, name_struct))]
+      end if
+      continue
+    end if
+
+    if s.startsWith(clean, "enum ") then
+      name_enum = _take_word(clean, len("enum "))
+      if name_enum != "" then items = items + [DeclarationItem(name_enum, "enum", file, li + 1, _declaration_col(raw, name_enum))] end if
+      continue
+    end if
+
+    fn_pos = s.indexOf(clean, "function ", 0)
+    if fn_pos >= 0 then
+      name_fn = _take_word(clean, fn_pos + len("function "))
+      if name_fn != "" then
+        decl_name = name_fn
+        decl_kind = "function"
+        if current_struct != "" and s.indexOf(name_fn, ".", 0) < 0 then
+          decl_name = current_struct + "." + name_fn
+          decl_kind = "method"
+        end if
+        items = items + [DeclarationItem(decl_name, decl_kind, file, li + 1, _declaration_col(raw, name_fn))]
+      end if
+      continue
+    end if
+
+    if s.startsWith(clean, "const ") then
+      name_const = _take_word(clean, len("const "))
+      if name_const != "" then items = items + [DeclarationItem(name_const, "const", file, li + 1, _declaration_col(raw, name_const))] end if
+      continue
+    end if
+  end for
+
+  return items
+end function
+
+// Return true when a declaration name has already been seen.
+function _has_declaration_name(items, name)
+  if typeof(items) != "array" or typeof(name) != "string" or name == "" then return false end if
+  if len(items) <= 0 then return false end if
+  for i = 0 to len(items) - 1
+    item = items[i]
+    if typeof(item) == "struct" and item.name == name then return true end if
+  end for
+  return false
+end function
+
+// Add duplicate-declaration inspection findings.
+function _add_duplicate_declaration_inspections(items, idx, limit)
+  seen = []
+  if typeof(idx) != "struct" or typeof(idx.files) != "array" then return items end if
+  if len(idx.files) <= 0 then return items end if
+
+  for fi = 0 to len(idx.files) - 1
+    file_info = idx.files[fi]
+    if typeof(file_info) != "struct" then continue end if
+    declarations = _declarations_for_file(file_info.path)
+    if typeof(declarations) != "array" then continue end if
+    if len(declarations) <= 0 then continue end if
+    for di = 0 to len(declarations) - 1
+      decl = declarations[di]
+      if typeof(decl) != "struct" then continue end if
+      if _has_declaration_name(seen, decl.name) then
+        msg_duplicate = "Duplicate " + decl.kind + ": " + decl.name
+        items = items + [InspectionItem("warning", msg_duplicate, decl.file, decl.line, decl.col)]
+        if len(items) >= limit then return items end if
+      else
+        seen = seen + [decl]
+      end if
+    end for
+  end for
+
+  return items
+end function
+
 // Return lightweight code-inspection findings.
 function code_inspection_items(snapshot, limit)
   items = []
@@ -917,6 +1049,9 @@ function code_inspection_items(snapshot, limit)
   idx = void
   if typeof(snapshot) == "struct" then idx = snapshot.project_index end if
   if typeof(idx) != "struct" then return items end if
+
+  items = _add_duplicate_declaration_inspections(items, idx, limit)
+  if len(items) >= limit then return items end if
 
   if typeof(idx.imports) == "array" then
     for ii = 0 to len(idx.imports) - 1

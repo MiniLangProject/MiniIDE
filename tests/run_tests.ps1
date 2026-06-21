@@ -284,6 +284,8 @@ function Test-StaticWiring {
   Assert-True ($main.Contains("lang_service.code_inspection_items")) "Code Inspections must use the language service facade."
   Assert-True ($service.Contains("_import_alias_used")) "Code inspections must detect unused import aliases."
   Assert-True ($service.Contains("Unused import alias")) "Unused import alias inspection message is missing."
+  Assert-True ($service.Contains("_add_duplicate_declaration_inspections")) "Code inspections must detect duplicate declarations."
+  Assert-True ($service.Contains('msg_duplicate = "Duplicate " + decl.kind')) "Duplicate declaration inspection message is missing."
   Assert-True ($main.Contains("_show_project_index")) "Project index result renderer is missing."
   Assert-True ($main.Contains("_show_project_symbols")) "Project symbols result renderer is missing."
   Assert-True ($main.Contains("_show_project_symbols_query")) "Project symbol query renderer is missing."

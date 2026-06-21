@@ -333,6 +333,8 @@ Navigation menu:
   symbol.
 - `Related Tests`: find tests that import the active source file or match the
   `foo.ml` to `foo_test.ml` / `test_foo.ml` naming convention.
+- `Code Inspections`: list lightweight project findings such as duplicate
+  declarations, unused import aliases, and possibly unused symbols.
 - `Search Word in Project`: search the current word across project `.ml` files.
 - `Problems`: show diagnostics from project analysis, missing configured entry
   files, missing working directories, missing import paths, duplicate import

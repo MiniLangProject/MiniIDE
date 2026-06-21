@@ -162,6 +162,17 @@ function _has_inspection(items, fragment)
   return false
 end function
 
+// Return true when an inspection contains a message fragment and severity.
+function _has_inspection_severity(items, fragment, severity)
+  if typeof(items) != "array" then return false end if
+  if len(items) <= 0 then return false end if
+  for i = 0 to len(items) - 1
+    item = items[i]
+    if typeof(item) == "struct" and item.severity == severity and s.indexOf(item.message, fragment, 0) >= 0 then return true end if
+  end for
+  return false
+end function
+
 // Return true when a TODO item contains the requested fragment.
 function _has_todo(items, kind, fragment)
   if typeof(items) != "array" then return false end if
@@ -227,6 +238,7 @@ function _create_fixture(root)
     "  util\n" +
     "  return 2\n" +
     "end function\n" +
+    "const duplicateSetting = 1\n" +
     "// TODO: revisit model lifecycle\n")
 
   fs.writeAllText(project.path_join(root, "src\\util.ml"),
@@ -235,7 +247,8 @@ function _create_fixture(root)
     "end function\n" +
     "function lonely_helper()\n" +
     "  return 2\n" +
-    "end function\n")
+    "end function\n" +
+    "const duplicateSetting = 2\n")
 
   fs.writeAllText(project.path_join(root, "tests\\main_test.ml"),
     "import \"..\\src\\main.ml\" as app\n" +
@@ -351,6 +364,7 @@ function main(args)
   if _assert_true("project diagnostics include duplicate import alias", _has_diagnostic(duplicate_diagnostics, "Duplicate import alias: dup")) == false then ok = false end if
 
   inspections = service.code_inspection_items(snapshot, 50)
+  if _assert_true("code inspections include duplicate symbol", _has_inspection_severity(inspections, "Duplicate const: duplicateSetting", "warning")) == false then ok = false end if
   if _assert_true("code inspections include unused helper", _has_inspection(inspections, "Possibly unused function: lonely_helper")) == false then ok = false end if
   if _assert_true("code inspections include unused import alias", _has_inspection(inspections, "Unused import alias: app")) == false then ok = false end if
   if _assert_true("code inspections skip used import alias", _has_inspection(inspections, "Unused import alias: util") == false) == false then ok = false end if
