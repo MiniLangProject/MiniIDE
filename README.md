@@ -280,11 +280,12 @@ the compiler command for advanced flags such as heap or tracing options.
 
 Use `Configuration > AI Assistant Settings...` to configure the optional coding
 assistant. When enabled, MiniIDE sends the user prompt plus read-only local
-tool context to an OpenAI-compatible chat-completions endpoint. The context can
-include the active file excerpt, open tab excerpts, indexed project files, the
-latest build log, and a MiniLang language-reference excerpt. API keys are
-referenced through an environment variable name such as `OPENAI_API_KEY`;
-MiniIDE does not store the secret itself.
+tool context to an OpenAI-compatible chat-completions endpoint through native
+WinHTTP networking. The context can include the active file excerpt, open tab
+excerpts, indexed project files, the latest build log, and a MiniLang
+language-reference excerpt. API keys are referenced through an environment
+variable name such as `OPENAI_API_KEY`; MiniIDE does not store the secret
+itself.
 
 ```ini
 ai.enabled=false
