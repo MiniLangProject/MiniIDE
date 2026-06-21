@@ -3942,6 +3942,9 @@ function _show_problems(st)
   files = []
   lines_out = []
   cols = []
+  problem_error_count = 0
+  problem_warning_count = 0
+  problem_info_count = 0
 
   snapshot = lang_service.analyze_project(st.project)
   project_items = lang_service.diagnostics(snapshot)
@@ -3953,6 +3956,9 @@ function _show_problems(st)
       files = files + [d.file]
       lines_out = lines_out + [d.line]
       cols = cols + [d.col]
+      if d.kind == "error" then problem_error_count = problem_error_count + 1 end if
+      if d.kind == "warning" then problem_warning_count = problem_warning_count + 1 end if
+      if d.kind == "info" then problem_info_count = problem_info_count + 1 end if
     end for
   end if
 
@@ -3965,6 +3971,9 @@ function _show_problems(st)
       files = files + [item.file]
       lines_out = lines_out + [item.line]
       cols = cols + [item.col]
+      if item.severity == "error" then problem_error_count = problem_error_count + 1 end if
+      if item.severity == "warning" then problem_warning_count = problem_warning_count + 1 end if
+      if item.severity == "info" then problem_info_count = problem_info_count + 1 end if
     end for
   end if
 
@@ -3981,11 +3990,15 @@ function _show_problems(st)
       files = files + [file]
       lines_out = lines_out + [d.line]
       cols = cols + [d.col]
+      if d.kind == "error" then problem_error_count = problem_error_count + 1 end if
+      if d.kind == "warning" then problem_warning_count = problem_warning_count + 1 end if
+      if d.kind == "info" then problem_info_count = problem_info_count + 1 end if
     end for
   end if
 
   if len(rows) <= 0 then return _set_log(st, "Problems: no entries in project analysis, code inspections, or the last build log.") end if
-  return _show_result_panel(st, "problems", "Problems", rows, files, lines_out, cols)
+  title = "Problems (" + problem_error_count + " errors, " + problem_warning_count + " warnings, " + problem_info_count + " info)"
+  return _show_result_panel(st, "problems", title, rows, files, lines_out, cols)
 end function
 
 // Show code inspections.

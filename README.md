@@ -339,7 +339,8 @@ Navigation menu:
 - `Search Word in Project`: search the current word across project `.ml` files.
 - `Problems`: show diagnostics from project analysis, code inspections, missing
   configured entry files, missing working directories, missing import paths,
-  duplicate import aliases, and the last build log.
+  duplicate import aliases, and the last build log, with severity totals in the
+  panel title.
 
 Help menu:
 

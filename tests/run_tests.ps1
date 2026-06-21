@@ -262,6 +262,8 @@ function Test-StaticWiring {
   Assert-True ($main.Contains("ID_NAV_PROBLEMS")) "Problems command is missing."
   Assert-True ($main.Contains("lang_service.diagnostics")) "Problems must include language service diagnostics."
   Assert-True ($main.Contains("problem_inspection_items = lang_service.code_inspection_items(snapshot, 300)")) "Problems must include language service code inspections."
+  Assert-True ($main.Contains("problem_error_count")) "Problems title must summarize error count."
+  Assert-True ($main.Contains('" errors, " + problem_warning_count + " warnings, " + problem_info_count + " info)"')) "Problems title must summarize warning and info counts."
   Assert-True ($main.Contains("code inspections, or the last build log")) "Problems empty-state text must mention code inspections."
   Assert-True ($service.Contains("Project entry not found")) "Language service diagnostics must report missing project entry files."
   Assert-True ($service.Contains("Project test entry not found")) "Language service diagnostics must report missing test entry files."
