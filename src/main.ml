@@ -46,6 +46,9 @@ struct AppState
   panel_title,
   result_list,
   autocomplete_list,
+  assistant_output,
+  assistant_input,
+  assistant_send,
   status,
   btn_open,
   btn_save,
@@ -67,6 +70,8 @@ struct AppState
   build_extra_args,
   build_profile,
   theme_mode,
+  assistant_config,
+  assistant_transcript,
   tree_handles,
   tree_paths,
   tree_is_dir,
@@ -126,6 +131,18 @@ struct AppState
   live_diagnostics_key,
   last_live_diagnostics_ms,
   running,
+end struct
+
+struct AssistantConfig
+  enabled,
+  provider,
+  base_url,
+  api_key_env,
+  model,
+  tool_mode,
+  include_tabs,
+  include_project,
+  include_help,
 end struct
 
 struct FoldRange
@@ -255,6 +272,10 @@ const ID_NAV_GOTO_LINE = 1036
 const ID_EDIT_FIND = 1037
 const ID_EDIT_FIND_NEXT = 1038
 const ID_NAV_GOTO_DEFINITION = 1039
+const ID_ASSISTANT_PANEL = 1077
+const ID_ASSISTANT_SEND = 1078
+const ID_ASSISTANT_CONTEXT = 1079
+const ID_CONFIG_ASSISTANT_SETTINGS = 1080
 const ID_WINDOW_MINIMIZE = 1101
 const ID_WINDOW_MAXIMIZE = 1102
 const ID_WINDOW_RESTORE = 1103
@@ -305,6 +326,17 @@ const ID_RENAME_SYMBOL_TEXT_EDIT = 1581
 const ID_RENAME_SYMBOL_OK = 1582
 const ID_RENAME_SYMBOL_CANCEL = 1583
 const ID_RENAME_SYMBOL_APPLY = 1584
+const ID_AI_PROVIDER_EDIT = 1591
+const ID_AI_BASE_URL_EDIT = 1592
+const ID_AI_KEY_ENV_EDIT = 1593
+const ID_AI_MODEL_EDIT = 1594
+const ID_AI_TOOL_MODE_EDIT = 1595
+const ID_AI_ENABLED = 1596
+const ID_AI_INCLUDE_TABS = 1597
+const ID_AI_INCLUDE_PROJECT = 1598
+const ID_AI_INCLUDE_HELP = 1599
+const ID_AI_SETTINGS_OK = 1600
+const ID_AI_SETTINGS_CANCEL = 1601
 
 const ID_CTX_TAB_CLOSE = 1201
 const ID_CTX_TAB_CLOSE_OTHERS = 1202
@@ -570,6 +602,9 @@ function _set_log(st, text)
   win.ShowWindow(st.panel_title, win.SW_HIDE)
   win.ShowWindow(st.result_list, win.SW_HIDE)
   win.ShowWindow(st.autocomplete_list, win.SW_HIDE)
+  win.ShowWindow(st.assistant_output, win.SW_HIDE)
+  win.ShowWindow(st.assistant_input, win.SW_HIDE)
+  win.ShowWindow(st.assistant_send, win.SW_HIDE)
   win.set_window_text(st.log, text)
   win.edit_set_background(st.log, theme.panel_bg(st))
   win.rich_set_all_color(st.log, theme.editor_fg(st))
@@ -602,9 +637,127 @@ function _show_result_panel(st, mode, title, rows, files, lines, cols)
     win.listbox_setsel(st.result_list, 0)
   end if
   win.ShowWindow(st.log, win.SW_HIDE)
+  win.ShowWindow(st.assistant_output, win.SW_HIDE)
+  win.ShowWindow(st.assistant_input, win.SW_HIDE)
+  win.ShowWindow(st.assistant_send, win.SW_HIDE)
   win.ShowWindow(st.panel_title, win.SW_SHOW)
   win.ShowWindow(st.result_list, win.SW_SHOW)
   return st
+end function
+
+// Append text to the assistant transcript.
+function _assistant_append(st, role, text)
+  if typeof(role) != "string" or role == "" then role = "Assistant" end if
+  if typeof(text) != "string" then text = "" end if
+  if typeof(st.assistant_transcript) != "string" then st.assistant_transcript = "" end if
+  if st.assistant_transcript != "" then st.assistant_transcript = st.assistant_transcript + "\r\n\r\n" end if
+  st.assistant_transcript = st.assistant_transcript + role + ":\r\n" + text
+  return st
+end function
+
+// Return a compact list of open tabs for assistant context.
+function _assistant_open_tabs_text(st)
+  text = "open_tabs:\n"
+  if typeof(st.open_files) != "array" or len(st.open_files) <= 0 then return text + "- none\n" end if
+  for i = 0 to len(st.open_files) - 1
+    marker = " "
+    if i == st.active_tab then marker = "*" end if
+    dirty = ""
+    if i < len(st.open_dirty) and st.open_dirty[i] then dirty = " dirty" end if
+    text = text + "- " + marker + " " + _project_relative_path(st, st.open_files[i]) + dirty + "\n"
+  end for
+  return text
+end function
+
+// Return active file metadata and current unsaved editor text length.
+function _assistant_active_file_text(st)
+  if typeof(st.current_file) != "string" or st.current_file == "" then return "active_file: none\n" end if
+  text_len = 0
+  if st.active_tab >= 0 and st.active_tab < len(st.open_texts) then text_len = len(st.open_texts[st.active_tab]) end if
+  return "active_file: " + _project_relative_path(st, st.current_file) + "\nactive_text_length: " + text_len + "\n"
+end function
+
+// Return indexed project files for assistant context.
+function _assistant_project_files_text(st, limit)
+  if typeof(limit) != "int" or limit <= 0 then limit = 80 end if
+  text = "project_files:\n"
+  count = 0
+  if typeof(st.project.files) != "array" or len(st.project.files) <= 0 then return text + "- none\n" end if
+  for i = 0 to len(st.project.files) - 1
+    if count >= limit then break end if
+    f = st.project.files[i]
+    if typeof(f) != "struct" or f.is_dir then continue end if
+    text = text + "- " + _project_relative_path(st, f.path) + "\n"
+    count = count + 1
+  end for
+  if count >= limit then text = text + "- ...\n" end if
+  return text
+end function
+
+// Return MiniLang help availability for assistant context.
+function _assistant_help_text(st)
+  loaded = help_lang.read_reference(st.project.root, _effective_compiler(st))
+  if loaded[2] != "" then return "minilang_help: unavailable (" + loaded[2] + ")\n" end if
+  return "minilang_help: " + loaded[0] + " (" + len(loaded[1]) + " chars)\n"
+end function
+
+// Return assistant read-only tool context.
+function _assistant_tool_context(st)
+  text = "MiniIDE assistant tool context\n"
+  text = text + "project: " + st.project.name + "\n"
+  text = text + "provider: " + st.assistant_config.provider + "\n"
+  text = text + "model: " + st.assistant_config.model + "\n"
+  text = text + "tool_mode: " + st.assistant_config.tool_mode + "\n"
+  text = text + "enabled: " + st.assistant_config.enabled + "\n\n"
+  text = text + _assistant_active_file_text(st) + "\n"
+  if st.assistant_config.include_tabs then text = text + _assistant_open_tabs_text(st) + "\n" end if
+  if st.assistant_config.include_project then text = text + _assistant_project_files_text(st, 80) + "\n" end if
+  if st.assistant_config.include_help then text = text + _assistant_help_text(st) + "\n" end if
+  return text
+end function
+
+// Show the assistant panel.
+function _show_assistant_panel(st)
+  st.result_mode = "assistant"
+  win.ShowWindow(st.log, win.SW_HIDE)
+  win.ShowWindow(st.result_list, win.SW_HIDE)
+  win.ShowWindow(st.autocomplete_list, win.SW_HIDE)
+  win.ShowWindow(st.panel_title, win.SW_SHOW)
+  win.ShowWindow(st.assistant_output, win.SW_SHOW)
+  win.ShowWindow(st.assistant_input, win.SW_SHOW)
+  win.ShowWindow(st.assistant_send, win.SW_SHOW)
+  win.set_window_text(st.panel_title, "Assistant")
+  if typeof(st.assistant_transcript) != "string" or st.assistant_transcript == "" then
+    st.assistant_transcript = "Assistant:\r\nConfigured local read-only tooling is ready. Provider calls are not enabled in this build yet."
+  end if
+  win.set_window_text(st.assistant_output, st.assistant_transcript)
+  win.edit_set_background(st.assistant_output, theme.panel_bg(st))
+  win.rich_set_all_color(st.assistant_output, theme.editor_fg(st))
+  win.edit_setsel(st.assistant_output, len(st.assistant_transcript), len(st.assistant_transcript))
+  win.edit_scroll_caret(st.assistant_output)
+  return st
+end function
+
+// Handle one assistant prompt through local read-only tooling.
+function _assistant_send(st)
+  st = _sync_active_tab(st)
+  prompt = s.trim(win.get_control_text(st.assistant_input))
+  if prompt == "" then return _show_assistant_panel(st) end if
+  win.set_window_text(st.assistant_input, "")
+  st = _assistant_append(st, "You", prompt)
+  if st.assistant_config.enabled == false then
+    st = _assistant_append(st, "Assistant", "AI provider calls are disabled. Open Configuration > AI Assistant Settings to enable the assistant. Local tool context is available through Assistant > Show Tool Context.")
+    return _show_assistant_panel(st)
+  end if
+  response = "Provider calls are not wired yet. Current local read-only tool context:\r\n\r\n" + _assistant_tool_context(st)
+  st = _assistant_append(st, "Assistant", response)
+  return _show_assistant_panel(st)
+end function
+
+// Show assistant tool context in the assistant panel.
+function _assistant_show_context(st)
+  st = _assistant_append(st, "Assistant", _assistant_tool_context(st))
+  return _show_assistant_panel(st)
 end function
 
 // Resolve result file.
@@ -1263,6 +1416,35 @@ function _load_build_extra_args(p)
   return _load_config_value(p, "extraArgs", "")
 end function
 
+// Load assistant provider.
+function _load_assistant_provider(p)
+  value = s.toLowerAscii(_load_config_value(p, "ai.provider", "openai"))
+  if value == "openai-compatible" or value == "compatible" then return "openai-compatible" end if
+  return "openai"
+end function
+
+// Load assistant base URL.
+function _load_assistant_base_url(p)
+  return _load_config_value(p, "ai.baseUrl", "https://api.openai.com/v1")
+end function
+
+// Load assistant API key environment variable name.
+function _load_assistant_api_key_env(p)
+  return _load_config_value(p, "ai.apiKeyEnv", "OPENAI_API_KEY")
+end function
+
+// Load assistant model.
+function _load_assistant_model(p)
+  return _load_config_value(p, "ai.model", "gpt-5.1")
+end function
+
+// Load assistant tool mode.
+function _load_assistant_tool_mode(p)
+  value = s.toLowerAscii(_load_config_value(p, "ai.toolMode", "read-only"))
+  if value == "confirm-writes" or value == "confirm" then return "confirm-writes" end if
+  return "read-only"
+end function
+
 // Load build configuration.
 function _load_build_config(st)
   profile = _load_build_profile(st.project)
@@ -1283,6 +1465,16 @@ function _load_build_config(st)
     st.build_subsystem = "windows"
   end if
   st.build_extra_args = _profile_config_value(st.project, profile, "extraArgs", st.build_extra_args)
+  st.assistant_config = AssistantConfig(
+    _load_config_bool(st.project, "ai.enabled", false),
+    _load_assistant_provider(st.project),
+    _load_assistant_base_url(st.project),
+    _load_assistant_api_key_env(st.project),
+    _load_assistant_model(st.project),
+    _load_assistant_tool_mode(st.project),
+    _load_config_bool(st.project, "ai.includeOpenTabs", true),
+    _load_config_bool(st.project, "ai.includeProjectFiles", true),
+    _load_config_bool(st.project, "ai.includeMiniLangHelp", true))
   return st
 end function
 
@@ -1298,6 +1490,16 @@ function _save_config(st)
   text = text + "maxErrors=" + st.build_max_errors + "\n"
   text = text + "subsystem=" + st.build_subsystem + "\n"
   text = text + "extraArgs=" + st.build_extra_args + "\n"
+  text = text + "\n# AI assistant options. Store secrets in environment variables, not here.\n"
+  text = text + "ai.enabled=" + st.assistant_config.enabled + "\n"
+  text = text + "ai.provider=" + st.assistant_config.provider + "\n"
+  text = text + "ai.baseUrl=" + st.assistant_config.base_url + "\n"
+  text = text + "ai.apiKeyEnv=" + st.assistant_config.api_key_env + "\n"
+  text = text + "ai.model=" + st.assistant_config.model + "\n"
+  text = text + "ai.toolMode=" + st.assistant_config.tool_mode + "\n"
+  text = text + "ai.includeOpenTabs=" + st.assistant_config.include_tabs + "\n"
+  text = text + "ai.includeProjectFiles=" + st.assistant_config.include_project + "\n"
+  text = text + "ai.includeMiniLangHelp=" + st.assistant_config.include_help + "\n"
   text = text + "\n# Optional profile overrides, for example:\n"
   text = text + "# debug.maxErrors=80\n"
   text = text + "# release.keepGoing=false\n"
@@ -1330,6 +1532,8 @@ function _apply_theme(st)
   win.set_control_dark_theme(st.tabbar, dark)
   win.set_control_dark_theme(st.result_list, dark)
   win.set_control_dark_theme(st.autocomplete_list, dark)
+  win.set_control_dark_theme(st.assistant_input, dark)
+  win.set_control_dark_theme(st.assistant_send, dark)
   win.tree_set_colors(st.tree, theme.panel_bg(st), theme.editor_fg(st), theme.border_color(st))
   win.edit_set_background(st.toolbar_bg, theme.chrome_bg(st))
   win.rich_set_all_color(st.toolbar_bg, theme.muted_fg(st))
@@ -1352,6 +1556,8 @@ function _apply_theme(st)
   win.rich_set_all_color(st.line_numbers, theme.muted_fg(st))
   win.edit_set_background(st.log, theme.panel_bg(st))
   win.rich_set_all_color(st.log, theme.editor_fg(st))
+  win.edit_set_background(st.assistant_output, theme.panel_bg(st))
+  win.rich_set_all_color(st.assistant_output, theme.editor_fg(st))
   win.edit_set_background(st.panel_title, theme.chrome_bg(st))
   win.rich_set_all_color(st.panel_title, theme.editor_fg(st))
   win.edit_set_background(st.status, theme.chrome_bg(st))
@@ -1402,6 +1608,8 @@ function _create_menus()
   win.AppendMenuWId(config_menu, win.MF_SEPARATOR, 0, "")
   win.AppendMenuWId(config_menu, win.MF_STRING, ID_CONFIG_THEME_DARK, "Theme: &Dark")
   win.AppendMenuWId(config_menu, win.MF_STRING, ID_CONFIG_THEME_LIGHT, "Theme: &Light")
+  win.AppendMenuWId(config_menu, win.MF_SEPARATOR, 0, "")
+  win.AppendMenuWId(config_menu, win.MF_STRING, ID_CONFIG_ASSISTANT_SETTINGS, "&AI Assistant Settings...")
   win.AppendMenuWId(config_menu, win.MF_SEPARATOR, 0, "")
   win.AppendMenuWId(config_menu, win.MF_STRING, ID_CONFIG_COMPILER_SELECT, "Select &Compiler...")
   win.AppendMenuWId(config_menu, win.MF_STRING, ID_CONFIG_COMPILER_RESET, "Reset Compiler to &Default")
@@ -1476,6 +1684,9 @@ function _create_menus()
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_FIND_REFERENCES, "Find &References\tShift+F12")
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_SEARCH_WORD, "Search &Word in Project")
   win.AppendMenuWId(nav_menu, win.MF_STRING, ID_NAV_PROBLEMS, "&Problems")
+  win.AppendMenuWId(nav_menu, win.MF_SEPARATOR, 0, "")
+  win.AppendMenuWId(nav_menu, win.MF_STRING, ID_ASSISTANT_PANEL, "&Assistant")
+  win.AppendMenuWId(nav_menu, win.MF_STRING, ID_ASSISTANT_CONTEXT, "Assistant Tool &Context")
 
   win.AppendMenuWId(help_menu, win.MF_STRING, ID_HELP_WELCOME, "&Home")
   win.AppendMenuWId(help_menu, win.MF_SEPARATOR, 0, "")
@@ -2579,8 +2790,14 @@ function _show_config(st)
   msg = msg + "Max errors: " + st.build_max_errors + "\n"
   msg = msg + "Subsystem: " + st.build_subsystem + "\n"
   msg = msg + "Extra args: " + st.build_extra_args + "\n\n"
+  msg = msg + "AI assistant: " + st.assistant_config.enabled + "\n"
+  msg = msg + "AI provider: " + st.assistant_config.provider + "\n"
+  msg = msg + "AI base URL: " + st.assistant_config.base_url + "\n"
+  msg = msg + "AI API key env: " + st.assistant_config.api_key_env + "\n"
+  msg = msg + "AI model: " + st.assistant_config.model + "\n"
+  msg = msg + "AI tool mode: " + st.assistant_config.tool_mode + "\n\n"
   msg = msg + "Edit .miniide.cfg for advanced options:\n"
-  msg = msg + "compiler, profile, theme, keepGoing, maxErrors, subsystem, extraArgs"
+  msg = msg + "compiler, profile, theme, keepGoing, maxErrors, subsystem, extraArgs, ai.*"
   win.MessageBoxW(st.hwnd, msg, "MiniIDE configuration", 0)
   return st
 end function
@@ -2626,6 +2843,166 @@ end function
 function _refresh_settings_buttons(keep_btn, subsystem_btn, keep_going, subsystem)
   win.set_window_text(keep_btn, "Keep-going: " + _on_off(keep_going))
   win.set_window_text(subsystem_btn, "Subsystem: " + subsystem)
+end function
+
+// Refresh assistant settings toggle buttons.
+function _refresh_assistant_settings_buttons(enabled_btn, tabs_btn, project_btn, help_btn, enabled, include_tabs, include_project, include_help)
+  win.set_window_text(enabled_btn, "Assistant: " + _on_off(enabled))
+  win.set_window_text(tabs_btn, "Open tabs: " + _on_off(include_tabs))
+  win.set_window_text(project_btn, "Project files: " + _on_off(include_project))
+  win.set_window_text(help_btn, "MiniLang help: " + _on_off(include_help))
+end function
+
+// Normalize assistant provider.
+function _normalize_assistant_provider(value)
+  value = s.toLowerAscii(s.trim(value))
+  if value == "openai-compatible" or value == "compatible" then return "openai-compatible" end if
+  return "openai"
+end function
+
+// Normalize assistant tool mode.
+function _normalize_assistant_tool_mode(value)
+  value = s.toLowerAscii(s.trim(value))
+  if value == "confirm-writes" or value == "confirm" then return "confirm-writes" end if
+  return "read-only"
+end function
+
+// Read assistant settings from controls.
+function _read_assistant_dialog_config(provider_edit, base_url_edit, key_env_edit, model_edit, tool_mode_edit, enabled, include_tabs, include_project, include_help)
+  return AssistantConfig(
+    enabled,
+    _normalize_assistant_provider(win.get_control_text(provider_edit)),
+    s.trim(win.get_control_text(base_url_edit)),
+    s.trim(win.get_control_text(key_env_edit)),
+    s.trim(win.get_control_text(model_edit)),
+    _normalize_assistant_tool_mode(win.get_control_text(tool_mode_edit)),
+    include_tabs,
+    include_project,
+    include_help)
+end function
+
+// Open assistant settings window.
+function _open_assistant_settings_window(st)
+  dlg = win.create_main_window("AI Assistant Settings", 760, 430)
+  if dlg is void then return _set_log(st, "AI Assistant Settings could not be opened.") end if
+
+  _settings_label(dlg, st.font_ui, "Provider", 20, 26, 140, 24)
+  provider_edit = _settings_edit_id(dlg, st.font_ui, st.assistant_config.provider, 180, 22, 520, 26, ID_AI_PROVIDER_EDIT)
+  _settings_label(dlg, st.font_ui, "Use openai or openai-compatible.", 180, 50, 520, 22)
+
+  _settings_label(dlg, st.font_ui, "Base URL", 20, 86, 140, 24)
+  base_url_edit = _settings_edit_id(dlg, st.font_ui, st.assistant_config.base_url, 180, 82, 520, 26, ID_AI_BASE_URL_EDIT)
+
+  _settings_label(dlg, st.font_ui, "API key env", 20, 126, 140, 24)
+  key_env_edit = _settings_edit_id(dlg, st.font_ui, st.assistant_config.api_key_env, 180, 122, 220, 26, ID_AI_KEY_ENV_EDIT)
+  _settings_label(dlg, st.font_ui, "MiniIDE stores the environment variable name, not the key.", 414, 126, 286, 24)
+
+  _settings_label(dlg, st.font_ui, "Model", 20, 166, 140, 24)
+  model_edit = _settings_edit_id(dlg, st.font_ui, st.assistant_config.model, 180, 162, 220, 26, ID_AI_MODEL_EDIT)
+
+  _settings_label(dlg, st.font_ui, "Tool mode", 20, 206, 140, 24)
+  tool_mode_edit = _settings_edit_id(dlg, st.font_ui, st.assistant_config.tool_mode, 180, 202, 220, 26, ID_AI_TOOL_MODE_EDIT)
+  _settings_label(dlg, st.font_ui, "read-only now; confirm-writes is reserved for patch preview.", 414, 206, 286, 24)
+
+  enabled = st.assistant_config.enabled
+  include_tabs = st.assistant_config.include_tabs
+  include_project = st.assistant_config.include_project
+  include_help = st.assistant_config.include_help
+  enabled_btn = _settings_button(dlg, st.font_ui, "", 180, 256, 150, 28, ID_AI_ENABLED)
+  tabs_btn = _settings_button(dlg, st.font_ui, "", 342, 256, 150, 28, ID_AI_INCLUDE_TABS)
+  project_btn = _settings_button(dlg, st.font_ui, "", 504, 256, 150, 28, ID_AI_INCLUDE_PROJECT)
+  help_btn = _settings_button(dlg, st.font_ui, "", 180, 296, 150, 28, ID_AI_INCLUDE_HELP)
+  _refresh_assistant_settings_buttons(enabled_btn, tabs_btn, project_btn, help_btn, enabled, include_tabs, include_project, include_help)
+
+  ok_btn = _settings_button(dlg, st.font_ui, "OK", 500, 360, 92, 30, ID_AI_SETTINGS_OK)
+  cancel_btn = _settings_button(dlg, st.font_ui, "Cancel", 604, 360, 100, 30, ID_AI_SETTINGS_CANCEL)
+
+  done = false
+  while done == false and win.IsWindow(dlg)
+    msg = bytes(48, 0)
+    while win.PeekMessageW(msg, void, 0, 0, win.PM_REMOVE)
+      code = win.msg_message(msg)
+      hwnd = win.msg_hwnd(msg)
+      handled = false
+
+      if code == win.WM_QUIT then
+        st.running = false
+        done = true
+        handled = true
+      else if code == win.WM_CLOSE and hwnd == dlg then
+        done = true
+        win.DestroyWindow(dlg)
+        handled = true
+      else if code == win.WM_CLOSE and hwnd == st.hwnd then
+        st = _request_exit(st)
+        done = true
+        if win.IsWindow(dlg) then win.DestroyWindow(dlg) end if
+        handled = true
+      else if (code == win.WM_DESTROY or code == win.WM_NCDESTROY) and hwnd == dlg then
+        done = true
+        handled = true
+      else if code == win.WM_KEYDOWN then
+        key = win.msg_wparam_u32(msg)
+        if key == win.VK_ESCAPE then
+          done = true
+          win.DestroyWindow(dlg)
+          handled = true
+        else if key == win.VK_RETURN then
+          st.assistant_config = _read_assistant_dialog_config(provider_edit, base_url_edit, key_env_edit, model_edit, tool_mode_edit, enabled, include_tabs, include_project, include_help)
+          st = _save_config(st)
+          done = true
+          win.DestroyWindow(dlg)
+          handled = true
+        end if
+      else if code == win.WM_COMMAND and hwnd == dlg then
+        cid = win.msg_command_id(msg)
+        if cid == ID_AI_ENABLED then enabled = enabled == false end if
+        if cid == ID_AI_INCLUDE_TABS then include_tabs = include_tabs == false end if
+        if cid == ID_AI_INCLUDE_PROJECT then include_project = include_project == false end if
+        if cid == ID_AI_INCLUDE_HELP then include_help = include_help == false end if
+        if cid == ID_AI_ENABLED or cid == ID_AI_INCLUDE_TABS or cid == ID_AI_INCLUDE_PROJECT or cid == ID_AI_INCLUDE_HELP then
+          _refresh_assistant_settings_buttons(enabled_btn, tabs_btn, project_btn, help_btn, enabled, include_tabs, include_project, include_help)
+          handled = true
+        else if cid == ID_AI_SETTINGS_CANCEL then
+          done = true
+          win.DestroyWindow(dlg)
+          handled = true
+        else if cid == ID_AI_SETTINGS_OK then
+          st.assistant_config = _read_assistant_dialog_config(provider_edit, base_url_edit, key_env_edit, model_edit, tool_mode_edit, enabled, include_tabs, include_project, include_help)
+          st = _save_config(st)
+          done = true
+          win.DestroyWindow(dlg)
+          handled = true
+        end if
+      else if code == win.WM_LBUTTONUP then
+        if hwnd == enabled_btn then enabled = enabled == false end if
+        if hwnd == tabs_btn then include_tabs = include_tabs == false end if
+        if hwnd == project_btn then include_project = include_project == false end if
+        if hwnd == help_btn then include_help = include_help == false end if
+        if hwnd == enabled_btn or hwnd == tabs_btn or hwnd == project_btn or hwnd == help_btn then
+          _refresh_assistant_settings_buttons(enabled_btn, tabs_btn, project_btn, help_btn, enabled, include_tabs, include_project, include_help)
+          handled = true
+        else if hwnd == cancel_btn then
+          done = true
+          win.DestroyWindow(dlg)
+          handled = true
+        else if hwnd == ok_btn then
+          st.assistant_config = _read_assistant_dialog_config(provider_edit, base_url_edit, key_env_edit, model_edit, tool_mode_edit, enabled, include_tabs, include_project, include_help)
+          st = _save_config(st)
+          done = true
+          win.DestroyWindow(dlg)
+          handled = true
+        end if
+      end if
+
+      if handled == false then
+        win.TranslateMessage(msg)
+        win.DispatchMessageW(msg)
+      end if
+    end while
+    win.Sleep(10)
+  end while
+  return st
 end function
 
 // Return the project relative path.
@@ -3240,10 +3617,10 @@ function _command_palette_ids()
     ID_FILE_CLEAN, ID_FILE_BUILD, ID_FILE_REBUILD, ID_FILE_RUN, ID_FILE_STOP, ID_FILE_TEST, ID_FILE_TEST_CURRENT, ID_FILE_TEST_RELATED,
     ID_EDIT_UNDO, ID_EDIT_REDO, ID_EDIT_CUT, ID_EDIT_COPY, ID_EDIT_PASTE, ID_EDIT_FIND, ID_EDIT_FIND_NEXT, ID_EDIT_SELECT_ALL, ID_EDIT_RENAME_SYMBOL, ID_EDIT_COMPLETE, ID_EDIT_FORMAT,
     ID_NAV_BACK, ID_NAV_FORWARD, ID_NAV_TOGGLE_BOOKMARK, ID_NAV_BOOKMARKS, ID_NAV_NEXT_BOOKMARK, ID_NAV_PREV_BOOKMARK, ID_NAV_REVEAL_ACTIVE_FILE, ID_NAV_OUTLINE, ID_NAV_FILE_STRUCTURE, ID_NAV_WORKSPACE_HEALTH, ID_NAV_TODOS, ID_NAV_TEST_EXPLORER, ID_NAV_RELATED_TESTS, ID_NAV_IMPORT_GRAPH, ID_NAV_CALL_HIERARCHY, ID_NAV_SYMBOL_INFO, ID_NAV_CODE_INSPECTIONS, ID_NAV_PROJECT_INDEX, ID_NAV_PROJECT_SYMBOLS, ID_NAV_GOTO_SYMBOL,
-    ID_NAV_GOTO_LINE, ID_NAV_GOTO_DEFINITION, ID_NAV_FIND_REFERENCES, ID_NAV_SEARCH_WORD, ID_NAV_PROBLEMS,
+    ID_NAV_GOTO_LINE, ID_NAV_GOTO_DEFINITION, ID_NAV_FIND_REFERENCES, ID_NAV_SEARCH_WORD, ID_NAV_PROBLEMS, ID_ASSISTANT_PANEL, ID_ASSISTANT_CONTEXT,
     ID_CONFIG_COMPILE_SETTINGS, ID_CONFIG_PROFILE_DEBUG, ID_CONFIG_PROFILE_RELEASE,
     ID_CONFIG_THEME_DARK, ID_CONFIG_THEME_LIGHT, ID_CONFIG_COMPILER_SELECT, ID_CONFIG_COMPILER_RESET,
-    ID_CONFIG_TOGGLE_KEEP_GOING, ID_CONFIG_TOGGLE_MAX_ERRORS, ID_CONFIG_TOGGLE_SUBSYSTEM, ID_CONFIG_RELOAD, ID_CONFIG_SHOW,
+    ID_CONFIG_TOGGLE_KEEP_GOING, ID_CONFIG_TOGGLE_MAX_ERRORS, ID_CONFIG_TOGGLE_SUBSYSTEM, ID_CONFIG_RELOAD, ID_CONFIG_ASSISTANT_SETTINGS, ID_CONFIG_SHOW,
     ID_HELP_WELCOME, ID_HELP_LANGUAGE, ID_HELP_LANGUAGE_SEARCH, ID_HELP_ABOUT,
   ]
 end function
@@ -4984,6 +5361,16 @@ function _create_state(root)
   build_extra_args = _load_build_extra_args(p)
   build_profile = _load_build_profile(p)
   theme_mode = _load_theme_mode(p)
+  assistant_enabled = _load_config_bool(p, "ai.enabled", false)
+  assistant_provider = _load_assistant_provider(p)
+  assistant_base_url = _load_assistant_base_url(p)
+  assistant_api_key_env = _load_assistant_api_key_env(p)
+  assistant_model = _load_assistant_model(p)
+  assistant_tool_mode = _load_assistant_tool_mode(p)
+  assistant_include_tabs = _load_config_bool(p, "ai.includeOpenTabs", true)
+  assistant_include_project = _load_config_bool(p, "ai.includeProjectFiles", true)
+  assistant_include_help = _load_config_bool(p, "ai.includeMiniLangHelp", true)
+  assistant_config = AssistantConfig(assistant_enabled, assistant_provider, assistant_base_url, assistant_api_key_env, assistant_model, assistant_tool_mode, assistant_include_tabs, assistant_include_project, assistant_include_help)
   win.init_common_controls()
   hwnd = win.create_main_window("MiniIDE", 1180, 760)
   menus = _create_menus()
@@ -5004,9 +5391,16 @@ function _create_state(root)
   panel_title = win.create_child(hwnd, "RICHEDIT50W", "Results", 0, win.ES_READONLY, 0, 0, 100, 24)
   result_style = win.WS_TABSTOP | win.WS_VSCROLL | win.LBS_NOTIFY | win.LBS_HASSTRINGS | win.LBS_NOINTEGRALHEIGHT
   result_list = win.create_child_id(hwnd, "LISTBOX", "", 0, result_style, 0, 0, 100, 100, ID_RESULT_LIST)
+  assistant_output = _create_log(hwnd, font_code)
+  assistant_input_style = win.WS_TABSTOP | win.ES_AUTOHSCROLL
+  assistant_input = win.create_child_id(hwnd, "EDIT", "", win.WS_EX_CLIENTEDGE, assistant_input_style, 0, 0, 100, 24, ID_ASSISTANT_PANEL)
+  assistant_send = win.create_child_id(hwnd, "BUTTON", "Send", 0, win.WS_TABSTOP | win.BS_PUSHBUTTON, 0, 0, 72, 24, ID_ASSISTANT_SEND)
   autocomplete_list = win.create_child_id(hwnd, "LISTBOX", "", 0, result_style, 0, 0, 240, 140, ID_AUTOCOMPLETE_LIST)
   win.ShowWindow(panel_title, win.SW_HIDE)
   win.ShowWindow(result_list, win.SW_HIDE)
+  win.ShowWindow(assistant_output, win.SW_HIDE)
+  win.ShowWindow(assistant_input, win.SW_HIDE)
+  win.ShowWindow(assistant_send, win.SW_HIDE)
   win.ShowWindow(autocomplete_list, win.SW_HIDE)
   status = win.create_child(hwnd, "RICHEDIT50W", "Line 1, Column 1", 0, win.ES_READONLY, 0, 0, 200, STATUS_H)
   btn_open = _create_toolbar_button(hwnd, font_ui, "          Project", ID_FILE_OPEN_PROJECT)
@@ -5039,6 +5433,9 @@ function _create_state(root)
   win.set_control_font(tabbar, font_ui)
   win.set_control_font(panel_title, font_ui)
   win.set_control_font(result_list, font_ui)
+  win.set_control_font(assistant_output, font_code)
+  win.set_control_font(assistant_input, font_ui)
+  win.set_control_font(assistant_send, font_ui)
   win.set_control_font(autocomplete_list, font_ui)
   win.set_control_font(status, font_ui)
   win.set_control_font(btn_open, font_ui)
@@ -5051,7 +5448,7 @@ function _create_state(root)
   win.set_control_font(btn_copy, font_ui)
   win.set_control_font(btn_paste, font_ui)
 
-  st = AppState(hwnd, menus[0], menus[1], menus[2], menus[3], menus[4], menus[5], toolbar_bg, tree_images, tree, tabbar, line_numbers, editor, editor, log, panel_title, result_list, autocomplete_list, status, btn_open, btn_save, btn_build, btn_run, btn_test, btn_reload, btn_cut, btn_copy, btn_paste, toolbar_icons, font_ui, font_code, p, compiler_path, build_keep_going, build_max_errors, build_subsystem, build_extra_args, build_profile, theme_mode, [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], -1, "", -1, [], [], [], 0, 0, "", "", -1, 0, 0, false, "", 0, "", -1, 0, false, 0, 0, array(256, 0), false, false, -1, "", 0, "", "log", [], [], [], [], "", void, "", false, "", 0, "", "", 0, true)
+  st = AppState(hwnd, menus[0], menus[1], menus[2], menus[3], menus[4], menus[5], toolbar_bg, tree_images, tree, tabbar, line_numbers, editor, editor, log, panel_title, result_list, autocomplete_list, assistant_output, assistant_input, assistant_send, status, btn_open, btn_save, btn_build, btn_run, btn_test, btn_reload, btn_cut, btn_copy, btn_paste, toolbar_icons, font_ui, font_code, p, compiler_path, build_keep_going, build_max_errors, build_subsystem, build_extra_args, build_profile, theme_mode, assistant_config, "", [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], -1, "", -1, [], [], [], 0, 0, "", "", -1, 0, 0, false, "", 0, "", -1, 0, false, 0, 0, array(256, 0), false, false, -1, "", 0, "", "log", [], [], [], [], "", void, "", false, "", 0, "", "", 0, true)
   st = _load_build_config(st)
   st = _populate_project_tree(st)
   st = _open_file(st, _entry_file(p))
@@ -5167,6 +5564,9 @@ function _layout(st)
   win.MoveWindow(st.log, STATUS_PAD, log_y, w - STATUS_PAD * 2, panel_h, true)
   win.MoveWindow(st.panel_title, STATUS_PAD, log_y, w - STATUS_PAD * 2, 24, true)
   win.MoveWindow(st.result_list, STATUS_PAD, log_y + 24, w - STATUS_PAD * 2, panel_h - 24, true)
+  win.MoveWindow(st.assistant_output, STATUS_PAD, log_y + 24, w - STATUS_PAD * 2, panel_h - 58, true)
+  win.MoveWindow(st.assistant_input, STATUS_PAD, log_y + panel_h - 28, w - STATUS_PAD * 2 - 84, 26, true)
+  win.MoveWindow(st.assistant_send, w - STATUS_PAD - 76, log_y + panel_h - 28, 76, 26, true)
   win.MoveWindow(st.status, STATUS_PAD, log_y + LOG_H - STATUS_PAD - STATUS_H, w - STATUS_PAD * 2, STATUS_H, true)
   return st
 end function
@@ -6315,6 +6715,8 @@ function _perform_command(st, id)
   if id == ID_NAV_FIND_REFERENCES then return _find_references(st) end if
   if id == ID_NAV_SEARCH_WORD then return _search_current_word(st) end if
   if id == ID_NAV_PROBLEMS then return _show_problems(st) end if
+  if id == ID_ASSISTANT_PANEL then return _show_assistant_panel(st) end if
+  if id == ID_ASSISTANT_CONTEXT then return _assistant_show_context(st) end if
   if id == ID_CTX_EDITOR_SELECT_ALL then return _edit_select_all(st) end if
   if id == ID_CTX_TAB_CLOSE then return _close_tab(st, st.context_tab) end if
   if id == ID_CTX_TAB_CLOSE_OTHERS then return _close_other_tabs(st) end if
@@ -6338,6 +6740,7 @@ function _perform_command(st, id)
   if id == ID_CONFIG_COMPILER_SELECT then return _select_compiler(st) end if
   if id == ID_CONFIG_COMPILER_RESET then return _reset_compiler(st) end if
   if id == ID_CONFIG_RELOAD then return _reload_config(st) end if
+  if id == ID_CONFIG_ASSISTANT_SETTINGS then return _open_assistant_settings_window(st) end if
   if id == ID_CONFIG_TOGGLE_KEEP_GOING then return _toggle_keep_going(st) end if
   if id == ID_CONFIG_TOGGLE_MAX_ERRORS then return _toggle_max_errors(st) end if
   if id == ID_CONFIG_TOGGLE_SUBSYSTEM then return _toggle_subsystem(st) end if
@@ -6387,6 +6790,7 @@ end function
 // Handle command.
 function _handle_command(st, msg)
   id = win.msg_command_id(msg)
+  if id == ID_ASSISTANT_SEND and win.msg_command_notify(msg) == 0 then return _assistant_send(st) end if
   if id == ID_RESULT_LIST and st.result_mode == "problems" and win.msg_command_notify(msg) == win.LBN_SELCHANGE then
     return _open_result_selection(st)
   end if
@@ -6753,6 +7157,9 @@ function _pump_messages(st)
         st = _hide_autocomplete(st)
         win.SetFocus(st.editor)
         handled = true
+      else if win.msg_hwnd(msg) == st.assistant_input and key == win.VK_RETURN then
+        st = _assistant_send(st)
+        handled = true
       else
         if win.msg_hwnd(msg) == st.editor and (key == win.VK_BACK or key == win.VK_DELETE) then
           st = _record_edit_activity(st)
@@ -6788,6 +7195,9 @@ function _pump_messages(st)
           handled = true
         else if win.msg_hwnd(msg) == st.result_list and st.result_mode == "problems" then
           st = _open_result_selection(st)
+          handled = true
+        else if win.msg_hwnd(msg) == st.assistant_send then
+          st = _assistant_send(st)
           handled = true
         else if win.msg_hwnd(msg) == st.hwnd then
           st = _handle_left_click(st, win.msg_lparam_x(msg), win.msg_lparam_y(msg))

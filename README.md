@@ -34,6 +34,8 @@ Win32 APIs and RichEdit.
   clickable Problems/results panel.
 - Lightweight active-file live diagnostics summary in the status bar after
   editor idle.
+- Bottom Assistant panel with project-aware read-only tool context and
+  OpenAI/OpenAI-compatible provider settings.
 - Project-wide symbol outline and search.
 - Go to line and go to definition.
 - Find, find-next, and basic completion.
@@ -274,6 +276,25 @@ release.extraArgs=--trace-calls
 `Configuration > Show Configuration` displays the effective compiler, entry
 file, output file, import paths, and build options. `extraArgs` is appended to
 the compiler command for advanced flags such as heap or tracing options.
+
+Use `Configuration > AI Assistant Settings...` to configure the optional coding
+assistant. The first assistant slice is local and read-only: it can show the
+active file, open tabs, indexed project files, and MiniLang help availability in
+the Assistant panel. Provider calls are prepared for OpenAI and
+OpenAI-compatible endpoints, but keys are referenced through an environment
+variable name such as `OPENAI_API_KEY`; MiniIDE does not store the secret itself.
+
+```ini
+ai.enabled=false
+ai.provider=openai
+ai.baseUrl=https://api.openai.com/v1
+ai.apiKeyEnv=OPENAI_API_KEY
+ai.model=gpt-5.1
+ai.toolMode=read-only
+ai.includeOpenTabs=true
+ai.includeProjectFiles=true
+ai.includeMiniLangHelp=true
+```
 
 ## Main Commands
 
