@@ -285,6 +285,7 @@ function Test-StaticWiring {
   Assert-True ($service.Contains('"Info: " + info_count')) "Workspace health must report info count."
   Assert-True ($main.Contains("_show_todos")) "TODO renderer is missing."
   Assert-True ($main.Contains("lang_service.todo_items")) "TODO renderer must use the language service facade."
+  Assert-True ($main.Contains('"TODOs (" + todo_count + " TODO, " + fixme_count + " FIXME)"')) "TODO renderer title must summarize TODO and FIXME counts."
   Assert-True ($main.Contains("_show_test_explorer")) "Test Explorer renderer is missing."
   Assert-True ($main.Contains("lang_service.test_items")) "Test Explorer must use the language service facade."
   Assert-True ($main.Contains("_show_related_tests")) "Related Tests renderer is missing."

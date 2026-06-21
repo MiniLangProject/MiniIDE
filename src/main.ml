@@ -3777,16 +3777,20 @@ function _show_todos(st)
   files = []
   lines_out = []
   cols = []
+  todo_count = 0
+  fixme_count = 0
   for i = 0 to len(items) - 1
     item = items[i]
     if typeof(item) != "struct" then continue end if
+    if item.kind == "TODO" then todo_count = todo_count + 1 end if
+    if item.kind == "FIXME" then fixme_count = fixme_count + 1 end if
     rows = rows + [item.kind + "  " + _project_relative_path(st, item.file) + ":" + item.line + "  " + item.text]
     files = files + [item.file]
     lines_out = lines_out + [item.line]
     cols = cols + [1]
   end for
 
-  title = "TODOs"
+  title = "TODOs (" + todo_count + " TODO, " + fixme_count + " FIXME)"
   if len(items) >= 300 then title = title + " (first 300)" end if
   return _show_result_panel(st, "todos", title, rows, files, lines_out, cols)
 end function

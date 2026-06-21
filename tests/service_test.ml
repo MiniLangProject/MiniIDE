@@ -239,7 +239,8 @@ function _create_fixture(root)
     "  return 2\n" +
     "end function\n" +
     "const duplicateSetting = 1\n" +
-    "// TODO: revisit model lifecycle\n")
+    "// TODO: revisit model lifecycle\n" +
+    "// FIXME: tighten error handling\n")
 
   fs.writeAllText(project.path_join(root, "src\\util.ml"),
     "function helper_util()\n" +
@@ -383,6 +384,7 @@ function main(args)
 
   todos = service.todo_items(snapshot, 20)
   if _assert_true("TODO explorer finds project task", _has_todo(todos, "TODO", "revisit model lifecycle")) == false then ok = false end if
+  if _assert_true("TODO explorer finds fixme task", _has_todo(todos, "FIXME", "tighten error handling")) == false then ok = false end if
 
   tests = service.test_items(snapshot, 20)
   if _assert_true("test explorer includes configured entry", _has_test_item(tests, "Test Entry", "entry", "configured")) == false then ok = false end if
