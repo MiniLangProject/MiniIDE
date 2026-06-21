@@ -322,10 +322,11 @@ function main(args)
   diagnostics = service.diagnostics(snapshot)
   if _assert_true("project diagnostics include unresolved imports", _has_diagnostic(diagnostics, "Unresolved import: missing\\nope.ml")) == false then ok = false end if
   broken_project = project.with_compile_settings(p, "src\\missing_entry.ml", p.output)
-  broken_project = project.with_run_settings(broken_project, "tests\\missing_test.ml", p.run_args, p.working_dir)
+  broken_project = project.with_run_settings(broken_project, "tests\\missing_test.ml", p.run_args, "missing_workdir")
   broken_diagnostics = service.diagnostics(service.analyze_project(broken_project))
   if _assert_true("project diagnostics include missing entry", _has_diagnostic(broken_diagnostics, "Project entry not found: src\\missing_entry.ml")) == false then ok = false end if
   if _assert_true("project diagnostics include missing test entry", _has_diagnostic(broken_diagnostics, "Project test entry not found: tests\\missing_test.ml")) == false then ok = false end if
+  if _assert_true("project diagnostics include missing working directory", _has_diagnostic(broken_diagnostics, "Working directory not found: missing_workdir")) == false then ok = false end if
   fs.writeAllText(project.path_join(root, "BrokenImportPath.mlproj"),
     "name=BrokenImportPath\n" +
     "type=console\n" +

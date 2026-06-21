@@ -254,6 +254,7 @@ function Test-StaticWiring {
   Assert-True ($main.Contains("lang_service.diagnostics")) "Problems must include language service diagnostics."
   Assert-True ($service.Contains("Project entry not found")) "Language service diagnostics must report missing project entry files."
   Assert-True ($service.Contains("Project test entry not found")) "Language service diagnostics must report missing test entry files."
+  Assert-True ($service.Contains("Working directory not found")) "Language service diagnostics must report missing working directories."
   Assert-True ($service.Contains("Import path not found")) "Language service diagnostics must report missing import paths."
   Assert-True ($service.Contains("Duplicate import alias")) "Language service diagnostics must report duplicate import aliases."
   Assert-True ($main.Contains("ID_RESULT_LIST")) "Clickable result panel is missing."

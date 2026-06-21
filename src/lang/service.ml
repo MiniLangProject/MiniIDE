@@ -443,6 +443,10 @@ function diagnostics(snapshot)
     if typeof(project.test_entry) == "string" and project.test_entry != "" and fs.exists(test_entry_path) == false then
       items = items + [DiagnosticItem("warning", "Project test entry not found: " + project.test_entry, test_entry_path, 1, 1)]
     end if
+    working_dir_path = _join_path(project.root, project.working_dir)
+    if typeof(project.working_dir) == "string" and project.working_dir != "" and fs.exists(working_dir_path) == false then
+      items = items + [DiagnosticItem("warning", "Working directory not found: " + project.working_dir, working_dir_path, 1, 1)]
+    end if
     if typeof(project.import_paths) == "array" and len(project.import_paths) > 0 then
       for ip = 0 to len(project.import_paths) - 1
         import_path = project.import_paths[ip]
