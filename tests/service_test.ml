@@ -243,6 +243,11 @@ function _create_fixture(root)
     "  return 0\n" +
     "end function\n")
 
+  fs.writeAllText(project.path_join(root, "tests\\util_test.ml"),
+    "function test_helper_util()\n" +
+    "  return 0\n" +
+    "end function\n")
+
   return root
 end function
 
@@ -341,7 +346,7 @@ function main(args)
   if _assert_true("code inspections skip used import alias", _has_inspection(inspections, "Unused import alias: util") == false) == false then ok = false end if
 
   health = service.workspace_health_lines(snapshot)
-  if _assert_true("workspace health counts files", _has_health_line(health, "Files: 3")) == false then ok = false end if
+  if _assert_true("workspace health counts files", _has_health_line(health, "Files: 4")) == false then ok = false end if
   if _assert_true("workspace health counts imports", _has_health_line(health, "Imports: 3")) == false then ok = false end if
   if _assert_true("workspace health counts unresolved imports", _has_health_line(health, "Unresolved imports: 1")) == false then ok = false end if
   if _assert_true("workspace health counts diagnostics", _has_health_line(health, "Diagnostics: 1")) == false then ok = false end if
@@ -358,6 +363,11 @@ function main(args)
   if _assert_true("related tests include importing test function", _has_test_item(related_tests, "test_model_lifecycle", "function", "related")) == false then ok = false end if
   related_file = service.related_test_file(snapshot, project.path_join(p.root, "src\\main.ml"))
   if _assert_true("related test file picks importing test file", related_file == project.path_join(p.root, "tests\\main_test.ml")) == false then ok = false end if
+  convention_tests = service.related_test_items(snapshot, project.path_join(p.root, "src\\util.ml"), 20)
+  if _assert_true("related tests include convention test file", _has_test_item(convention_tests, project.path_join(p.root, "tests\\util_test.ml"), "file", "related")) == false then ok = false end if
+  if _assert_true("related tests include convention test function", _has_test_item(convention_tests, "test_helper_util", "function", "related")) == false then ok = false end if
+  convention_file = service.related_test_file(snapshot, project.path_join(p.root, "src\\util.ml"))
+  if _assert_true("related test file picks convention test file", convention_file == project.path_join(p.root, "tests\\util_test.ml")) == false then ok = false end if
 
   invalid_apply = service.apply_rename(snapshot, "modelValue", "bad-name", 20)
   if _assert_true("apply rename rejects invalid new name", typeof(invalid_apply) == "struct" and invalid_apply.ok == false) == false then ok = false end if

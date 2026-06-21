@@ -269,6 +269,8 @@ function Test-StaticWiring {
   Assert-True ($main.Contains("_show_related_tests")) "Related Tests renderer is missing."
   Assert-True ($main.Contains("lang_service.related_test_items")) "Related Tests must use the language service facade."
   Assert-True ($service.Contains("related_test_file")) "Language service related test file picker is missing."
+  Assert-True ($service.Contains("_file_stem")) "Language service related tests must support naming-convention matching."
+  Assert-True ($service.Contains('current_stem + "_test"')) "Related Tests must match foo.ml to foo_test.ml."
   Assert-True ($main.Contains("_show_import_graph")) "Import Graph renderer is missing."
   Assert-True ($main.Contains("lang_service.import_items")) "Import Graph must use the language service facade."
   Assert-True ($main.Contains("_show_call_hierarchy")) "Call Hierarchy renderer is missing."

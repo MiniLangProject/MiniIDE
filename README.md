@@ -329,6 +329,8 @@ Navigation menu:
 - `Go to Definition` / `F12`: jump to a matching project symbol.
 - `Find References` / `Shift+F12`: list project references for the current
   symbol.
+- `Related Tests`: find tests that import the active source file or match the
+  `foo.ml` to `foo_test.ml` / `test_foo.ml` naming convention.
 - `Search Word in Project`: search the current word across project `.ml` files.
 - `Problems`: show diagnostics from project analysis, missing configured entry
   files, missing import paths, and the last build log.

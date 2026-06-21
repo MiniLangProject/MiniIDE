@@ -531,6 +531,28 @@ function _join_path(root, path)
   return root + "\\" + path
 end function
 
+// Return a lower-case file stem without extension.
+function _file_stem(path)
+  if typeof(path) != "string" or path == "" then return "" end if
+  start = 0
+  i = len(path) - 1
+  while i >= 0
+    ch = path[i]
+    if ch == "\\" or ch == "/" then
+      start = i + 1
+      break
+    end if
+    i = i - 1
+  end while
+  name = s.substr(path, start, len(path) - start)
+  dot = len(name) - 1
+  while dot >= 0
+    if name[dot] == "." then return s.toLowerAscii(s.substr(name, 0, dot)) end if
+    dot = dot - 1
+  end while
+  return s.toLowerAscii(name)
+end function
+
 // Return true when a test item is already present.
 function _has_test_item(items, name, file, line)
   if typeof(items) != "array" then return false end if
@@ -608,6 +630,7 @@ function related_test_items(snapshot, current_file, limit)
   if typeof(idx) != "struct" then return items end if
 
   current_key = s.toLowerAscii(current_file)
+  current_stem = _file_stem(current_file)
   if typeof(idx.imports) == "array" then
     for ii = 0 to len(idx.imports) - 1
       imp = idx.imports[ii]
@@ -616,6 +639,18 @@ function related_test_items(snapshot, current_file, limit)
       if s.toLowerAscii(imp.resolved_path) != current_key then continue end if
       if _is_test_path(imp.file) == false then continue end if
       items = _add_test_item(items, imp.file, "file", imp.file, 1, "related")
+    end for
+  end if
+
+  if current_stem != "" and typeof(idx.files) == "array" then
+    for fi = 0 to len(idx.files) - 1
+      file_info = idx.files[fi]
+      if typeof(file_info) != "struct" then continue end if
+      if _is_test_path(file_info.path) == false then continue end if
+      test_stem = _file_stem(file_info.path)
+      if test_stem != current_stem + "_test" and test_stem != "test_" + current_stem then continue end if
+      items = _add_test_item(items, file_info.path, "file", file_info.path, 1, "related")
+      if len(items) >= limit then return items end if
     end for
   end if
 
