@@ -56,12 +56,14 @@ function main(args)
   definition_idx = _index_of(labels, "Navigation: Go to Definition")
   keep_idx = _index_of(labels, "Configuration: Toggle Keep-going")
   max_errors_idx = _index_of(labels, "Configuration: Toggle Max Errors")
+  subsystem_idx = _index_of(labels, "Configuration: Toggle Subsystem")
   output_idx = _index_of(labels, "Output: Clear")
   if _assert_true("quick open label exists", quick_idx >= 0) == false then ok = false end if
   if _assert_true("current test label exists", current_test_idx >= 0) == false then ok = false end if
   if _assert_true("definition label exists", definition_idx >= 0) == false then ok = false end if
   if _assert_true("keep-going label exists", keep_idx >= 0) == false then ok = false end if
   if _assert_true("max errors label exists", max_errors_idx >= 0) == false then ok = false end if
+  if _assert_true("subsystem label exists", subsystem_idx >= 0) == false then ok = false end if
   if _assert_true("output clear label exists", output_idx >= 0) == false then ok = false end if
 
   if keep_idx >= 0 then
@@ -69,6 +71,10 @@ function main(args)
   end if
   if max_errors_idx >= 0 then
     if _assert_true("pick finds max errors by alias", commands.pick(ids, labels, search_texts, "max errors", 0) == ids[max_errors_idx]) == false then ok = false end if
+  end if
+  if subsystem_idx >= 0 then
+    if _assert_true("pick finds subsystem by alias", commands.pick(ids, labels, search_texts, "subsystem", 0) == ids[subsystem_idx]) == false then ok = false end if
+    if _assert_true("pick finds subsystem by console alias", commands.pick(ids, labels, search_texts, "console", 0) == ids[subsystem_idx]) == false then ok = false end if
   end if
   if quick_idx >= 0 then
     if _assert_true("pick finds quick open by shortcut alias", commands.pick(ids, labels, search_texts, "ctrl p", 0) == ids[quick_idx]) == false then ok = false end if
