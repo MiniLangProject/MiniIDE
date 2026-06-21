@@ -333,7 +333,7 @@ Navigation menu:
   `foo.ml` to `foo_test.ml` / `test_foo.ml` naming convention.
 - `Search Word in Project`: search the current word across project `.ml` files.
 - `Problems`: show diagnostics from project analysis, missing configured entry
-  files, missing import paths, and the last build log.
+  files, missing import paths, duplicate import aliases, and the last build log.
 
 Help menu:
 

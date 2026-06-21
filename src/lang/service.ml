@@ -418,6 +418,17 @@ function import_items(snapshot, query, limit)
   return items
 end function
 
+// Return true when a string array contains a value.
+function _has_text(items, value)
+  if typeof(items) != "array" then return false end if
+  if typeof(value) != "string" or value == "" then return false end if
+  if len(items) <= 0 then return false end if
+  for i = 0 to len(items) - 1
+    if items[i] == value then return true end if
+  end for
+  return false
+end function
+
 // Return project-analysis diagnostics.
 function diagnostics(snapshot)
   items = []
@@ -454,6 +465,22 @@ function diagnostics(snapshot)
       if typeof(imp) != "struct" then continue end if
       msg = "Unresolved import: " + imp.target
       items = items + [DiagnosticItem("warning", msg, imp.file, imp.line + 1, 1)]
+    end for
+  end if
+
+  if typeof(idx.imports) == "array" and len(idx.imports) > 0 then
+    seen_aliases = []
+    for i = 0 to len(idx.imports) - 1
+      imp = idx.imports[i]
+      if typeof(imp) != "struct" then continue end if
+      if typeof(imp.alias) != "string" or imp.alias == "" then continue end if
+      alias_key = s.toLowerAscii(imp.file + "|" + imp.alias)
+      if _has_text(seen_aliases, alias_key) then
+        msg_alias = "Duplicate import alias: " + imp.alias
+        items = items + [DiagnosticItem("warning", msg_alias, imp.file, imp.line + 1, 1)]
+      else
+        seen_aliases = seen_aliases + [alias_key]
+      end if
     end for
   end if
 

@@ -339,6 +339,15 @@ function main(args)
   broken_import_project = project.load_project_file(project.path_join(root, "BrokenImportPath.mlproj"))
   broken_import_diagnostics = service.diagnostics(service.analyze_project(broken_import_project))
   if _assert_true("project diagnostics include missing import path", _has_diagnostic(broken_import_diagnostics, "Import path not found: missing_imports")) == false then ok = false end if
+  fs.writeAllText(project.path_join(root, "src\\duplicate_alias.ml"),
+    "import \"util.ml\" as dup\n" +
+    "import \"main.ml\" as dup\n" +
+    "function duplicateAliasFixture()\n" +
+    "  return 0\n" +
+    "end function\n")
+  duplicate_project = project.load_project_file(project.path_join(root, "ServiceTest.mlproj"))
+  duplicate_diagnostics = service.diagnostics(service.analyze_project(duplicate_project))
+  if _assert_true("project diagnostics include duplicate import alias", _has_diagnostic(duplicate_diagnostics, "Duplicate import alias: dup")) == false then ok = false end if
 
   inspections = service.code_inspection_items(snapshot, 50)
   if _assert_true("code inspections include unused helper", _has_inspection(inspections, "Possibly unused function: lonely_helper")) == false then ok = false end if
