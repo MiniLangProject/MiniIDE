@@ -291,6 +291,7 @@ function Test-StaticWiring {
   Assert-True ($main.Contains('"Test Explorer (" + configured_count + " configured, " + discovered_count + " discovered, " + missing_count + " missing)"')) "Test Explorer title must summarize configured, discovered, and missing tests."
   Assert-True ($main.Contains("_show_related_tests")) "Related Tests renderer is missing."
   Assert-True ($main.Contains("lang_service.related_test_items")) "Related Tests must use the language service facade."
+  Assert-True ($main.Contains('" (" + related_file_count + " files, " + related_symbol_count + " symbols)"')) "Related Tests title must summarize related files and symbols."
   Assert-True ($service.Contains("related_test_file")) "Language service related test file picker is missing."
   Assert-True ($service.Contains("_file_stem")) "Language service related tests must support naming-convention matching."
   Assert-True ($service.Contains('current_stem + "_test"')) "Related Tests must match foo.ml to foo_test.ml."

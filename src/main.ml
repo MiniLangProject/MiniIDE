@@ -3838,16 +3838,20 @@ function _show_related_tests(st)
   files = []
   lines_out = []
   cols = []
+  related_file_count = 0
+  related_symbol_count = 0
   for i = 0 to len(items) - 1
     item = items[i]
     if typeof(item) != "struct" then continue end if
+    if item.kind == "file" then related_file_count = related_file_count + 1 end if
+    if item.kind == "function" or item.kind == "method" then related_symbol_count = related_symbol_count + 1 end if
     rows = rows + [item.kind + "  " + item.name + "  " + item.status + "  " + _project_relative_path(st, item.file) + ":" + item.line]
     files = files + [item.file]
     lines_out = lines_out + [item.line]
     cols = cols + [1]
   end for
 
-  title = "Related Tests: " + _basename(st.current_file)
+  title = "Related Tests: " + _basename(st.current_file) + " (" + related_file_count + " files, " + related_symbol_count + " symbols)"
   if len(items) >= 300 then title = title + " (first 300)" end if
   return _show_result_panel(st, "related-tests", title, rows, files, lines_out, cols)
 end function
