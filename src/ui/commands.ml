@@ -79,7 +79,7 @@ function labels()
     "Navigation: Go to Line", "Navigation: Go to Definition", "Navigation: Find References", "Navigation: Search Word in Project", "Navigation: Problems",
     "Configuration: Compile Settings", "Configuration: Build Profile Debug", "Configuration: Build Profile Release",
     "Configuration: Theme Dark", "Configuration: Theme Light", "Configuration: Select Compiler", "Configuration: Reset Compiler",
-    "Configuration: Toggle Keep-going", "Configuration: Reload Configuration", "Configuration: Show Configuration",
+    "Configuration: Toggle Keep-going", "Configuration: Toggle Max Errors", "Configuration: Reload Configuration", "Configuration: Show Configuration",
     "Help: Home", "Help: MiniLang Language Reference", "Help: Search MiniLang Help", "Help: About MiniIDE",
   ]
 end function
@@ -94,7 +94,7 @@ function search_texts()
     "navigation goto line ctrl g", "navigation goto definition f12", "navigation find references shift f12", "navigation search word project", "navigation problems diagnostics errors warnings",
     "configuration compile settings compiler build", "configuration build profile debug", "configuration build profile release",
     "configuration theme dark", "configuration theme light", "configuration compiler select", "configuration compiler reset default",
-    "configuration toggle keep going compiler errors", "configuration reload", "configuration show",
+    "configuration toggle keep going compiler errors", "configuration toggle max errors 20 80 compiler", "configuration reload", "configuration show",
     "help home welcome", "help minilang language reference", "help search minilang language", "help about miniide",
   ]
 end function
