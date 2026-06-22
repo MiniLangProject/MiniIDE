@@ -18,13 +18,13 @@ package project.config
 
 import std.fs as fs
 import std.string as s
-import "project/project.ml" as project
+import "project/project.ml" as project_model
 
 // Return the project-local configuration file path.
 function path(p)
   root = "."
   if typeof(p) == "struct" then root = p.root end if
-  return project.path_join(root, ".miniide.cfg")
+  return project_model.path_join(root, ".miniide.cfg")
 end function
 
 // Load one raw key from .miniide.cfg while ignoring comments and blank lines.

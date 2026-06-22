@@ -15,10 +15,10 @@
 import std.fs as fs
 import std.string as s
 import "platform/win32.ml" as win
-import "project/project.ml" as project
+import "project/project.ml" as project_model
 import "project/config.ml" as project_config
 import "project/templates.ml" as templates
-import "build/build_service.ml" as build
+import "build/build_service.ml" as build_service
 import "lang/syntax.ml" as syntax
 import "help/language.ml" as help_lang
 import "ai/assistant.ml" as assistant
@@ -356,12 +356,12 @@ end function
 // Resolve a possibly relative path against the project root.
 function _resolve(root, path)
   if _is_abs(path) then return path end if
-  return project.path_join(root, path)
+  return project_model.path_join(root, path)
 end function
 
 // Return the file name portion of a path.
 function _basename(path)
-  return project.basename(path)
+  return project_model.basename(path)
 end function
 
 // Return the index of a path in an array, or -1 when absent.
@@ -706,7 +706,7 @@ end function
 function _resolve_result_file(st, file)
   if typeof(file) != "string" or file == "" then return "" end if
   if _is_abs(file) == false and typeof(st.project) == "struct" then
-    return project.resolve_project_path(st.project, file)
+    return project_model.resolve_project_path(st.project, file)
   end if
   return file
 end function
@@ -919,7 +919,7 @@ function _diagnostic_near_log_line(lines, line_idx)
     if i > first then snippet = snippet + "\n" end if
     snippet = snippet + lines[i]
   end for
-  items = build.parse_diagnostics(snippet)
+  items = build_service.parse_diagnostics(snippet)
   if typeof(items) == "array" and len(items) > 0 then return items[0] end if
 end function
 
@@ -1403,7 +1403,7 @@ end function
 // Return the effective compiler.
 function _effective_compiler(st)
   if typeof(st.compiler_path) == "string" and st.compiler_path != "" then return st.compiler_path end if
-  return build.default_compiler(st.project)
+  return build_service.default_compiler(st.project)
 end function
 
 // Apply theme.
@@ -1604,7 +1604,7 @@ end function
 
 // Return the entry file.
 function _entry_file(p)
-  path = project.project_entry_path(p)
+  path = project_model.project_entry_path(p)
   if fs.exists(path) then return path end if
   return _first_project_file(p)
 end function
@@ -1986,17 +1986,17 @@ end function
 // Start compile job.
 function _start_compile_job(st, mode)
   // Keep process setup and state capture together for reliable polling.
-  job = build.start_compile_with_options(st.project, st.compiler_path, st.build_keep_going, st.build_max_errors, st.build_subsystem, st.build_extra_args)
+  job = build_service.start_compile_with_options(st.project, st.compiler_path, st.build_keep_going, st.build_max_errors, st.build_subsystem, st.build_extra_args)
   st.build_job = job
   st.build_mode = mode
-  st.build_running = build.job_started(job)
+  st.build_running = build_service.job_started(job)
   st.build_last_poll_ms = 0
   if st.build_running == false then
     log = _format_build_log(st, job.log_text, false, job.exit_code)
     st.build_last_log = log
     return _set_log(st, log)
   end if
-  log = _format_build_log(st, "", true, build.STILL_ACTIVE)
+  log = _format_build_log(st, "", true, build_service.STILL_ACTIVE)
   if mode == "compile-run" then
     log = "Run: the project is newer than the program, building first.\r\n\r\n" + log
   end if
@@ -2008,17 +2008,17 @@ end function
 // Start run job.
 function _start_run_job(st)
   // Keep process setup and state capture together for reliable polling.
-  job = build.start_run_output(st.project)
+  job = build_service.start_run_output(st.project)
   st.build_job = job
   st.build_mode = "run"
-  st.build_running = build.job_started(job)
+  st.build_running = build_service.job_started(job)
   st.build_last_poll_ms = 0
   if st.build_running == false then
     log = _format_build_log(st, job.log_text, false, job.exit_code)
     st.build_last_log = log
     return _set_log(st, log)
   end if
-  log = _format_build_log(st, "", true, build.STILL_ACTIVE)
+  log = _format_build_log(st, "", true, build_service.STILL_ACTIVE)
   st.build_last_log = log
   st = _set_log(st, log)
   return st
@@ -2027,17 +2027,17 @@ end function
 // Start test compile job.
 function _start_test_compile_job(st)
   // Keep process setup and state capture together for reliable polling.
-  job = build.start_test_compile_with_options(st.project, st.compiler_path, st.build_keep_going, st.build_max_errors, "console", st.build_extra_args)
+  job = build_service.start_test_compile_with_options(st.project, st.compiler_path, st.build_keep_going, st.build_max_errors, "console", st.build_extra_args)
   st.build_job = job
   st.build_mode = "test-compile"
-  st.build_running = build.job_started(job)
+  st.build_running = build_service.job_started(job)
   st.build_last_poll_ms = 0
   if st.build_running == false then
     log = _format_build_log(st, job.log_text, false, job.exit_code)
     st.build_last_log = log
     return _set_log(st, log)
   end if
-  log = _format_build_log(st, "", true, build.STILL_ACTIVE)
+  log = _format_build_log(st, "", true, build_service.STILL_ACTIVE)
   st.build_last_log = log
   return _set_log(st, log)
 end function
@@ -2047,17 +2047,17 @@ function _start_test_file_compile_job(st, test_file, mode, label)
   // Keep process setup and state capture together for reliable polling.
   if typeof(mode) != "string" or mode == "" then mode = "test-current-compile" end if
   if typeof(label) != "string" or label == "" then label = "Run Current Test File" end if
-  job = build.start_test_file_compile_with_options(st.project, test_file, st.compiler_path, st.build_keep_going, st.build_max_errors, "console", st.build_extra_args)
+  job = build_service.start_test_file_compile_with_options(st.project, test_file, st.compiler_path, st.build_keep_going, st.build_max_errors, "console", st.build_extra_args)
   st.build_job = job
   st.build_mode = mode
-  st.build_running = build.job_started(job)
+  st.build_running = build_service.job_started(job)
   st.build_last_poll_ms = 0
   if st.build_running == false then
     log = _format_build_log(st, job.log_text, false, job.exit_code)
     st.build_last_log = log
     return _set_log(st, log)
   end if
-  log = label + ": " + _project_relative_path(st, test_file) + "\r\n\r\n" + _format_build_log(st, "", true, build.STILL_ACTIVE)
+  log = label + ": " + _project_relative_path(st, test_file) + "\r\n\r\n" + _format_build_log(st, "", true, build_service.STILL_ACTIVE)
   st.build_last_log = log
   return _set_log(st, log)
 end function
@@ -2075,17 +2075,17 @@ end function
 // Start test run job.
 function _start_test_run_job(st)
   // Keep process setup and state capture together for reliable polling.
-  job = build.start_test_output(st.project)
+  job = build_service.start_test_output(st.project)
   st.build_job = job
   st.build_mode = "test-run"
-  st.build_running = build.job_started(job)
+  st.build_running = build_service.job_started(job)
   st.build_last_poll_ms = 0
   if st.build_running == false then
     log = _format_build_log(st, job.log_text, false, job.exit_code)
     st.build_last_log = log
     return _set_log(st, log)
   end if
-  log = _format_build_log(st, "", true, build.STILL_ACTIVE)
+  log = _format_build_log(st, "", true, build_service.STILL_ACTIVE)
   st.build_last_log = log
   return _set_log(st, log)
 end function
@@ -2109,7 +2109,7 @@ function _run_project(st)
   save_result = _save_all_open(st)
   st = save_result[0]
   if save_result[1] == false then return _set_log(st, save_result[2]) end if
-  if build.needs_recompile(st.project) then
+  if build_service.needs_recompile(st.project) then
     return _start_compile_job(st, "compile-run")
   end if
   return _start_run_job(st)
@@ -2166,7 +2166,7 @@ function _clean_project(st)
   if st.build_running then
     return _set_log(st, st.build_last_log + "\r\n\r\nPlease stop the running process first.")
   end if
-  text = build.clean_project(st.project)
+  text = build_service.clean_project(st.project)
   return _set_log(st, text)
 end function
 
@@ -2178,7 +2178,7 @@ function _rebuild_project(st)
   save_result = _save_all_open(st)
   st = save_result[0]
   if save_result[1] == false then return _set_log(st, save_result[2]) end if
-  clean_text = build.clean_project(st.project)
+  clean_text = build_service.clean_project(st.project)
   st = _start_compile_job(st, "rebuild")
   st.build_last_log = clean_text + "\r\n\r\n" + st.build_last_log
   return _set_log(st, st.build_last_log)
@@ -2187,9 +2187,9 @@ end function
 // Stop build job.
 function _stop_build_job(st)
   if st.build_running == false then return _set_log(st, "No background process is running.") end if
-  st.build_job = build.stop_job(st.build_job)
+  st.build_job = build_service.stop_job(st.build_job)
   st.build_running = false
-  log_text = build.job_log(st.build_job)
+  log_text = build_service.job_log(st.build_job)
   st.build_last_log = _format_build_log(st, log_text, false, 1) + "\r\nCanceled."
   st.build_mode = ""
   return _set_log(st, st.build_last_log)
@@ -2222,13 +2222,13 @@ function _format_build_log(st, log_text, running, exit_code)
   fail_text = "Build failed: exit "
   if st.build_mode == "run" then
     label = "Program"
-    compiler = project.project_output_path(st.project)
+    compiler = project_model.project_output_path(st.project)
     running_text = "Program is running in the background..."
     ok_text = "Program finished: exit 0"
     fail_text = "Program finished: exit "
   else if st.build_mode == "test-compile" or st.build_mode == "test-current-compile" or st.build_mode == "test-related-compile" then
     label = "Test Compiler"
-    compiler = project.project_test_entry_path(st.project)
+    compiler = project_model.project_test_entry_path(st.project)
     running_text = "Tests are being built..."
     if st.build_mode == "test-current-compile" then running_text = "Current test file is being built..." end if
     if st.build_mode == "test-related-compile" then running_text = "Related test file is being built..." end if
@@ -2236,7 +2236,7 @@ function _format_build_log(st, log_text, running, exit_code)
     fail_text = "Test-Build failed: exit "
   else if st.build_mode == "test-run" then
     label = "Tests"
-    compiler = project.project_test_entry_path(st.project)
+    compiler = project_model.project_test_entry_path(st.project)
     running_text = "Tests are running in the background..."
     ok_text = "Tests finished: exit 0"
     fail_text = "Tests finished: exit "
@@ -2268,16 +2268,16 @@ function _format_build_log(st, log_text, running, exit_code)
   return log
 end function
 
-// Poll build.
+// Poll build_service.
 function _poll_build(st)
   if st.build_running == false then return st end if
   now = win.GetTickCount()
   if now - st.build_last_poll_ms < 250 then return st end if
   st.build_last_poll_ms = now
-  running = build.job_is_running(st.build_job)
-  log_text = build.job_log(st.build_job)
-  exit_code = build.STILL_ACTIVE
-  if running == false then exit_code = build.job_exit_code(st.build_job) end if
+  running = build_service.job_is_running(st.build_job)
+  log_text = build_service.job_log(st.build_job)
+  exit_code = build_service.STILL_ACTIVE
+  if running == false then exit_code = build_service.job_exit_code(st.build_job) end if
   log = _format_build_log(st, log_text, running, exit_code)
   if log != st.build_last_log then
     st.build_last_log = log
@@ -2285,7 +2285,7 @@ function _poll_build(st)
   end if
   if running == false then
     finished_mode = st.build_mode
-    st.build_job = build.close_job(st.build_job)
+    st.build_job = build_service.close_job(st.build_job)
     st.build_running = false
     if finished_mode == "compile-run" and exit_code == 0 then
       return _start_run_job(st)
@@ -2314,7 +2314,7 @@ function _reload_project(st)
   win.ShowWindow(st.code_editor, win.SW_SHOW)
   root = "."
   if typeof(st.project) == "struct" then root = st.project.root end if
-  st.project = project.load_project(root)
+  st.project = project_model.load_project(root)
   st = _load_build_config(st)
   st.open_files = []
   st.open_texts = []
@@ -2357,7 +2357,7 @@ function _open_project_file(st, path)
   st = _destroy_all_markdown_views(st)
   st.editor = st.code_editor
   win.ShowWindow(st.code_editor, win.SW_SHOW)
-  loaded_project = try(project.load_project_file(path))
+  loaded_project = try(project_model.load_project_file(path))
   if typeof(loaded_project) == "error" then
     return _set_log(st, "Open project failed: " + loaded_project.message)
   end if
@@ -2465,7 +2465,7 @@ function _new_standard_project(st)
   st = guard[0]
   if guard[1] == false then return st end if
   parent = "projects"
-  if typeof(st.project) == "struct" then parent = project.path_join(st.project.root, "projects") end if
+  if typeof(st.project) == "struct" then parent = project_model.path_join(st.project.root, "projects") end if
 
   dlg = win.create_main_window("New Project", 620, 260)
   if dlg is void then return _set_log(st, "New Project could not be opened.") end if
@@ -2619,7 +2619,7 @@ end function
 function _reset_compiler(st)
   st.compiler_path = ""
   st = _save_config(st)
-  return _set_log(st, "Compiler reset to default: " + build.default_compiler(st.project))
+  return _set_log(st, "Compiler reset to default: " + build_service.default_compiler(st.project))
 end function
 
 // Reload config.
@@ -2879,8 +2879,8 @@ end function
 // Return the project relative path.
 function _project_relative_path(st, path)
   if typeof(path) != "string" or path == "" then return "" end if
-  abs = project.abspath(path)
-  root = project.abspath(st.project.root)
+  abs = project_model.abspath(path)
+  root = project_model.abspath(st.project.root)
   abs_l = s.toLowerAscii(abs)
   root_l = s.toLowerAscii(root)
   if len(abs) > len(root) and s.startsWith(abs_l, root_l) then
@@ -2934,7 +2934,7 @@ function _apply_compile_settings(st, dlg, values, keep_going, subsystem)
     win.MessageBoxW(dlg, "Please select a main file.", "Compile Settings", 0)
     return [st, false]
   end if
-  entry_path = project.resolve_project_path(st.project, entry)
+  entry_path = project_model.resolve_project_path(st.project, entry)
   if fs.exists(entry_path) == false then
     win.MessageBoxW(dlg, "The main file was not found:\n" + entry_path, "Compile Settings", 0)
     return [st, false]
@@ -2949,21 +2949,21 @@ function _apply_compile_settings(st, dlg, values, keep_going, subsystem)
   end if
   if subsystem != "console" then subsystem = "windows" end if
 
-  st.project = project.with_compile_settings(st.project, entry, output)
-  st.project = project.with_run_settings(st.project, test_entry, run_args, working_dir)
+  st.project = project_model.with_compile_settings(st.project, entry, output)
+  st.project = project_model.with_run_settings(st.project, test_entry, run_args, working_dir)
   st.compiler_path = compiler
   st.build_keep_going = keep_going
   st.build_max_errors = max_errors
   st.build_subsystem = subsystem
   st.build_extra_args = extra_args
 
-  wr = project.save_project(st.project)
+  wr = project_model.save_project(st.project)
   if typeof(wr) == "error" then
     win.MessageBoxW(dlg, "The project file could not be saved:\n" + wr.message, "Compile Settings", 0)
     return [st, false]
   end if
   st = _save_config(st)
-  st.project = project.load_project(st.project.root)
+  st.project = project_model.load_project(st.project.root)
   st = _populate_project_tree(st)
   st = _refresh_tabs(st)
   st = _set_log(st, "Compile settings saved. Main file: " + st.project.entry)
@@ -2996,7 +2996,7 @@ function _open_compile_settings_window(st)
   _settings_label(dlg, st.font_ui, "Compiler", 20, 226, 120, 24)
   compiler_edit = _settings_edit_id(dlg, st.font_ui, st.compiler_path, 150, 222, 450, 26, ID_SETTINGS_COMPILER_EDIT)
   compiler_browse = _settings_button(dlg, st.font_ui, "Browse", 612, 222, 92, 26, ID_SETTINGS_COMPILER_BROWSE)
-  _settings_label(dlg, st.font_ui, "Leave empty for default: " + build.default_compiler(st.project), 150, 250, 554, 22)
+  _settings_label(dlg, st.font_ui, "Leave empty for default: " + build_service.default_compiler(st.project), 150, 250, 554, 22)
 
   _settings_label(dlg, st.font_ui, "Max errors", 20, 286, 120, 24)
   max_edit = _settings_edit_id(dlg, st.font_ui, "" + st.build_max_errors, 150, 282, 100, 26, ID_SETTINGS_MAX_EDIT)
@@ -4289,14 +4289,14 @@ function _show_problems(st)
     end for
   end if
 
-  items = build.parse_diagnostics(st.build_last_log)
+  items = build_service.parse_diagnostics(st.build_last_log)
   if typeof(items) == "array" and len(items) > 0 then
     for i = 0 to len(items) - 1
       d = items[i]
       if typeof(d) != "struct" then continue end if
       file = d.file
       if file != "" and _is_abs(file) == false and typeof(st.project) == "struct" then
-        file = project.resolve_project_path(st.project, file)
+        file = project_model.resolve_project_path(st.project, file)
       end if
       rows = rows + [d.kind + "  " + _project_relative_path(st, file) + ":" + d.line + ":" + d.col + "  " + d.message]
       files = files + [file]
@@ -4467,7 +4467,7 @@ function _apply_rename_symbol(st, word, new_name)
   st = _refresh_renamed_open_files(st, result.files)
   root = "."
   if typeof(st.project) == "struct" then root = st.project.root end if
-  st.project = project.load_project(root)
+  st.project = project_model.load_project(root)
   st = _populate_project_tree(st)
   st = _refresh_tabs(st)
   return _set_log(st, "Renamed " + word + " -> " + s.trim(new_name) + ": " + result.replacements + " replacements in " + len(result.files) + " files.")
@@ -5224,7 +5224,7 @@ end function
 // Create state.
 function _create_state(root)
   // Keep validation near the top so callers can treat invalid input as a no-op.
-  p = project.load_project(root)
+  p = project_model.load_project(root)
   compiler_path = _load_compiler_path(p)
   build_keep_going = _load_build_keep_going(p)
   build_max_errors = _load_build_max_errors(p)
@@ -5790,14 +5790,14 @@ function _tree_target_dir(st)
   is_dir = true
   if idx >= 0 and idx < len(st.tree_is_dir) then is_dir = st.tree_is_dir[idx] end if
   if is_dir then return path end if
-  return project.dirname(path)
+  return project_model.dirname(path)
 end function
 
 // Reload tree only.
 function _reload_tree_only(st)
   root = "."
   if typeof(st.project) == "struct" then root = st.project.root end if
-  st.project = project.load_project(root)
+  st.project = project_model.load_project(root)
   st = _populate_project_tree(st)
   st = _refresh_tabs(st)
   _set_title(st)
@@ -5806,28 +5806,28 @@ end function
 
 // Return the unique file path.
 function _unique_file_path(dir, stem, ext)
-  candidate = project.path_join(dir, stem + ext)
+  candidate = project_model.path_join(dir, stem + ext)
   if fs.exists(candidate) == false then return candidate end if
   i = 2
   while i < 1000
-    candidate = project.path_join(dir, stem + "_" + i + ext)
+    candidate = project_model.path_join(dir, stem + "_" + i + ext)
     if fs.exists(candidate) == false then return candidate end if
     i = i + 1
   end while
-  return project.path_join(dir, stem + "_" + win.GetTickCount() + ext)
+  return project_model.path_join(dir, stem + "_" + win.GetTickCount() + ext)
 end function
 
 // Return the unique named path.
 function _unique_named_path(dir, name)
-  candidate = project.path_join(dir, name)
+  candidate = project_model.path_join(dir, name)
   if fs.exists(candidate) == false then return candidate end if
   i = 2
   while i < 1000
-    candidate = project.path_join(dir, "copy_" + i + "_" + name)
+    candidate = project_model.path_join(dir, "copy_" + i + "_" + name)
     if fs.exists(candidate) == false then return candidate end if
     i = i + 1
   end while
-  return project.path_join(dir, "copy_" + win.GetTickCount() + "_" + name)
+  return project_model.path_join(dir, "copy_" + win.GetTickCount() + "_" + name)
 end function
 
 // Return the norm path key.
@@ -5893,8 +5893,8 @@ function _copy_path_recursive(src, dest)
     if typeof(entries) == "array" and len(entries) > 0 then
       for i = 0 to len(entries) - 1
         name = entries[i]
-        child_src = project.path_join(src, name)
-        child_dest = project.path_join(dest, name)
+        child_src = project_model.path_join(src, name)
+        child_dest = project_model.path_join(dest, name)
         err = _copy_path_recursive(child_src, child_dest)
         if err != "" then return err end if
       end for
@@ -5914,7 +5914,7 @@ function _delete_path_recursive(path)
     if typeof(entries) == "error" then return entries.message end if
     if typeof(entries) == "array" and len(entries) > 0 then
       for i = 0 to len(entries) - 1
-        child = project.path_join(path, entries[i])
+        child = project_model.path_join(path, entries[i])
         err = _delete_path_recursive(child)
         if err != "" then return err end if
       end for
@@ -6059,7 +6059,7 @@ function _rename_tree_item(st)
   end while
 
   if new_name == "" then return st end if
-  dest = project.path_join(project.dirname(path), new_name)
+  dest = project_model.path_join(project_model.dirname(path), new_name)
   if fs.exists(dest) then return _set_log(st, "Rename failed: target already exists.") end if
   mv = fs.moveFile(path, dest, false)
   if typeof(mv) == "error" then return _set_log(st, "Rename failed: " + mv.message) end if

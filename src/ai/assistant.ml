@@ -17,7 +17,7 @@ package ai.assistant
 // Assistant configuration and read-only context assembly for MiniIDE.
 
 import std.string as s
-import "project/project.ml" as project
+import "project/project.ml" as project_model
 import "help/language.ml" as help_lang
 
 struct AssistantConfig
@@ -58,8 +58,8 @@ end function
 function relative_path(root, path)
   if typeof(path) != "string" then return "" end if
   if typeof(root) != "string" or root == "" then return path end if
-  abs = project.abspath(path)
-  base = project.abspath(root)
+  abs = project_model.abspath(path)
+  base = project_model.abspath(root)
   if len(abs) > len(base) + 1 and s.toLowerAscii(s.substr(abs, 0, len(base))) == s.toLowerAscii(base) then
     sep = abs[len(base)]
     if sep == "\\" or sep == "/" then return s.substr(abs, len(base) + 1, len(abs) - len(base) - 1) end if

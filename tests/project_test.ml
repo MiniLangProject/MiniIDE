@@ -14,7 +14,7 @@
 
 import std.fs as fs
 import std.string as s
-import "project/project.ml" as project
+import "project/project.ml" as project_model
 import "project/templates.ml" as templates
 
 // Print a failed assertion and return false.
@@ -29,7 +29,7 @@ function main(args)
   ok = true
   suffix = 0
   name = "ProjectLoadDirTest"
-  while fs.exists(project.path_join("build", name))
+  while fs.exists(project_model.path_join("build", name))
     suffix = suffix + 1
     name = "ProjectLoadDirTest_" + suffix
   end while
@@ -40,14 +40,14 @@ function main(args)
   duplicate = try(templates.create_standard_project("build", name, "console"))
   if _assert_true("duplicate project creation returns an error value", typeof(duplicate) == "error") == false then ok = false end if
 
-  loaded_from_dir = try(project.load_project_file(created))
+  loaded_from_dir = try(project_model.load_project_file(created))
   if _assert_true("project directory passed to load_project_file does not crash", typeof(loaded_from_dir) == "struct") == false then ok = false end if
   if typeof(loaded_from_dir) == "struct" then
     if _assert_true("project name is read from generated mlproj", loaded_from_dir.name == name) == false then ok = false end if
-    if _assert_true("generated entry file exists", fs.exists(project.project_entry_path(loaded_from_dir))) == false then ok = false end if
+    if _assert_true("generated entry file exists", fs.exists(project_model.project_entry_path(loaded_from_dir))) == false then ok = false end if
   end if
 
-  loaded_from_root = try(project.load_project(created))
+  loaded_from_root = try(project_model.load_project(created))
   if _assert_true("project root loads through load_project", typeof(loaded_from_root) == "struct") == false then ok = false end if
   if typeof(loaded_from_root) == "struct" then
     if _assert_true("load_project keeps the same project name", loaded_from_root.name == name) == false then ok = false end if

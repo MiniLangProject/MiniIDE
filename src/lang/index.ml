@@ -18,7 +18,7 @@ package lang.index
 
 import std.fs as fs
 import std.string as s
-import "project/project.ml" as project
+import "project/project.ml" as project_model
 import "lang/symbols.ml" as symbols
 
 struct SourceFileInfo
@@ -123,21 +123,21 @@ end function
 // Try to resolve an import candidate against the current file, root, and import paths.
 function _resolve_candidate(root, current_file, import_paths, candidate)
   if typeof(candidate) != "string" or candidate == "" then return "" end if
-  if _is_abs(candidate) and fs.exists(candidate) then return project.abspath(candidate) end if
+  if _is_abs(candidate) and fs.exists(candidate) then return project_model.abspath(candidate) end if
 
-  local_path = project.path_join(project.dirname(current_file), candidate)
-  if fs.exists(local_path) then return project.abspath(local_path) end if
+  local_path = project_model.path_join(project_model.dirname(current_file), candidate)
+  if fs.exists(local_path) then return project_model.abspath(local_path) end if
 
-  root_path = project.path_join(root, candidate)
-  if fs.exists(root_path) then return project.abspath(root_path) end if
+  root_path = project_model.path_join(root, candidate)
+  if fs.exists(root_path) then return project_model.abspath(root_path) end if
 
   if typeof(import_paths) == "array" and len(import_paths) > 0 then
     for i = 0 to len(import_paths) - 1
       base = import_paths[i]
       if typeof(base) != "string" or base == "" then continue end if
-      if _is_abs(base) == false then base = project.path_join(root, base) end if
-      full = project.path_join(base, candidate)
-      if fs.exists(full) then return project.abspath(full) end if
+      if _is_abs(base) == false then base = project_model.path_join(root, base) end if
+      full = project_model.path_join(base, candidate)
+      if fs.exists(full) then return project_model.abspath(full) end if
     end for
   end if
 

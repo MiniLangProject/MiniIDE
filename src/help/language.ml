@@ -18,18 +18,18 @@ package help.language
 
 import std.fs as fs
 import std.string as s
-import "project/project.ml" as project
+import "project/project.ml" as project_model
 
 // Return the reference path.
 function reference_path(root, compiler_path)
   if typeof(root) != "string" or root == "" then root = "." end if
-  p = project.path_join(root, "MiniLangCompilerML\\README.md")
-  if fs.exists(p) == false then p = project.path_join(".", "MiniLangCompilerML\\README.md") end if
-  if fs.exists(p) == false then p = project.path_join(root, "..\\MiniLangCompilerML\\README.md") end if
-  if fs.exists(p) == false then p = project.path_join(root, "..\\..\\MiniLangCompilerML\\README.md") end if
+  p = project_model.path_join(root, "MiniLangCompilerML\\README.md")
+  if fs.exists(p) == false then p = project_model.path_join(".", "MiniLangCompilerML\\README.md") end if
+  if fs.exists(p) == false then p = project_model.path_join(root, "..\\MiniLangCompilerML\\README.md") end if
+  if fs.exists(p) == false then p = project_model.path_join(root, "..\\..\\MiniLangCompilerML\\README.md") end if
   if fs.exists(p) == false and typeof(compiler_path) == "string" and compiler_path != "" then
-    compiler_dir = project.dirname(compiler_path)
-    p = project.path_join(compiler_dir, "..\\README.md")
+    compiler_dir = project_model.dirname(compiler_path)
+    p = project_model.path_join(compiler_dir, "..\\README.md")
   end if
   if fs.exists(p) then return p end if
   return ""

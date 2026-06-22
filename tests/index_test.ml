@@ -14,7 +14,7 @@
 
 import std.fs as fs
 import std.string as s
-import "project/project.ml" as project
+import "project/project.ml" as project_model
 import "lang/index.ml" as index
 
 extern function CreateDirectoryW(path as wstr, securityAttributes as ptr) from "kernel32.dll" symbol "CreateDirectoryW" returns bool
@@ -60,11 +60,11 @@ end function
 function _create_fixture(root)
   _mkdir("build")
   _mkdir(root)
-  _mkdir(project.path_join(root, "src"))
-  _mkdir(project.path_join(root, "src\\lib"))
-  _mkdir(project.path_join(root, "shared"))
+  _mkdir(project_model.path_join(root, "src"))
+  _mkdir(project_model.path_join(root, "src\\lib"))
+  _mkdir(project_model.path_join(root, "shared"))
 
-  fs.writeAllText(project.path_join(root, "IndexTest.mlproj"),
+  fs.writeAllText(project_model.path_join(root, "IndexTest.mlproj"),
     "name=IndexTest\n" +
     "type=console\n" +
     "entry=src\\main.ml\n" +
@@ -75,7 +75,7 @@ function _create_fixture(root)
     "importPath=src\n" +
     "importPath=shared\n")
 
-  fs.writeAllText(project.path_join(root, "src\\main.ml"),
+  fs.writeAllText(project_model.path_join(root, "src\\main.ml"),
     "import \"lib\\util.ml\" as util\n" +
     "import helpers as helpers\n" +
     "import \"missing\\nope.ml\" as nope\n" +
@@ -84,13 +84,13 @@ function _create_fixture(root)
     "  return util.add(1, 2)\n" +
     "end function\n")
 
-  fs.writeAllText(project.path_join(root, "src\\lib\\util.ml"),
+  fs.writeAllText(project_model.path_join(root, "src\\lib\\util.ml"),
     "package lib.util\n" +
     "function add(a, b)\n" +
     "  return a + b\n" +
     "end function\n")
 
-  fs.writeAllText(project.path_join(root, "shared\\helpers.ml"),
+  fs.writeAllText(project_model.path_join(root, "shared\\helpers.ml"),
     "function helper()\n" +
     "  return 1\n" +
     "end function\n")
@@ -101,18 +101,18 @@ end function
 // Run focused project index checks.
 function main(args)
   ok = true
-  root = project.path_join("build", "IndexTestProject")
+  root = project_model.path_join("build", "IndexTestProject")
   suffix = 0
   while fs.exists(root)
     suffix = suffix + 1
-    root = project.path_join("build", "IndexTestProject_" + suffix)
+    root = project_model.path_join("build", "IndexTestProject_" + suffix)
   end while
 
   created = _create_fixture(root)
   if _assert_true("index fixture is created", typeof(created) == "string") == false then ok = false end if
   if ok == false then return 1 end if
 
-  p = project.load_project(root)
+  p = project_model.load_project(root)
   idx = index.build_project_index(p)
 
   if _assert_true("index returns a struct", typeof(idx) == "struct") == false then ok = false end if
