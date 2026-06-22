@@ -132,7 +132,9 @@ end function
 function _config_value(config, field, fallback)
   if typeof(config) == "struct" then
     if field == "base_url" and typeof(config.base_url) == "string" and config.base_url != "" then return config.base_url end if
+    if field == "api_key_mode" and typeof(config.api_key_mode) == "string" and config.api_key_mode != "" then return config.api_key_mode end if
     if field == "api_key_env" and typeof(config.api_key_env) == "string" and config.api_key_env != "" then return config.api_key_env end if
+    if field == "api_key" and typeof(config.api_key) == "string" and config.api_key != "" then return config.api_key end if
     if field == "model" and typeof(config.model) == "string" and config.model != "" then return config.model end if
   end if
   return fallback
@@ -216,6 +218,21 @@ function _env_value(name)
   value = decode16Z(buf)
   if typeof(value) != "string" then return "" end if
   return value
+end function
+
+// Resolve the configured API key without exposing it in logs.
+function _api_key_result(config)
+  key_mode = s.toLowerAscii(s.trim(_config_value(config, "api_key_mode", "env")))
+  if key_mode == "direct" then
+    direct_key = s.trim(_config_value(config, "api_key", ""))
+    if direct_key == "" then return [false, "", "Direct API key is empty."] end if
+    return [true, direct_key, ""]
+  end if
+
+  key_env = _config_value(config, "api_key_env", "OPENAI_API_KEY")
+  api_key = _env_value(key_env)
+  if api_key == "" then return [false, "", "Environment variable " + key_env + " is not set."] end if
+  return [true, api_key, ""]
 end function
 
 function _close_http(handle)
@@ -405,9 +422,9 @@ end function
 // Send one OpenAI-compatible chat-completions request through native WinHTTP.
 function chat_completion(project_root, config, prompt, context, transcript)
   model = _config_value(config, "model", "gpt-5.1")
-  key_env = _config_value(config, "api_key_env", "OPENAI_API_KEY")
-  api_key = _env_value(key_env)
-  if api_key == "" then return ProviderResult(false, "Environment variable " + key_env + " is not set.", "") end if
+  key_result = _api_key_result(config)
+  if key_result[0] == false then return ProviderResult(false, key_result[2], "") end if
+  api_key = key_result[1]
 
   url = _chat_url(config)
   body = _request_body(model, prompt, context, transcript)

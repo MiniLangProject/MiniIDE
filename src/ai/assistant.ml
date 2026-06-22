@@ -24,7 +24,9 @@ struct AssistantConfig
   enabled,
   provider,
   base_url,
+  api_key_mode,
   api_key_env,
+  api_key,
   model,
   tool_mode,
   allow_insecure_tls,
@@ -38,6 +40,13 @@ function normalize_provider(value)
   value = s.toLowerAscii(s.trim(value))
   if value == "openai-compatible" or value == "compatible" then return "openai-compatible" end if
   return "openai"
+end function
+
+// Normalize API-key source names accepted by the settings dialog and config file.
+function normalize_api_key_mode(value)
+  value = s.toLowerAscii(s.trim(value))
+  if value == "direct" or value == "key" or value == "api-key" or value == "static" then return "direct" end if
+  return "env"
 end function
 
 // Normalize future tool modes while keeping the current build read-only.

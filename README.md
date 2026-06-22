@@ -284,16 +284,20 @@ tool context to an OpenAI-compatible chat-completions endpoint through native
 WinHTTP networking. The context can include the active file excerpt, open tab
 excerpts, indexed project files, the latest build log, and a MiniLang
 language-reference excerpt. API keys are referenced through an environment
-variable name such as `OPENAI_API_KEY`; MiniIDE does not store the secret
-itself. For private OpenAI-compatible clusters with self-signed certificates,
-`ai.allowInsecureTls=true` relaxes certificate validation for assistant
-requests only.
+variable name such as `OPENAI_API_KEY` by default. If needed, the assistant
+settings can be switched to direct-key mode; in that mode MiniIDE stores
+`ai.apiKey` in `.miniide.cfg`, so environment-variable mode remains the safer
+default for shared projects. For private OpenAI-compatible clusters with
+self-signed certificates, `ai.allowInsecureTls=true` relaxes certificate
+validation for assistant requests only.
 
 ```ini
 ai.enabled=false
 ai.provider=openai
 ai.baseUrl=https://api.openai.com/v1
+ai.apiKeyMode=env
 ai.apiKeyEnv=OPENAI_API_KEY
+ai.apiKey=
 ai.model=gpt-5.1
 ai.toolMode=read-only
 ai.allowInsecureTls=false
