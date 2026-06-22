@@ -46,6 +46,13 @@ struct ProviderResult
   ok,
   text,
   log,
+  tool_calls,
+end struct
+
+struct ToolCall
+  id,
+  name,
+  arguments,
 end struct
 
 struct HttpUrl
@@ -106,25 +113,42 @@ end function
 
 function _system_prompt()
   text = "You are MiniIDE's programming assistant for MiniLang projects. "
-  text = text + "Use the provided read-only tool context as your source of truth. "
+  text = text + "Use the provided read-only tool context and available read-only tools as your source of truth. "
   text = text + "Be concise, concrete, and prefer MiniLang-specific guidance. "
   text = text + "Do not claim that you changed files or ran commands. "
   text = text + "If a write would be useful, describe the exact proposed change and wait for confirmation."
   return text
 end function
 
-function _request_body(model, prompt, context, transcript)
+function _tool_schema_json()
+  tools = "["
+  tools = tools + "{\"type\":\"function\",\"function\":{\"name\":\"miniide_get_active_file\",\"description\":\"Return the active editor file path and a bounded text excerpt.\",\"parameters\":{\"type\":\"object\",\"properties\":{},\"additionalProperties\":false}}},"
+  tools = tools + "{\"type\":\"function\",\"function\":{\"name\":\"miniide_get_open_tabs\",\"description\":\"Return open editor tabs, dirty flags, and active tab marker.\",\"parameters\":{\"type\":\"object\",\"properties\":{},\"additionalProperties\":false}}},"
+  tools = tools + "{\"type\":\"function\",\"function\":{\"name\":\"miniide_list_project_files\",\"description\":\"Return a bounded list of source files in the current MiniLang project.\",\"parameters\":{\"type\":\"object\",\"properties\":{},\"additionalProperties\":false}}},"
+  tools = tools + "{\"type\":\"function\",\"function\":{\"name\":\"miniide_read_project_file\",\"description\":\"Read a bounded excerpt from a project file by relative path.\",\"parameters\":{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\",\"description\":\"Project-relative file path.\"}},\"required\":[\"path\"],\"additionalProperties\":false}}},"
+  tools = tools + "{\"type\":\"function\",\"function\":{\"name\":\"miniide_get_build_log\",\"description\":\"Return the latest MiniIDE build or run log.\",\"parameters\":{\"type\":\"object\",\"properties\":{},\"additionalProperties\":false}}},"
+  tools = tools + "{\"type\":\"function\",\"function\":{\"name\":\"miniide_get_minilang_help\",\"description\":\"Return a bounded MiniLang language reference excerpt.\",\"parameters\":{\"type\":\"object\",\"properties\":{},\"additionalProperties\":false}}}"
+  tools = tools + "]"
+  return tools
+end function
+
+function _request_body(model, prompt, context, transcript, tool_results, include_tools)
   if typeof(model) != "string" or model == "" then model = "gpt-5.1" end if
   if typeof(prompt) != "string" then prompt = "" end if
   if typeof(context) != "string" then context = "" end if
   if typeof(transcript) != "string" then transcript = "" end if
+  if typeof(tool_results) != "string" then tool_results = "" end if
   user = "User request:\n" + prompt + "\n\nRecent transcript:\n" + transcript + "\n\nRead-only tool context:\n" + context
+  if tool_results != "" then user = user + "\n\nTool results from MiniIDE:\n" + tool_results end if
   body = "{"
   body = body + "\"model\":\"" + json_escape(model) + "\","
   body = body + "\"messages\":["
   body = body + "{\"role\":\"system\",\"content\":\"" + json_escape(_system_prompt()) + "\"},"
   body = body + "{\"role\":\"user\",\"content\":\"" + json_escape(user) + "\"}"
   body = body + "]"
+  if include_tools then
+    body = body + ",\"tools\":" + _tool_schema_json() + ",\"tool_choice\":\"auto\""
+  end if
   body = body + "}"
   return body
 end function
@@ -395,6 +419,117 @@ function _parse_json_string_at(text, quote_pos)
   return value_builder.toString()
 end function
 
+function _skip_json_ws(text, pos)
+  i = pos
+  while i < len(text) and (text[i] == " " or text[i] == "\t" or text[i] == "\r" or text[i] == "\n")
+    i = i + 1
+  end while
+  return i
+end function
+
+function _find_json_close(text, open_pos, open_ch, close_ch)
+  if typeof(text) != "string" or open_pos < 0 or open_pos >= len(text) then return -1 end if
+  depth = 0
+  in_string = false
+  escape = false
+  i = open_pos
+  while i < len(text)
+    ch = text[i]
+    if in_string then
+      if escape then
+        escape = false
+      else if ch == "\\" then
+        escape = true
+      else if ch == "\"" then
+        in_string = false
+      end if
+    else
+      if ch == "\"" then
+        in_string = true
+      else if ch == open_ch then
+        depth = depth + 1
+      else if ch == close_ch then
+        depth = depth - 1
+        if depth == 0 then return i end if
+      end if
+    end if
+    i = i + 1
+  end while
+  return -1
+end function
+
+function json_field_string(text, field)
+  if typeof(text) != "string" or typeof(field) != "string" or field == "" then return "" end if
+  marker = "\"" + field + "\""
+  pos = s.indexOf(text, marker, 0)
+  while pos >= 0
+    colon = s.indexOf(text, ":", pos + len(marker))
+    if colon < 0 then return "" end if
+    i = _skip_json_ws(text, colon + 1)
+    if i < len(text) and text[i] == "\"" then return _parse_json_string_at(text, i) end if
+    pos = s.indexOf(text, marker, pos + len(marker))
+  end while
+  return ""
+end function
+
+function _json_field_object(text, field)
+  if typeof(text) != "string" or typeof(field) != "string" or field == "" then return "" end if
+  marker = "\"" + field + "\""
+  pos = s.indexOf(text, marker, 0)
+  while pos >= 0
+    colon = s.indexOf(text, ":", pos + len(marker))
+    if colon < 0 then return "" end if
+    i = _skip_json_ws(text, colon + 1)
+    if i < len(text) and text[i] == "{" then
+      close = _find_json_close(text, i, "{", "}")
+      if close > i then return s.substr(text, i, close - i + 1) end if
+      return ""
+    end if
+    pos = s.indexOf(text, marker, pos + len(marker))
+  end while
+  return ""
+end function
+
+function _json_field_array(text, field)
+  if typeof(text) != "string" or typeof(field) != "string" or field == "" then return "" end if
+  marker = "\"" + field + "\""
+  pos = s.indexOf(text, marker, 0)
+  while pos >= 0
+    colon = s.indexOf(text, ":", pos + len(marker))
+    if colon < 0 then return "" end if
+    i = _skip_json_ws(text, colon + 1)
+    if i < len(text) and text[i] == "[" then
+      close = _find_json_close(text, i, "[", "]")
+      if close > i then return s.substr(text, i, close - i + 1) end if
+      return ""
+    end if
+    pos = s.indexOf(text, marker, pos + len(marker))
+  end while
+  return ""
+end function
+
+function parse_tool_calls(response)
+  calls = []
+  arr = _json_field_array(response, "tool_calls")
+  if arr == "" then return calls end if
+  i = 0
+  while i < len(arr)
+    if arr[i] == "{" then
+      close = _find_json_close(arr, i, "{", "}")
+      if close <= i then break end if
+      obj = s.substr(arr, i, close - i + 1)
+      func = _json_field_object(obj, "function")
+      name = json_field_string(func, "name")
+      args = json_field_string(func, "arguments")
+      call_id = json_field_string(obj, "id")
+      if name != "" then calls = calls + [ToolCall(call_id, name, args)] end if
+      i = close
+    end if
+    i = i + 1
+  end while
+  return calls
+end function
+
 function parse_chat_content(response)
   if typeof(response) != "string" or response == "" then return "" end if
   marker = "\"content\""
@@ -420,22 +555,23 @@ function _short_text(text, limit)
 end function
 
 // Send one OpenAI-compatible chat-completions request through native WinHTTP.
-function chat_completion(project_root, config, prompt, context, transcript)
+function chat_completion(project_root, config, prompt, context, transcript, tool_results, include_tools)
   model = _config_value(config, "model", "gpt-5.1")
   key_result = _api_key_result(config)
-  if key_result[0] == false then return ProviderResult(false, key_result[2], "") end if
+  if key_result[0] == false then return ProviderResult(false, key_result[2], "", []) end if
   api_key = key_result[1]
 
   url = _chat_url(config)
-  body = _request_body(model, prompt, context, transcript)
+  body = _request_body(model, prompt, context, transcript, tool_results, include_tools)
   result = _http_post_json(url, api_key, body, _config_bool(config, "allow_insecure_tls", false))
   if result.ok == false then
     detail = result.error
     if result.body != "" then detail = detail + "\r\n\r\n" + _short_text(result.body, 4000) end if
-    return ProviderResult(false, detail, result.log)
+    return ProviderResult(false, detail, result.log, [])
   end if
 
+  tool_calls = parse_tool_calls(result.body)
   content = parse_chat_content(result.body)
-  if content == "" then return ProviderResult(false, "Provider response did not contain chat content:\r\n\r\n" + _short_text(result.body, 4000), result.log) end if
-  return ProviderResult(true, content, result.log)
+  if content == "" and len(tool_calls) <= 0 then return ProviderResult(false, "Provider response did not contain chat content:\r\n\r\n" + _short_text(result.body, 4000), result.log, []) end if
+  return ProviderResult(true, content, result.log, tool_calls)
 end function

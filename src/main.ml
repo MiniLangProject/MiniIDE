@@ -654,6 +654,88 @@ function _assistant_tool_context(st)
   return assistant.tool_context(st.project, _effective_compiler(st), st.assistant_config, st.current_file, st.open_files, st.open_dirty, st.active_tab, st.open_texts, st.build_last_log)
 end function
 
+// Return a simple string argument from a JSON object produced by tool calling.
+function _assistant_json_arg(args, name)
+  return ai_provider.json_field_string(args, name)
+end function
+
+// Return true when a resolved path stays inside the current project root.
+function _assistant_path_inside_project(st, path)
+  if typeof(st.project) != "struct" or typeof(path) != "string" or path == "" then return false end if
+  root = project_model.abspath(st.project.root)
+  abs = project_model.abspath(path)
+  root_l = s.toLowerAscii(root)
+  abs_l = s.toLowerAscii(abs)
+  if abs_l == root_l then return true end if
+  if len(abs_l) > len(root_l) and s.startsWith(abs_l, root_l) then
+    sep = abs[len(root)]
+    if sep == "\\" or sep == "/" then return true end if
+  end if
+  return false
+end function
+
+// Resolve a tool path against the project root and reject paths outside it.
+function _assistant_resolve_project_tool_path(st, rel_path)
+  if typeof(rel_path) != "string" or s.trim(rel_path) == "" then return ["", "Missing required path argument."] end if
+  rel_path = s.trim(rel_path)
+  target = rel_path
+  if _is_abs(target) == false then target = project_model.path_join(st.project.root, target) end if
+  if _assistant_path_inside_project(st, target) == false then return ["", "Path is outside the current project: " + rel_path] end if
+  return [project_model.abspath(target), ""]
+end function
+
+// Execute one read-only assistant tool call against the current IDE state.
+function _assistant_execute_tool_call(st, call)
+  if typeof(call) != "struct" then return "Invalid tool call." end if
+  name = call.name
+  if name == "miniide_get_active_file" then
+    return assistant.active_file_text(st.project.root, st.current_file, st.active_tab, st.open_texts)
+  end if
+  if name == "miniide_get_open_tabs" then
+    return assistant.open_tabs_text(st.project.root, st.open_files, st.open_dirty, st.active_tab)
+  end if
+  if name == "miniide_list_project_files" then
+    return assistant.project_files_text(st.project.root, st.project.files, 120)
+  end if
+  if name == "miniide_get_build_log" then
+    return assistant.build_log_text(st.build_last_log)
+  end if
+  if name == "miniide_get_minilang_help" then
+    return assistant.help_text(st.project.root, _effective_compiler(st))
+  end if
+  if name == "miniide_read_project_file" then
+    rel_path = _assistant_json_arg(call.arguments, "path")
+    resolved = _assistant_resolve_project_tool_path(st, rel_path)
+    if resolved[1] != "" then return resolved[1] end if
+    path = resolved[0]
+    if fs.exists(path) == false then return "Project file not found: " + rel_path end if
+    text = fs.readAllText(path)
+    if typeof(text) != "string" then return "Project file could not be read: " + rel_path end if
+    return "file: " + _project_relative_path(st, path) + "\nchars: " + len(text) + "\n```minilang\n" + assistant.excerpt(text, 8000) + "\n```"
+  end if
+  return "Unsupported read-only tool: " + name
+end function
+
+// Execute read-only tool calls requested by the assistant model.
+function _assistant_execute_tool_calls(st, calls)
+  text = ""
+  if typeof(calls) != "array" or len(calls) <= 0 then return text end if
+  for i = 0 to len(calls) - 1
+    call = calls[i]
+    if text != "" then text = text + "\n\n" end if
+    call_id = ""
+    call_name = ""
+    if typeof(call) == "struct" then
+      call_id = call.id
+      call_name = call.name
+    end if
+    text = text + "tool_call_id: " + call_id + "\n"
+    text = text + "tool_name: " + call_name + "\n"
+    text = text + "result:\n" + _assistant_execute_tool_call(st, call)
+  end for
+  return text
+end function
+
 // Show the assistant panel.
 function _show_assistant_panel(st)
   st.result_mode = "assistant"
@@ -688,11 +770,23 @@ function _assistant_send(st)
     return _show_assistant_panel(st)
   end if
   context = _assistant_tool_context(st)
-  result = ai_provider.chat_completion(st.project.root, st.assistant_config, prompt, context, st.assistant_transcript)
+  transcript_before_tools = st.assistant_transcript
+  result = ai_provider.chat_completion(st.project.root, st.assistant_config, prompt, context, transcript_before_tools, "", true)
   if typeof(result) != "struct" then
     st = _assistant_append(st, "Assistant", "Assistant provider call failed.")
   else if result.ok == false then
     st = _assistant_append(st, "Assistant", "Assistant provider call failed:\r\n\r\n" + result.text)
+  else if typeof(result.tool_calls) == "array" and len(result.tool_calls) > 0 then
+    tool_results = _assistant_execute_tool_calls(st, result.tool_calls)
+    st = _assistant_append(st, "Tools", tool_results)
+    final_result = ai_provider.chat_completion(st.project.root, st.assistant_config, prompt, context, transcript_before_tools, tool_results, false)
+    if typeof(final_result) != "struct" then
+      st = _assistant_append(st, "Assistant", "Assistant provider call failed after tool execution.")
+    else if final_result.ok == false then
+      st = _assistant_append(st, "Assistant", "Assistant provider call failed after tool execution:\r\n\r\n" + final_result.text)
+    else
+      st = _assistant_append(st, "Assistant", final_result.text)
+    end if
   else
     st = _assistant_append(st, "Assistant", result.text)
   end if

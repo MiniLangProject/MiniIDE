@@ -283,13 +283,19 @@ assistant. When enabled, MiniIDE sends the user prompt plus read-only local
 tool context to an OpenAI-compatible chat-completions endpoint through native
 WinHTTP networking. The context can include the active file excerpt, open tab
 excerpts, indexed project files, the latest build log, and a MiniLang
-language-reference excerpt. API keys are referenced through an environment
-variable name such as `OPENAI_API_KEY` by default. If needed, the assistant
-settings can be switched to direct-key mode; in that mode MiniIDE stores
-`ai.apiKey` in `.miniide.cfg`, so environment-variable mode remains the safer
-default for shared projects. For private OpenAI-compatible clusters with
-self-signed certificates, `ai.allowInsecureTls=true` relaxes certificate
-validation for assistant requests only.
+language-reference excerpt. MiniIDE also exposes OpenAI-compatible read-only
+tools for the active file, open tabs, project file list, bounded project-file
+reads, latest build log, and MiniLang help. The assistant may request these
+tools first; MiniIDE executes them locally and sends the results back for the
+final answer. Write tools are intentionally not enabled yet.
+
+API keys are referenced through an environment variable name such as
+`OPENAI_API_KEY` by default. If needed, the assistant settings can be switched
+to direct-key mode; in that mode MiniIDE stores `ai.apiKey` in `.miniide.cfg`,
+so environment-variable mode remains the safer default for shared projects.
+For private OpenAI-compatible clusters with self-signed certificates,
+`ai.allowInsecureTls=true` relaxes certificate validation for assistant
+requests only.
 
 ```ini
 ai.enabled=false
