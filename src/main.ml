@@ -328,6 +328,7 @@ const ID_AI_INCLUDE_PROJECT = 1598
 const ID_AI_INCLUDE_HELP = 1599
 const ID_AI_SETTINGS_OK = 1600
 const ID_AI_SETTINGS_CANCEL = 1601
+const ID_AI_ALLOW_INSECURE_TLS = 1602
 
 const ID_CTX_TAB_CLOSE = 1201
 const ID_CTX_TAB_CLOSE_OTHERS = 1202
@@ -1329,6 +1330,11 @@ function _load_assistant_tool_mode(p)
   return assistant.normalize_tool_mode(project_config.load_value(p, "ai.toolMode", "read-only"))
 end function
 
+// Load whether assistant HTTPS certificate validation may be relaxed.
+function _load_assistant_allow_insecure_tls(p)
+  return project_config.load_bool(p, "ai.allowInsecureTls", false)
+end function
+
 // Load build configuration.
 function _load_build_config(st)
   profile = _load_build_profile(st.project)
@@ -1356,6 +1362,7 @@ function _load_build_config(st)
     _load_assistant_api_key_env(st.project),
     _load_assistant_model(st.project),
     _load_assistant_tool_mode(st.project),
+    _load_assistant_allow_insecure_tls(st.project),
     project_config.load_bool(st.project, "ai.includeOpenTabs", true),
     project_config.load_bool(st.project, "ai.includeProjectFiles", true),
     project_config.load_bool(st.project, "ai.includeMiniLangHelp", true))
@@ -1381,6 +1388,7 @@ function _save_config(st)
   text = text + "ai.apiKeyEnv=" + st.assistant_config.api_key_env + "\n"
   text = text + "ai.model=" + st.assistant_config.model + "\n"
   text = text + "ai.toolMode=" + st.assistant_config.tool_mode + "\n"
+  text = text + "ai.allowInsecureTls=" + st.assistant_config.allow_insecure_tls + "\n"
   text = text + "ai.includeOpenTabs=" + st.assistant_config.include_tabs + "\n"
   text = text + "ai.includeProjectFiles=" + st.assistant_config.include_project + "\n"
   text = text + "ai.includeMiniLangHelp=" + st.assistant_config.include_help + "\n"
@@ -2680,7 +2688,8 @@ function _show_config(st)
   msg = msg + "AI base URL: " + st.assistant_config.base_url + "\n"
   msg = msg + "AI API key env: " + st.assistant_config.api_key_env + "\n"
   msg = msg + "AI model: " + st.assistant_config.model + "\n"
-  msg = msg + "AI tool mode: " + st.assistant_config.tool_mode + "\n\n"
+  msg = msg + "AI tool mode: " + st.assistant_config.tool_mode + "\n"
+  msg = msg + "AI allow self-signed TLS: " + st.assistant_config.allow_insecure_tls + "\n\n"
   msg = msg + "Edit .miniide.cfg for advanced options:\n"
   msg = msg + "compiler, profile, theme, keepGoing, maxErrors, subsystem, extraArgs, ai.*"
   win.MessageBoxW(st.hwnd, msg, "MiniIDE configuration", 0)
@@ -2710,6 +2719,14 @@ function _settings_edit_id(parent, font, text, x, y, w, h, control_id)
   return hwnd
 end function
 
+// Create a settings combo box with fixed choices.
+function _settings_combo_id(parent, font, x, y, w, h, control_id)
+  style = win.WS_TABSTOP | win.CBS_DROPDOWNLIST | win.CBS_HASSTRINGS | win.WS_VSCROLL
+  hwnd = win.create_child_id(parent, "COMBOBOX", "", win.WS_EX_CLIENTEDGE, style, x, y, w, h, control_id)
+  win.set_control_font(hwnd, font)
+  return hwnd
+end function
+
 // Return the settings button.
 function _settings_button(parent, font, text, x, y, w, h, control_id)
   style = win.WS_TABSTOP | win.BS_PUSHBUTTON
@@ -2730,23 +2747,46 @@ function _refresh_settings_buttons(keep_btn, subsystem_btn, keep_going, subsyste
   win.set_window_text(subsystem_btn, "Subsystem: " + subsystem)
 end function
 
+// Return the combo-box index for a provider type.
+function _provider_combo_index(provider)
+  provider = assistant.normalize_provider(provider)
+  if provider == "openai-compatible" then return 1 end if
+  return 0
+end function
+
+// Return the provider type represented by the combo-box selection.
+function _provider_from_combo(provider_combo)
+  idx = win.combo_getsel(provider_combo)
+  if idx == 1 then return "openai-compatible" end if
+  return "openai"
+end function
+
+// Populate the provider type combo box.
+function _populate_provider_combo(provider_combo, provider)
+  win.combo_add(provider_combo, "openai")
+  win.combo_add(provider_combo, "openai-compatible")
+  win.combo_setsel(provider_combo, _provider_combo_index(provider))
+end function
+
 // Refresh assistant settings toggle buttons.
-function _refresh_assistant_settings_buttons(enabled_btn, tabs_btn, project_btn, help_btn, enabled, include_tabs, include_project, include_help)
+function _refresh_assistant_settings_buttons(enabled_btn, tls_btn, tabs_btn, project_btn, help_btn, enabled, allow_insecure_tls, include_tabs, include_project, include_help)
   win.set_window_text(enabled_btn, "Assistant: " + _on_off(enabled))
+  win.set_window_text(tls_btn, "Allow self-signed TLS: " + _on_off(allow_insecure_tls))
   win.set_window_text(tabs_btn, "Open tabs: " + _on_off(include_tabs))
   win.set_window_text(project_btn, "Project files: " + _on_off(include_project))
   win.set_window_text(help_btn, "MiniLang help: " + _on_off(include_help))
 end function
 
 // Read assistant settings from controls.
-function _read_assistant_dialog_config(provider_edit, base_url_edit, key_env_edit, model_edit, tool_mode_edit, enabled, include_tabs, include_project, include_help)
+function _read_assistant_dialog_config(provider_combo, base_url_edit, key_env_edit, model_edit, tool_mode_edit, enabled, allow_insecure_tls, include_tabs, include_project, include_help)
   return assistant.AssistantConfig(
     enabled,
-    assistant.normalize_provider(win.get_control_text(provider_edit)),
+    _provider_from_combo(provider_combo),
     s.trim(win.get_control_text(base_url_edit)),
     s.trim(win.get_control_text(key_env_edit)),
     s.trim(win.get_control_text(model_edit)),
     assistant.normalize_tool_mode(win.get_control_text(tool_mode_edit)),
+    allow_insecure_tls,
     include_tabs,
     include_project,
     include_help)
@@ -2754,39 +2794,42 @@ end function
 
 // Open assistant settings window.
 function _open_assistant_settings_window(st)
-  dlg = win.create_main_window("AI Assistant Settings", 760, 430)
+  dlg = win.create_main_window("AI Assistant Settings", 780, 470)
   if dlg is void then return _set_log(st, "AI Assistant Settings could not be opened.") end if
 
   _settings_label(dlg, st.font_ui, "Provider", 20, 26, 140, 24)
-  provider_edit = _settings_edit_id(dlg, st.font_ui, st.assistant_config.provider, 180, 22, 520, 26, ID_AI_PROVIDER_EDIT)
-  _settings_label(dlg, st.font_ui, "Use openai or openai-compatible.", 180, 50, 520, 22)
+  provider_combo = _settings_combo_id(dlg, st.font_ui, 180, 22, 250, 120, ID_AI_PROVIDER_EDIT)
+  _populate_provider_combo(provider_combo, st.assistant_config.provider)
+  _settings_label(dlg, st.font_ui, "Choose OpenAI or an OpenAI-compatible endpoint.", 448, 26, 292, 24)
 
   _settings_label(dlg, st.font_ui, "Base URL", 20, 86, 140, 24)
-  base_url_edit = _settings_edit_id(dlg, st.font_ui, st.assistant_config.base_url, 180, 82, 520, 26, ID_AI_BASE_URL_EDIT)
+  base_url_edit = _settings_edit_id(dlg, st.font_ui, st.assistant_config.base_url, 180, 82, 540, 26, ID_AI_BASE_URL_EDIT)
 
   _settings_label(dlg, st.font_ui, "API key env", 20, 126, 140, 24)
   key_env_edit = _settings_edit_id(dlg, st.font_ui, st.assistant_config.api_key_env, 180, 122, 220, 26, ID_AI_KEY_ENV_EDIT)
-  _settings_label(dlg, st.font_ui, "MiniIDE stores the environment variable name, not the key.", 414, 126, 286, 24)
+  _settings_label(dlg, st.font_ui, "MiniIDE stores the environment variable name, not the key.", 414, 126, 326, 24)
 
   _settings_label(dlg, st.font_ui, "Model", 20, 166, 140, 24)
   model_edit = _settings_edit_id(dlg, st.font_ui, st.assistant_config.model, 180, 162, 220, 26, ID_AI_MODEL_EDIT)
 
   _settings_label(dlg, st.font_ui, "Tool mode", 20, 206, 140, 24)
   tool_mode_edit = _settings_edit_id(dlg, st.font_ui, st.assistant_config.tool_mode, 180, 202, 220, 26, ID_AI_TOOL_MODE_EDIT)
-  _settings_label(dlg, st.font_ui, "read-only now; confirm-writes is reserved for patch preview.", 414, 206, 286, 24)
+  _settings_label(dlg, st.font_ui, "read-only now; confirm-writes is reserved for patch preview.", 414, 206, 326, 24)
 
   enabled = st.assistant_config.enabled
+  allow_insecure_tls = st.assistant_config.allow_insecure_tls
   include_tabs = st.assistant_config.include_tabs
   include_project = st.assistant_config.include_project
   include_help = st.assistant_config.include_help
   enabled_btn = _settings_button(dlg, st.font_ui, "", 180, 256, 150, 28, ID_AI_ENABLED)
-  tabs_btn = _settings_button(dlg, st.font_ui, "", 342, 256, 150, 28, ID_AI_INCLUDE_TABS)
-  project_btn = _settings_button(dlg, st.font_ui, "", 504, 256, 150, 28, ID_AI_INCLUDE_PROJECT)
-  help_btn = _settings_button(dlg, st.font_ui, "", 180, 296, 150, 28, ID_AI_INCLUDE_HELP)
-  _refresh_assistant_settings_buttons(enabled_btn, tabs_btn, project_btn, help_btn, enabled, include_tabs, include_project, include_help)
+  tls_btn = _settings_button(dlg, st.font_ui, "", 342, 256, 220, 28, ID_AI_ALLOW_INSECURE_TLS)
+  tabs_btn = _settings_button(dlg, st.font_ui, "", 180, 296, 150, 28, ID_AI_INCLUDE_TABS)
+  project_btn = _settings_button(dlg, st.font_ui, "", 342, 296, 150, 28, ID_AI_INCLUDE_PROJECT)
+  help_btn = _settings_button(dlg, st.font_ui, "", 504, 296, 150, 28, ID_AI_INCLUDE_HELP)
+  _refresh_assistant_settings_buttons(enabled_btn, tls_btn, tabs_btn, project_btn, help_btn, enabled, allow_insecure_tls, include_tabs, include_project, include_help)
 
-  ok_btn = _settings_button(dlg, st.font_ui, "OK", 500, 360, 92, 30, ID_AI_SETTINGS_OK)
-  cancel_btn = _settings_button(dlg, st.font_ui, "Cancel", 604, 360, 100, 30, ID_AI_SETTINGS_CANCEL)
+  ok_btn = _settings_button(dlg, st.font_ui, "OK", 520, 400, 92, 30, ID_AI_SETTINGS_OK)
+  cancel_btn = _settings_button(dlg, st.font_ui, "Cancel", 624, 400, 100, 30, ID_AI_SETTINGS_CANCEL)
 
   done = false
   while done == false and win.IsWindow(dlg)
@@ -2819,7 +2862,7 @@ function _open_assistant_settings_window(st)
           win.DestroyWindow(dlg)
           handled = true
         else if key == win.VK_RETURN then
-          st.assistant_config = _read_assistant_dialog_config(provider_edit, base_url_edit, key_env_edit, model_edit, tool_mode_edit, enabled, include_tabs, include_project, include_help)
+          st.assistant_config = _read_assistant_dialog_config(provider_combo, base_url_edit, key_env_edit, model_edit, tool_mode_edit, enabled, allow_insecure_tls, include_tabs, include_project, include_help)
           st = _save_config(st)
           done = true
           win.DestroyWindow(dlg)
@@ -2828,18 +2871,19 @@ function _open_assistant_settings_window(st)
       else if code == win.WM_COMMAND and hwnd == dlg then
         cid = win.msg_command_id(msg)
         if cid == ID_AI_ENABLED then enabled = enabled == false end if
+        if cid == ID_AI_ALLOW_INSECURE_TLS then allow_insecure_tls = allow_insecure_tls == false end if
         if cid == ID_AI_INCLUDE_TABS then include_tabs = include_tabs == false end if
         if cid == ID_AI_INCLUDE_PROJECT then include_project = include_project == false end if
         if cid == ID_AI_INCLUDE_HELP then include_help = include_help == false end if
-        if cid == ID_AI_ENABLED or cid == ID_AI_INCLUDE_TABS or cid == ID_AI_INCLUDE_PROJECT or cid == ID_AI_INCLUDE_HELP then
-          _refresh_assistant_settings_buttons(enabled_btn, tabs_btn, project_btn, help_btn, enabled, include_tabs, include_project, include_help)
+        if cid == ID_AI_ENABLED or cid == ID_AI_ALLOW_INSECURE_TLS or cid == ID_AI_INCLUDE_TABS or cid == ID_AI_INCLUDE_PROJECT or cid == ID_AI_INCLUDE_HELP then
+          _refresh_assistant_settings_buttons(enabled_btn, tls_btn, tabs_btn, project_btn, help_btn, enabled, allow_insecure_tls, include_tabs, include_project, include_help)
           handled = true
         else if cid == ID_AI_SETTINGS_CANCEL then
           done = true
           win.DestroyWindow(dlg)
           handled = true
         else if cid == ID_AI_SETTINGS_OK then
-          st.assistant_config = _read_assistant_dialog_config(provider_edit, base_url_edit, key_env_edit, model_edit, tool_mode_edit, enabled, include_tabs, include_project, include_help)
+          st.assistant_config = _read_assistant_dialog_config(provider_combo, base_url_edit, key_env_edit, model_edit, tool_mode_edit, enabled, allow_insecure_tls, include_tabs, include_project, include_help)
           st = _save_config(st)
           done = true
           win.DestroyWindow(dlg)
@@ -2847,18 +2891,19 @@ function _open_assistant_settings_window(st)
         end if
       else if code == win.WM_LBUTTONUP then
         if hwnd == enabled_btn then enabled = enabled == false end if
+        if hwnd == tls_btn then allow_insecure_tls = allow_insecure_tls == false end if
         if hwnd == tabs_btn then include_tabs = include_tabs == false end if
         if hwnd == project_btn then include_project = include_project == false end if
         if hwnd == help_btn then include_help = include_help == false end if
-        if hwnd == enabled_btn or hwnd == tabs_btn or hwnd == project_btn or hwnd == help_btn then
-          _refresh_assistant_settings_buttons(enabled_btn, tabs_btn, project_btn, help_btn, enabled, include_tabs, include_project, include_help)
+        if hwnd == enabled_btn or hwnd == tls_btn or hwnd == tabs_btn or hwnd == project_btn or hwnd == help_btn then
+          _refresh_assistant_settings_buttons(enabled_btn, tls_btn, tabs_btn, project_btn, help_btn, enabled, allow_insecure_tls, include_tabs, include_project, include_help)
           handled = true
         else if hwnd == cancel_btn then
           done = true
           win.DestroyWindow(dlg)
           handled = true
         else if hwnd == ok_btn then
-          st.assistant_config = _read_assistant_dialog_config(provider_edit, base_url_edit, key_env_edit, model_edit, tool_mode_edit, enabled, include_tabs, include_project, include_help)
+          st.assistant_config = _read_assistant_dialog_config(provider_combo, base_url_edit, key_env_edit, model_edit, tool_mode_edit, enabled, allow_insecure_tls, include_tabs, include_project, include_help)
           st = _save_config(st)
           done = true
           win.DestroyWindow(dlg)
@@ -5238,10 +5283,11 @@ function _create_state(root)
   assistant_api_key_env = _load_assistant_api_key_env(p)
   assistant_model = _load_assistant_model(p)
   assistant_tool_mode = _load_assistant_tool_mode(p)
+  assistant_allow_insecure_tls = _load_assistant_allow_insecure_tls(p)
   assistant_include_tabs = project_config.load_bool(p, "ai.includeOpenTabs", true)
   assistant_include_project = project_config.load_bool(p, "ai.includeProjectFiles", true)
   assistant_include_help = project_config.load_bool(p, "ai.includeMiniLangHelp", true)
-  assistant_config = assistant.AssistantConfig(assistant_enabled, assistant_provider, assistant_base_url, assistant_api_key_env, assistant_model, assistant_tool_mode, assistant_include_tabs, assistant_include_project, assistant_include_help)
+  assistant_config = assistant.AssistantConfig(assistant_enabled, assistant_provider, assistant_base_url, assistant_api_key_env, assistant_model, assistant_tool_mode, assistant_allow_insecure_tls, assistant_include_tabs, assistant_include_project, assistant_include_help)
   win.init_common_controls()
   hwnd = win.create_main_window("MiniIDE", 1180, 760)
   menus = _create_menus()

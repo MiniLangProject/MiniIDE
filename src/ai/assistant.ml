@@ -27,6 +27,7 @@ struct AssistantConfig
   api_key_env,
   model,
   tool_mode,
+  allow_insecure_tls,
   include_tabs,
   include_project,
   include_help,

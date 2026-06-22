@@ -285,7 +285,9 @@ WinHTTP networking. The context can include the active file excerpt, open tab
 excerpts, indexed project files, the latest build log, and a MiniLang
 language-reference excerpt. API keys are referenced through an environment
 variable name such as `OPENAI_API_KEY`; MiniIDE does not store the secret
-itself.
+itself. For private OpenAI-compatible clusters with self-signed certificates,
+`ai.allowInsecureTls=true` relaxes certificate validation for assistant
+requests only.
 
 ```ini
 ai.enabled=false
@@ -294,6 +296,7 @@ ai.baseUrl=https://api.openai.com/v1
 ai.apiKeyEnv=OPENAI_API_KEY
 ai.model=gpt-5.1
 ai.toolMode=read-only
+ai.allowInsecureTls=false
 ai.includeOpenTabs=true
 ai.includeProjectFiles=true
 ai.includeMiniLangHelp=true

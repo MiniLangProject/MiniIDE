@@ -24,6 +24,7 @@ extern function WinHttpConnect(session as ptr, serverName as wstr, serverPort as
 extern function WinHttpOpenRequest(connect as ptr, verb as wstr, objectName as wstr, version as ptr, referrer as ptr, acceptTypes as ptr, flags as u32) from "winhttp.dll" returns ptr
 extern function WinHttpSendRequest(request as ptr, headers as wstr, headersLength as u32, optional as bytes, optionalLength as u32, totalLength as u32, context as ptr) from "winhttp.dll" returns bool
 extern function WinHttpReceiveResponse(request as ptr, reserved as ptr) from "winhttp.dll" returns bool
+extern function WinHttpSetOption(handle as ptr, option as u32, buffer as bytes, bufferLength as u32) from "winhttp.dll" returns bool
 extern function WinHttpQueryHeaders(request as ptr, infoLevel as u32, name as ptr, buffer as bytes, bufferLength as bytes, index as ptr) from "winhttp.dll" returns bool
 extern function WinHttpQueryDataAvailable(request as ptr, bytesAvailable as bytes) from "winhttp.dll" returns bool
 extern function WinHttpReadData(request as ptr, buffer as bytes, bytesToRead as u32, bytesRead as bytes) from "winhttp.dll" returns bool
@@ -33,8 +34,13 @@ extern function GetLastError() from "kernel32.dll" returns u32
 
 const WINHTTP_ACCESS_TYPE_DEFAULT_PROXY = 0
 const WINHTTP_FLAG_SECURE = 0x00800000
+const WINHTTP_OPTION_SECURITY_FLAGS = 31
 const WINHTTP_QUERY_STATUS_CODE = 19
 const WINHTTP_QUERY_FLAG_NUMBER = 0x20000000
+const SECURITY_FLAG_IGNORE_UNKNOWN_CA = 0x00000100
+const SECURITY_FLAG_IGNORE_CERT_WRONG_USAGE = 0x00000200
+const SECURITY_FLAG_IGNORE_CERT_CN_INVALID = 0x00001000
+const SECURITY_FLAG_IGNORE_CERT_DATE_INVALID = 0x00002000
 
 struct ProviderResult
   ok,
@@ -128,6 +134,13 @@ function _config_value(config, field, fallback)
     if field == "base_url" and typeof(config.base_url) == "string" and config.base_url != "" then return config.base_url end if
     if field == "api_key_env" and typeof(config.api_key_env) == "string" and config.api_key_env != "" then return config.api_key_env end if
     if field == "model" and typeof(config.model) == "string" and config.model != "" then return config.model end if
+  end if
+  return fallback
+end function
+
+function _config_bool(config, field, fallback)
+  if typeof(config) == "struct" then
+    if field == "allow_insecure_tls" and typeof(config.allow_insecure_tls) == "bool" then return config.allow_insecure_tls end if
   end if
   return fallback
 end function
@@ -246,7 +259,7 @@ function _read_response_body(request)
   return [true, response_builder.toString(), ""]
 end function
 
-function _http_post_json(url, api_key, body)
+function _http_post_json(url, api_key, body, allow_insecure_tls)
   parsed = _parse_url(url)
   if parsed.ok == false then return HttpResult(false, 0, "", parsed.error, parsed.error) end if
 
@@ -273,6 +286,20 @@ function _http_post_json(url, api_key, body)
     _close_http(connect)
     _close_http(session)
     return HttpResult(false, 0, "", err, log)
+  end if
+
+  if parsed.secure and allow_insecure_tls then
+    security_flags = bytes(4, 0)
+    _write_u32(security_flags, 0, SECURITY_FLAG_IGNORE_UNKNOWN_CA | SECURITY_FLAG_IGNORE_CERT_WRONG_USAGE | SECURITY_FLAG_IGNORE_CERT_CN_INVALID | SECURITY_FLAG_IGNORE_CERT_DATE_INVALID)
+    ok_security = WinHttpSetOption(request, WINHTTP_OPTION_SECURITY_FLAGS, security_flags, 4)
+    if ok_security == false then
+      err = "WinHttpSetOption security flags failed: " + GetLastError()
+      _close_http(request)
+      _close_http(connect)
+      _close_http(session)
+      return HttpResult(false, 0, "", err, log)
+    end if
+    log = log + "\r\nTLS certificate validation: relaxed"
   end if
 
   headers = "Content-Type: application/json\r\nAccept: application/json\r\nAuthorization: Bearer " + api_key + "\r\n"
@@ -384,7 +411,7 @@ function chat_completion(project_root, config, prompt, context, transcript)
 
   url = _chat_url(config)
   body = _request_body(model, prompt, context, transcript)
-  result = _http_post_json(url, api_key, body)
+  result = _http_post_json(url, api_key, body, _config_bool(config, "allow_insecure_tls", false))
   if result.ok == false then
     detail = result.error
     if result.body != "" then detail = detail + "\r\n\r\n" + _short_text(result.body, 4000) end if
