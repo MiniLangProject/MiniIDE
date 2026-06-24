@@ -285,9 +285,10 @@ WinHTTP networking. The context can include the active file excerpt, open tab
 excerpts, indexed project files, the latest build log, and a MiniLang
 language-reference excerpt. MiniIDE also exposes OpenAI-compatible read-only
 tools for the active file, open tabs, project file list, bounded project-file
-reads, latest build log, and MiniLang help. The assistant may request these
-tools first; MiniIDE executes them locally and sends the results back for the
-final answer. Write tools are intentionally not enabled yet.
+reads, current selection, latest build log, MiniLang help, diagnostics, symbol
+search, and references. The assistant may request tools over up to four local
+rounds; MiniIDE executes them locally and sends the accumulated results back
+for the final answer. Write tools are intentionally not enabled yet.
 
 API keys are referenced through an environment variable name such as
 `OPENAI_API_KEY` by default. If needed, the assistant settings can be switched

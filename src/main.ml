@@ -684,6 +684,104 @@ function _assistant_resolve_project_tool_path(st, rel_path)
   return [project_model.abspath(target), ""]
 end function
 
+// Return project diagnostics in assistant-friendly text form.
+function _assistant_diagnostics_text(st)
+  snapshot = lang_service.analyze_project(st.project)
+  diagnostics = lang_service.diagnostics(snapshot)
+  inspections = lang_service.code_inspection_items(snapshot, 100)
+  text = "diagnostics:\n"
+  count = 0
+  if typeof(diagnostics) == "array" then
+    for i = 0 to len(diagnostics) - 1
+      d = diagnostics[i]
+      if typeof(d) != "struct" then continue end if
+      text = text + "- " + d.kind + " " + _project_relative_path(st, d.file) + ":" + d.line + ":" + d.col + " " + d.message + "\n"
+      count = count + 1
+    end for
+  end if
+  if count <= 0 then text = text + "- none\n" end if
+
+  text = text + "\ncode_inspections:\n"
+  inspection_count = 0
+  if typeof(inspections) == "array" then
+    for i = 0 to len(inspections) - 1
+      item = inspections[i]
+      if typeof(item) != "struct" then continue end if
+      text = text + "- " + item.severity + " " + _project_relative_path(st, item.file) + ":" + item.line + ":" + item.col + " " + item.message + "\n"
+      inspection_count = inspection_count + 1
+    end for
+  end if
+  if inspection_count <= 0 then text = text + "- none\n" end if
+  return text
+end function
+
+// Return project symbols matching a query in assistant-friendly text form.
+function _assistant_symbols_text(st, query)
+  snapshot = lang_service.analyze_project(st.project)
+  items = lang_service.symbol_items(snapshot, query, 80)
+  text = "symbols"
+  if typeof(query) == "string" and s.trim(query) != "" then text = text + " for " + s.trim(query) end if
+  text = text + ":\n"
+  if typeof(items) != "array" or len(items) <= 0 then return text + "- none\n" end if
+  for i = 0 to len(items) - 1
+    item = items[i]
+    if typeof(item) != "struct" then continue end if
+    text = text + "- " + item.kind + " " + item.name + " " + _project_relative_path(st, item.file) + ":" + (item.line + 1) + "\n"
+  end for
+  return text
+end function
+
+// Return references for a symbol in assistant-friendly text form.
+function _assistant_references_text(st, word)
+  if typeof(word) != "string" or s.trim(word) == "" then
+    editor_text = win.edit_get_text(st.editor)
+    sel = win.edit_getsel(st.editor)
+    word = _word_at_pos(editor_text, sel[0])
+  end if
+  word = s.trim(word)
+  if word == "" then return "references:\n- no symbol provided and no symbol at cursor\n" end if
+  snapshot = lang_service.analyze_project(st.project)
+  refs = lang_service.references(snapshot, word, 120)
+  text = "references for " + word + ":\n"
+  if typeof(refs) != "array" or len(refs) <= 0 then return text + "- none\n" end if
+  for i = 0 to len(refs) - 1
+    ref = refs[i]
+    if typeof(ref) != "struct" then continue end if
+    text = text + "- " + _project_relative_path(st, ref.file) + ":" + ref.line + ":" + ref.col + " " + ref.text + "\n"
+  end for
+  return text
+end function
+
+// Return current selection or cursor context.
+function _assistant_selection_text(st)
+  if st.active_tab < 0 or st.active_tab >= len(st.open_texts) then return "selection:\n- no active editor tab\n" end if
+  text = win.edit_get_text(st.editor)
+  sel = win.edit_getsel(st.editor)
+  start = sel[0]
+  finish = sel[1]
+  if finish < start then
+    tmp = start
+    start = finish
+    finish = tmp
+  end if
+  line = win.edit_line_from_char(st.editor, start) + 1
+  line_start = win.edit_line_index(st.editor, line - 1)
+  col = 1
+  if typeof(line_start) == "int" and line_start >= 0 then col = start - line_start + 1 end if
+  before = start - 300
+  if before < 0 then before = 0 end if
+  after = finish + 300
+  if after > len(text) then after = len(text) end if
+  selected = ""
+  if finish > start then selected = s.substr(text, start, finish - start) end if
+  excerpt = ""
+  if after > before then excerpt = s.substr(text, before, after - before) end if
+  result = "selection:\nfile: " + _project_relative_path(st, st.current_file) + "\nline: " + line + "\ncol: " + col + "\nselected_chars: " + len(selected) + "\n"
+  if selected != "" then result = result + "selected_text:\n```minilang\n" + assistant.excerpt(selected, 4000) + "\n```\n" end if
+  result = result + "nearby_excerpt:\n```minilang\n" + assistant.excerpt(excerpt, 4000) + "\n```\n"
+  return result
+end function
+
 // Execute one read-only assistant tool call against the current IDE state.
 function _assistant_execute_tool_call(st, call)
   if typeof(call) != "struct" then return "Invalid tool call." end if
@@ -702,6 +800,18 @@ function _assistant_execute_tool_call(st, call)
   end if
   if name == "miniide_get_minilang_help" then
     return assistant.help_text(st.project.root, _effective_compiler(st))
+  end if
+  if name == "miniide_get_diagnostics" then
+    return _assistant_diagnostics_text(st)
+  end if
+  if name == "miniide_search_symbols" then
+    return _assistant_symbols_text(st, _assistant_json_arg(call.arguments, "query"))
+  end if
+  if name == "miniide_find_references" then
+    return _assistant_references_text(st, _assistant_json_arg(call.arguments, "symbol"))
+  end if
+  if name == "miniide_get_selection" then
+    return _assistant_selection_text(st)
   end if
   if name == "miniide_read_project_file" then
     rel_path = _assistant_json_arg(call.arguments, "path")
@@ -748,7 +858,7 @@ function _show_assistant_panel(st)
   win.ShowWindow(st.assistant_send, win.SW_SHOW)
   win.set_window_text(st.panel_title, "Assistant")
   if typeof(st.assistant_transcript) != "string" or st.assistant_transcript == "" then
-    st.assistant_transcript = "Assistant:\r\nConfigured local read-only tooling is ready. Enable provider calls in Configuration > AI Assistant Settings."
+    st.assistant_transcript = "Assistant:\r\nRead-only MiniLang tooling is ready. Enable provider calls in Configuration > AI Assistant Settings."
   end if
   win.set_window_text(st.assistant_output, st.assistant_transcript)
   win.edit_set_background(st.assistant_output, theme.panel_bg(st))
@@ -769,26 +879,39 @@ function _assistant_send(st)
     st = _assistant_append(st, "Assistant", "AI provider calls are disabled. Open Configuration > AI Assistant Settings to enable the assistant. Local tool context is available through Assistant > Show Tool Context.")
     return _show_assistant_panel(st)
   end if
+  win.set_window_text(st.panel_title, "Assistant - thinking")
   context = _assistant_tool_context(st)
   transcript_before_tools = st.assistant_transcript
-  result = ai_provider.chat_completion(st.project.root, st.assistant_config, prompt, context, transcript_before_tools, "", true)
-  if typeof(result) != "struct" then
-    st = _assistant_append(st, "Assistant", "Assistant provider call failed.")
-  else if result.ok == false then
-    st = _assistant_append(st, "Assistant", "Assistant provider call failed:\r\n\r\n" + result.text)
-  else if typeof(result.tool_calls) == "array" and len(result.tool_calls) > 0 then
-    tool_results = _assistant_execute_tool_calls(st, result.tool_calls)
-    st = _assistant_append(st, "Tools", tool_results)
-    final_result = ai_provider.chat_completion(st.project.root, st.assistant_config, prompt, context, transcript_before_tools, tool_results, false)
-    if typeof(final_result) != "struct" then
-      st = _assistant_append(st, "Assistant", "Assistant provider call failed after tool execution.")
-    else if final_result.ok == false then
-      st = _assistant_append(st, "Assistant", "Assistant provider call failed after tool execution:\r\n\r\n" + final_result.text)
+  accumulated_tool_results = ""
+  final_text = ""
+  failed_text = ""
+  round = 0
+  done = false
+  while done == false and round < 4
+    result = ai_provider.chat_completion(st.project.root, st.assistant_config, prompt, context, transcript_before_tools, accumulated_tool_results, true)
+    if typeof(result) != "struct" then
+      failed_text = "Assistant provider call failed."
+      done = true
+    else if result.ok == false then
+      failed_text = "Assistant provider call failed:\r\n\r\n" + result.text
+      done = true
+    else if typeof(result.tool_calls) == "array" and len(result.tool_calls) > 0 then
+      round = round + 1
+      tool_results = _assistant_execute_tool_calls(st, result.tool_calls)
+      if accumulated_tool_results != "" then accumulated_tool_results = accumulated_tool_results + "\n\n" end if
+      accumulated_tool_results = accumulated_tool_results + "tool_round: " + round + "\n" + tool_results
+      st = _assistant_append(st, "Tools", "Round " + round + "\r\n" + tool_results)
     else
-      st = _assistant_append(st, "Assistant", final_result.text)
+      final_text = result.text
+      done = true
     end if
+  end while
+  if failed_text != "" then
+    st = _assistant_append(st, "Assistant", failed_text)
+  else if final_text != "" then
+    st = _assistant_append(st, "Assistant", final_text)
   else
-    st = _assistant_append(st, "Assistant", result.text)
+    st = _assistant_append(st, "Assistant", "Assistant stopped after 4 tool rounds without a final answer. Try a narrower request or disable tool use on the provider side.")
   end if
   return _show_assistant_panel(st)
 end function
