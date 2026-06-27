@@ -282,6 +282,8 @@ function Test-StaticWiring {
   Assert-True ($main.Contains("ID_AI_ALLOW_INSECURE_TLS")) "Assistant settings must expose the self-signed TLS toggle."
   Assert-True ($main.Contains("ID_AI_KEY_MODE")) "Assistant settings must expose the API key source selector."
   Assert-True ($main.Contains("ID_AI_API_KEY_EDIT")) "Assistant settings must expose the direct API key input."
+  Assert-True ($main.Contains("cid == ID_AI_ENABLED")) "Assistant settings toggles must be handled through WM_COMMAND command IDs."
+  Assert-True (-not $main.Contains("if hwnd == enabled_btn then enabled = enabled == false end if")) "Assistant settings toggle buttons must not also handle WM_LBUTTONUP."
   Assert-True ($win32.Contains("ES_PASSWORD")) "Direct API key input must use password edit styling."
   Assert-True ($main.Contains('import "ai/assistant.ml" as assistant')) "Assistant module import is missing."
   Assert-True ($main.Contains('import "ai/provider.ml" as ai_provider')) "Assistant provider module import is missing."

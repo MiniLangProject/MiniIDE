@@ -3194,26 +3194,6 @@ function _open_assistant_settings_window(st)
           win.DestroyWindow(dlg)
           handled = true
         end if
-      else if code == win.WM_LBUTTONUP then
-        if hwnd == enabled_btn then enabled = enabled == false end if
-        if hwnd == tls_btn then allow_insecure_tls = allow_insecure_tls == false end if
-        if hwnd == tabs_btn then include_tabs = include_tabs == false end if
-        if hwnd == project_btn then include_project = include_project == false end if
-        if hwnd == help_btn then include_help = include_help == false end if
-        if hwnd == enabled_btn or hwnd == tls_btn or hwnd == tabs_btn or hwnd == project_btn or hwnd == help_btn then
-          _refresh_assistant_settings_buttons(enabled_btn, tls_btn, tabs_btn, project_btn, help_btn, enabled, allow_insecure_tls, include_tabs, include_project, include_help)
-          handled = true
-        else if hwnd == cancel_btn then
-          done = true
-          win.DestroyWindow(dlg)
-          handled = true
-        else if hwnd == ok_btn then
-          st.assistant_config = _read_assistant_dialog_config(provider_combo, base_url_edit, key_mode_combo, key_env_edit, api_key_edit, model_edit, tool_mode_edit, enabled, allow_insecure_tls, include_tabs, include_project, include_help)
-          st = _save_config(st)
-          done = true
-          win.DestroyWindow(dlg)
-          handled = true
-        end if
       end if
 
       if handled == false then
