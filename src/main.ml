@@ -7142,18 +7142,14 @@ function _handle_hotkeys(st)
   if alt and _key_pressed(st, win.VK_UP) then return _goto_bookmark(st, -1) end if
   if alt and _key_pressed(st, win.VK_F1) then return _reveal_active_file(st) end if
   if ctrl and _key_pressed(st, win.VK_O) then return _open_project_dialog(st) end if
-  if ctrl and _key_pressed(st, win.VK_A) then return _edit_select_all(st) end if
   if ctrl and _key_pressed(st, win.VK_E) then return _show_recent_files(st) end if
   if ctrl and shift and _key_pressed(st, win.VK_S) then return _save_all(st) end if
   if ctrl and _key_pressed(st, win.VK_S) then return _save_current(st) end if
-  if ctrl and _key_pressed(st, win.VK_X) then return _edit_cut(st) end if
-  if ctrl and _key_pressed(st, win.VK_C) then return _edit_copy(st) end if
   if ctrl and _key_pressed(st, win.VK_F) then return _open_find_window(st) end if
   if ctrl and _key_pressed(st, win.VK_G) then return _open_goto_line_window(st) end if
   if ctrl and shift and _key_pressed(st, win.VK_P) then return _open_command_palette(st) end if
   if ctrl and _key_pressed(st, win.VK_P) then return _open_quick_open_window(st) end if
   if ctrl and _key_pressed(st, win.VK_T) then return _open_goto_symbol_window(st) end if
-  if ctrl and _key_pressed(st, win.VK_V) then return _edit_paste(st) end if
   if ctrl and _key_pressed(st, win.VK_SPACE) then return _autocomplete(st) end if
   if ctrl and shift and _key_pressed(st, win.VK_F7) then return _run_related_test_file(st) end if
   if ctrl and _key_pressed(st, win.VK_F7) then return _run_current_test_file(st) end if
@@ -7373,6 +7369,18 @@ function _pump_messages(st)
         handled = true
       else if ctrl and key == win.VK_Y then
         st = _edit_redo(st)
+        handled = true
+      else if ctrl and win.msg_hwnd(msg) == st.editor and key == win.VK_X then
+        st = _edit_cut(st)
+        handled = true
+      else if ctrl and win.msg_hwnd(msg) == st.editor and key == win.VK_C then
+        st = _edit_copy(st)
+        handled = true
+      else if ctrl and win.msg_hwnd(msg) == st.editor and key == win.VK_V then
+        st = _edit_paste(st)
+        handled = true
+      else if ctrl and win.msg_hwnd(msg) == st.editor and key == win.VK_A then
+        st = _edit_select_all(st)
         handled = true
       else if win.msg_hwnd(msg) == st.autocomplete_list and key == win.VK_RETURN then
         st = _accept_autocomplete(st)
