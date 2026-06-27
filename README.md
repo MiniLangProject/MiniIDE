@@ -280,16 +280,19 @@ file, output file, import paths, and build options. `extraArgs` is appended to
 the compiler command for advanced flags such as heap or tracing options.
 
 Use `Configuration > AI Assistant Settings...` to configure the optional coding
-assistant. When enabled, MiniIDE sends the user prompt plus read-only local
-tool context to an OpenAI-compatible chat-completions endpoint through native
-WinHTTP networking. The context can include the active file excerpt, open tab
-excerpts, indexed project files, the latest build log, and a MiniLang
-language-reference excerpt. MiniIDE also exposes OpenAI-compatible read-only
-tools for the active file, open tabs, project file list, bounded project-file
-reads, current selection, latest build log, MiniLang help, diagnostics, symbol
-search, and references. The assistant may request tools over up to four local
-rounds; MiniIDE executes them locally and sends the accumulated results back
-for the final answer. Write tools are intentionally not enabled yet.
+assistant. When enabled, MiniIDE sends the user prompt plus local tool context
+to an OpenAI-compatible chat-completions endpoint through native WinHTTP
+networking. The context can include the active file excerpt, open tab excerpts,
+indexed project files, the latest build log, and a MiniLang language-reference
+excerpt. MiniIDE exposes OpenAI-compatible tools for the active file, open
+tabs, project file list, bounded project-file reads, current selection, latest
+build log, MiniLang help, diagnostics, symbol search, and references. In
+`ai.toolMode=write`, the assistant can also overwrite/create project files and
+perform exact text replacements, guarded so paths must stay inside the current
+project. The assistant may request tools over up to twelve local rounds;
+MiniIDE executes them locally, streams tool results into the Assistant panel,
+and then forces a final response without additional tools if the round limit is
+reached.
 
 API keys are referenced through an environment variable name such as
 `OPENAI_API_KEY` by default. If needed, the assistant settings can be switched

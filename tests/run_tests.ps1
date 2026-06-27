@@ -22,6 +22,18 @@ $ErrorActionPreference = "Stop"
 $Root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $TempRoot = Join-Path $env:TEMP ("mide-" + [guid]::NewGuid().ToString("N").Substring(0, 8))
 $Compiler = Join-Path $Root "MiniLangCompilerML\build\mlc_win64.exe"
+$CompilerPrefixArgs = @()
+$CompilerInclude = ".\MiniLangCompilerML"
+$PythonExe = Join-Path $env:LOCALAPPDATA "Programs\Python\Python314\python.exe"
+$PythonCompiler = $env:MINILANG_PY_COMPILER
+if ([string]::IsNullOrWhiteSpace($PythonCompiler)) {
+  $PythonCompiler = Join-Path ([Environment]::GetFolderPath("Desktop")) "MiniIDE\MiniLangCompilerPy\mlc_win64.py"
+}
+if ((Test-Path -LiteralPath $PythonExe) -and (Test-Path -LiteralPath $PythonCompiler)) {
+  $Compiler = $PythonExe
+  $CompilerPrefixArgs = @($PythonCompiler)
+  $CompilerInclude = Split-Path -Parent $PythonCompiler
+}
 $MiniIdeExe = Join-Path $Root "build\MiniIDE.exe"
 $CompiledMiniIdeExe = $null
 
@@ -78,14 +90,14 @@ function Remove-BuildTmpDir($Path) {
 function Invoke-Checked($File, [string[]]$Arguments, $WorkingDirectory) {
   Push-Location $WorkingDirectory
   try {
-    & $File @Arguments
+    & $File @CompilerPrefixArgs @Arguments
     $exit = $LASTEXITCODE
   }
   finally {
     Pop-Location
   }
   if ($exit -ne 0) {
-    throw "Command failed ($exit): $File $($Arguments -join ' ')"
+    throw "Command failed ($exit): $File $($CompilerPrefixArgs -join ' ') $($Arguments -join ' ')"
   }
   return "OK: wrote"
 }
@@ -95,10 +107,11 @@ function Invoke-CheckedTimed($File, [string[]]$Arguments, $WorkingDirectory, [in
   $name = "proc-" + [guid]::NewGuid().ToString("N")
   $stdout = Join-Path $TempRoot ($name + ".out")
   $stderr = Join-Path $TempRoot ($name + ".err")
-  $p = Start-Process -FilePath $File -ArgumentList $Arguments -WorkingDirectory $WorkingDirectory -RedirectStandardOutput $stdout -RedirectStandardError $stderr -NoNewWindow -PassThru
+  $allArgs = @($CompilerPrefixArgs) + @($Arguments)
+  $p = Start-Process -FilePath $File -ArgumentList $allArgs -WorkingDirectory $WorkingDirectory -RedirectStandardOutput $stdout -RedirectStandardError $stderr -NoNewWindow -PassThru
   if (-not $p.WaitForExit($TimeoutSeconds * 1000)) {
     try { $p.Kill() } catch {}
-    throw "Command timed out after ${TimeoutSeconds}s: $File $($Arguments -join ' ')"
+    throw "Command timed out after ${TimeoutSeconds}s: $File $($allArgs -join ' ')"
   }
   $p.WaitForExit() | Out-Null
   $p.Refresh()
@@ -111,11 +124,11 @@ function Invoke-CheckedTimed($File, [string[]]$Arguments, $WorkingDirectory, [in
       $exitCode = 0
     }
     else {
-      throw "Command finished without exit code: $File $($Arguments -join ' ')`n$out"
+      throw "Command finished without exit code: $File $($allArgs -join ' ')`n$out"
     }
   }
   if ($exitCode -ne 0) {
-    throw "Command failed ($exitCode): $File $($Arguments -join ' ')`n$out"
+    throw "Command failed ($exitCode): $File $($allArgs -join ' ')`n$out"
   }
   return $out
 }
@@ -288,15 +301,18 @@ function Test-StaticWiring {
   Assert-True ($win32.Contains("ES_PASSWORD")) "Direct API key input must use password edit styling."
   Assert-True ($main.Contains('import "ai/assistant.ml" as assistant')) "Assistant module import is missing."
   Assert-True ($main.Contains('import "ai/provider.ml" as ai_provider')) "Assistant provider module import is missing."
-  Assert-True ($main.Contains("assistant.tool_context")) "Assistant read-only tool context must be delegated to the AI module."
+  Assert-True ($main.Contains("assistant.tool_context")) "Assistant tool context must be delegated to the AI module."
   Assert-True ($main.Contains("ai_provider.chat_completion")) "Assistant provider calls must be wired to the send action."
-  Assert-True ($main.Contains("_assistant_execute_tool_calls")) "Assistant must execute model-requested read-only tools."
+  Assert-True ($main.Contains("_assistant_execute_tool_calls")) "Assistant must execute model-requested tools."
   Assert-True ($main.Contains("_assistant_path_inside_project")) "Assistant file tools must guard project-root boundaries."
+  Assert-True ($main.Contains("_assistant_write_project_file")) "Assistant write tools must be able to update project files."
+  Assert-True ($main.Contains("_assistant_sync_written_file")) "Assistant writes must synchronize open editor tabs."
   Assert-True ($main.Contains("_assistant_diagnostics_text")) "Assistant must expose diagnostics as a read-only tool."
   Assert-True ($main.Contains("_assistant_symbols_text")) "Assistant must expose symbol search as a read-only tool."
   Assert-True ($main.Contains("_assistant_references_text")) "Assistant must expose references as a read-only tool."
   Assert-True ($main.Contains("_assistant_selection_text")) "Assistant must expose current editor selection as a read-only tool."
-  Assert-True ($main.Contains("round < 4")) "Assistant tool loop must have a bounded round limit."
+  Assert-True ($main.Contains("ASSISTANT_MAX_TOOL_ROUNDS = 12")) "Assistant tool loop must allow multi-step agent work while staying bounded."
+  Assert-True ($main.Contains("include_tools, false") -or $main.Contains("accumulated_tool_results, false")) "Assistant must force a final answer without more tools after the round limit."
   Assert-True ($main.Contains('"Tools"')) "Assistant transcript must show local tool execution results."
   Assert-True ($assistant.Contains("function open_tabs_text")) "Assistant must expose open-tab context."
   Assert-True ($assistant.Contains("function open_tab_contents_text")) "Assistant must expose open-tab contents."
@@ -306,7 +322,9 @@ function Test-StaticWiring {
   Assert-True ($provider.Contains("function chat_completion")) "OpenAI-compatible provider call helper is missing."
   Assert-True ($provider.Contains("/chat/completions")) "Provider call must use the OpenAI-compatible chat completions endpoint."
   Assert-True ($provider.Contains('\"tools\"')) "Provider call must advertise OpenAI-compatible tool schemas."
-  Assert-True ($provider.Contains('\"tool_choice\":\"auto\"')) "Provider call must let the model choose read-only tools."
+  Assert-True ($provider.Contains('\"tool_choice\":\"auto\"')) "Provider call must let the model choose tools."
+  Assert-True ($provider.Contains("miniide_write_project_file")) "Provider schema must expose project-file write tools in write mode."
+  Assert-True ($provider.Contains("Write tools are disabled")) "Provider prompt must keep read-only mode safe."
   Assert-True ($provider.Contains("function parse_tool_calls")) "Provider call must parse tool calls from assistant responses."
   Assert-True ($provider.Contains("struct ToolCall")) "Provider call must return structured tool calls."
   Assert-True ($provider.Contains("miniide_read_project_file")) "Provider tool schema must include bounded project-file reads."
@@ -632,7 +650,7 @@ function Test-CompileMiniIde {
       ".\src\main.ml",
       $outArg,
       "-I", ".\src",
-      "-I", ".\MiniLangCompilerML",
+      "-I", $CompilerInclude,
       "--keep-going", "--max-errors", "160", "--subsystem", "windows"
     )
     try {
@@ -659,7 +677,7 @@ function Test-CommandPalette {
     ".\tests\commands_test.ml",
     ".\build\commands_test.exe",
     "-I", ".\src",
-    "-I", ".\MiniLangCompilerML",
+    "-I", $CompilerInclude,
     "--keep-going", "--max-errors", "80", "--subsystem", "console"
   )
   Invoke-Checked $Compiler $args $Root | Out-Null
@@ -676,7 +694,7 @@ function Test-MarkdownRenderer {
     ".\tests\markdown_test.ml",
     ".\build\markdown_test.exe",
     "-I", ".\src",
-    "-I", ".\MiniLangCompilerML",
+    "-I", $CompilerInclude,
     "--keep-going", "--max-errors", "80", "--subsystem", "console"
   )
   Invoke-Checked $Compiler $args $Root | Out-Null
@@ -697,7 +715,7 @@ function Test-ProjectLoader {
     ".\tests\project_test.ml",
     ".\build\project_test.exe",
     "-I", ".\src",
-    "-I", ".\MiniLangCompilerML",
+    "-I", $CompilerInclude,
     "--keep-going", "--max-errors", "80", "--subsystem", "console"
   )
   Invoke-Checked $Compiler $args $Root | Out-Null
@@ -718,7 +736,7 @@ function Test-ProjectIndex {
     ".\tests\index_test.ml",
     ".\build\index_test.exe",
     "-I", ".\src",
-    "-I", ".\MiniLangCompilerML",
+    "-I", $CompilerInclude,
     "--keep-going", "--max-errors", "80", "--subsystem", "console"
   )
   Invoke-Checked $Compiler $args $Root | Out-Null
@@ -739,7 +757,7 @@ function Test-LanguageService {
     ".\tests\service_test.ml",
     ".\build\service_test.exe",
     "-I", ".\src",
-    "-I", ".\MiniLangCompilerML",
+    "-I", $CompilerInclude,
     "--keep-going", "--max-errors", "80", "--subsystem", "console"
   )
   Invoke-Checked $Compiler $args $Root | Out-Null

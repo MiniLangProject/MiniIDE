@@ -332,6 +332,7 @@ const ID_AI_SETTINGS_CANCEL = 1601
 const ID_AI_ALLOW_INSECURE_TLS = 1602
 const ID_AI_KEY_MODE = 1603
 const ID_AI_API_KEY_EDIT = 1604
+const ASSISTANT_MAX_TOOL_ROUNDS = 12
 
 const ID_CTX_TAB_CLOSE = 1201
 const ID_CTX_TAB_CLOSE_OTHERS = 1202
@@ -685,6 +686,70 @@ function _assistant_resolve_project_tool_path(st, rel_path)
   return [project_model.abspath(target), ""]
 end function
 
+// Return true when assistant tools may modify project files.
+function _assistant_write_tools_enabled(st)
+  if typeof(st.assistant_config) != "struct" then return false end if
+  mode = assistant.normalize_tool_mode(st.assistant_config.tool_mode)
+  return mode == "write"
+end function
+
+// Keep open editor state in sync after an assistant file write.
+function _assistant_sync_written_file(st, path, text)
+  text = _normalize_editor_text(text)
+  idx = _path_index(st.open_files, path)
+  if idx >= 0 then
+    if idx < len(st.open_texts) then st.open_texts[idx] = text end if
+    if idx < len(st.open_saved_texts) then st.open_saved_texts[idx] = text end if
+    if idx < len(st.open_dirty) then st.open_dirty[idx] = false end if
+    if idx == st.active_tab then
+      st = _write_active_editor(st, text)
+      st.last_editor_text = text
+      win.edit_set_modified(st.editor, false)
+      st = _invalidate_highlight(st)
+      st.last_line_numbers_text = ""
+    end if
+  end if
+  st.project = project_model.load_project(st.project.root)
+  st = _refresh_tabs(st)
+  _set_title(st)
+  return st
+end function
+
+// Write an assistant-provided project file after project-boundary validation.
+function _assistant_write_project_file(st, rel_path, content)
+  if _assistant_write_tools_enabled(st) == false then return [st, "Write tools are disabled. Set AI tool mode to write in Configuration > AI Assistant Settings."] end if
+  if typeof(content) != "string" then return [st, "Missing required content argument."] end if
+  resolved = _assistant_resolve_project_tool_path(st, rel_path)
+  if resolved[1] != "" then return [st, resolved[1]] end if
+  path = resolved[0]
+  parent = project_model.dirname(path)
+  if fs.exists(parent) == false then return [st, "Parent directory does not exist: " + _project_relative_path(st, parent)] end if
+  wr = fs.writeAllText(path, _normalize_editor_text(content))
+  if typeof(wr) == "error" then return [st, "Write failed: " + wr.message] end if
+  st = _assistant_sync_written_file(st, path, content)
+  return [st, "wrote: " + _project_relative_path(st, path) + "\nchars: " + len(content)]
+end function
+
+// Replace exact text in a project file for small assistant edits.
+function _assistant_replace_in_project_file(st, rel_path, old_text, new_text)
+  if _assistant_write_tools_enabled(st) == false then return [st, "Write tools are disabled. Set AI tool mode to write in Configuration > AI Assistant Settings."] end if
+  if typeof(old_text) != "string" or old_text == "" then return [st, "Missing required old_text argument."] end if
+  if typeof(new_text) != "string" then return [st, "Missing required new_text argument."] end if
+  resolved = _assistant_resolve_project_tool_path(st, rel_path)
+  if resolved[1] != "" then return [st, resolved[1]] end if
+  path = resolved[0]
+  if fs.exists(path) == false then return [st, "Project file not found: " + rel_path] end if
+  current = fs.readAllText(path)
+  if typeof(current) != "string" then return [st, "Project file could not be read: " + rel_path] end if
+  pos = s.indexOf(current, old_text, 0)
+  if pos < 0 then return [st, "old_text was not found in " + _project_relative_path(st, path)] end if
+  next_text = s.substr(current, 0, pos) + new_text + s.substr(current, pos + len(old_text), len(current) - pos - len(old_text))
+  wr = fs.writeAllText(path, _normalize_editor_text(next_text))
+  if typeof(wr) == "error" then return [st, "Replace failed: " + wr.message] end if
+  st = _assistant_sync_written_file(st, path, next_text)
+  return [st, "replaced text in: " + _project_relative_path(st, path) + "\nold_chars: " + len(old_text) + "\nnew_chars: " + len(new_text)]
+end function
+
 // Return project diagnostics in assistant-friendly text form.
 function _assistant_diagnostics_text(st)
   snapshot = lang_service.analyze_project(st.project)
@@ -783,54 +848,60 @@ function _assistant_selection_text(st)
   return result
 end function
 
-// Execute one read-only assistant tool call against the current IDE state.
+// Execute one assistant tool call against the current IDE state.
 function _assistant_execute_tool_call(st, call)
-  if typeof(call) != "struct" then return "Invalid tool call." end if
+  if typeof(call) != "struct" then return [st, "Invalid tool call."] end if
   name = call.name
   if name == "miniide_get_active_file" then
-    return assistant.active_file_text(st.project.root, st.current_file, st.active_tab, st.open_texts)
+    return [st, assistant.active_file_text(st.project.root, st.current_file, st.active_tab, st.open_texts)]
   end if
   if name == "miniide_get_open_tabs" then
-    return assistant.open_tabs_text(st.project.root, st.open_files, st.open_dirty, st.active_tab)
+    return [st, assistant.open_tabs_text(st.project.root, st.open_files, st.open_dirty, st.active_tab)]
   end if
   if name == "miniide_list_project_files" then
-    return assistant.project_files_text(st.project.root, st.project.files, 120)
+    return [st, assistant.project_files_text(st.project.root, st.project.files, 120)]
   end if
   if name == "miniide_get_build_log" then
-    return assistant.build_log_text(st.build_last_log)
+    return [st, assistant.build_log_text(st.build_last_log)]
   end if
   if name == "miniide_get_minilang_help" then
-    return assistant.help_text(st.project.root, _effective_compiler(st))
+    return [st, assistant.help_text(st.project.root, _effective_compiler(st))]
   end if
   if name == "miniide_get_diagnostics" then
-    return _assistant_diagnostics_text(st)
+    return [st, _assistant_diagnostics_text(st)]
   end if
   if name == "miniide_search_symbols" then
-    return _assistant_symbols_text(st, _assistant_json_arg(call.arguments, "query"))
+    return [st, _assistant_symbols_text(st, _assistant_json_arg(call.arguments, "query"))]
   end if
   if name == "miniide_find_references" then
-    return _assistant_references_text(st, _assistant_json_arg(call.arguments, "symbol"))
+    return [st, _assistant_references_text(st, _assistant_json_arg(call.arguments, "symbol"))]
   end if
   if name == "miniide_get_selection" then
-    return _assistant_selection_text(st)
+    return [st, _assistant_selection_text(st)]
+  end if
+  if name == "miniide_write_project_file" then
+    return _assistant_write_project_file(st, _assistant_json_arg(call.arguments, "path"), _assistant_json_arg(call.arguments, "content"))
+  end if
+  if name == "miniide_replace_in_project_file" then
+    return _assistant_replace_in_project_file(st, _assistant_json_arg(call.arguments, "path"), _assistant_json_arg(call.arguments, "old_text"), _assistant_json_arg(call.arguments, "new_text"))
   end if
   if name == "miniide_read_project_file" then
     rel_path = _assistant_json_arg(call.arguments, "path")
     resolved = _assistant_resolve_project_tool_path(st, rel_path)
-    if resolved[1] != "" then return resolved[1] end if
+    if resolved[1] != "" then return [st, resolved[1]] end if
     path = resolved[0]
-    if fs.exists(path) == false then return "Project file not found: " + rel_path end if
+    if fs.exists(path) == false then return [st, "Project file not found: " + rel_path] end if
     text = fs.readAllText(path)
-    if typeof(text) != "string" then return "Project file could not be read: " + rel_path end if
-    return "file: " + _project_relative_path(st, path) + "\nchars: " + len(text) + "\n```minilang\n" + assistant.excerpt(text, 8000) + "\n```"
+    if typeof(text) != "string" then return [st, "Project file could not be read: " + rel_path] end if
+    return [st, "file: " + _project_relative_path(st, path) + "\nchars: " + len(text) + "\n```minilang\n" + assistant.excerpt(text, 8000) + "\n```"]
   end if
-  return "Unsupported read-only tool: " + name
+  return [st, "Unsupported assistant tool: " + name]
 end function
 
-// Execute read-only tool calls requested by the assistant model.
+// Execute tool calls requested by the assistant model.
 function _assistant_execute_tool_calls(st, calls)
   text = ""
-  if typeof(calls) != "array" or len(calls) <= 0 then return text end if
+  if typeof(calls) != "array" or len(calls) <= 0 then return [st, text] end if
   for i = 0 to len(calls) - 1
     call = calls[i]
     if text != "" then text = text + "\n\n" end if
@@ -840,11 +911,13 @@ function _assistant_execute_tool_calls(st, calls)
       call_id = call.id
       call_name = call.name
     end if
+    result = _assistant_execute_tool_call(st, call)
+    st = result[0]
     text = text + "tool_call_id: " + call_id + "\n"
     text = text + "tool_name: " + call_name + "\n"
-    text = text + "result:\n" + _assistant_execute_tool_call(st, call)
+    text = text + "result:\n" + result[1]
   end for
-  return text
+  return [st, text]
 end function
 
 // Show the assistant panel.
@@ -880,7 +953,8 @@ function _assistant_send(st)
     st = _assistant_append(st, "Assistant", "AI provider calls are disabled. Open Configuration > AI Assistant Settings to enable the assistant. Local tool context is available through Assistant > Show Tool Context.")
     return _show_assistant_panel(st)
   end if
-  win.set_window_text(st.panel_title, "Assistant - thinking")
+  st = _show_assistant_panel(st)
+  win.set_window_text(st.panel_title, "Assistant - running")
   context = _assistant_tool_context(st)
   transcript_before_tools = st.assistant_transcript
   accumulated_tool_results = ""
@@ -888,7 +962,8 @@ function _assistant_send(st)
   failed_text = ""
   round = 0
   done = false
-  while done == false and round < 4
+  while done == false and round < ASSISTANT_MAX_TOOL_ROUNDS
+    win.set_window_text(st.panel_title, "Assistant - tool round " + (round + 1))
     result = ai_provider.chat_completion(st.project.root, st.assistant_config, prompt, context, transcript_before_tools, accumulated_tool_results, true)
     if typeof(result) != "struct" then
       failed_text = "Assistant provider call failed."
@@ -898,21 +973,35 @@ function _assistant_send(st)
       done = true
     else if typeof(result.tool_calls) == "array" and len(result.tool_calls) > 0 then
       round = round + 1
-      tool_results = _assistant_execute_tool_calls(st, result.tool_calls)
+      tool_result = _assistant_execute_tool_calls(st, result.tool_calls)
+      st = tool_result[0]
+      tool_results = tool_result[1]
       if accumulated_tool_results != "" then accumulated_tool_results = accumulated_tool_results + "\n\n" end if
       accumulated_tool_results = accumulated_tool_results + "tool_round: " + round + "\n" + tool_results
       st = _assistant_append(st, "Tools", "Round " + round + "\r\n" + tool_results)
+      st = _show_assistant_panel(st)
     else
       final_text = result.text
       done = true
     end if
   end while
+  if failed_text == "" and final_text == "" and accumulated_tool_results != "" then
+    win.set_window_text(st.panel_title, "Assistant - finalizing")
+    final_result = ai_provider.chat_completion(st.project.root, st.assistant_config, prompt + "\n\nTool round limit reached. Provide a final concise answer from the gathered tool results. Do not request more tools.", context, transcript_before_tools, accumulated_tool_results, false)
+    if typeof(final_result) == "struct" and final_result.ok and final_result.text != "" then
+      final_text = final_result.text
+    else if typeof(final_result) == "struct" then
+      failed_text = "Assistant reached " + ASSISTANT_MAX_TOOL_ROUNDS + " tool rounds and the final answer request failed:\r\n\r\n" + final_result.text
+    else
+      failed_text = "Assistant reached " + ASSISTANT_MAX_TOOL_ROUNDS + " tool rounds and the final answer request failed."
+    end if
+  end if
   if failed_text != "" then
     st = _assistant_append(st, "Assistant", failed_text)
   else if final_text != "" then
     st = _assistant_append(st, "Assistant", final_text)
   else
-    st = _assistant_append(st, "Assistant", "Assistant stopped after 4 tool rounds without a final answer. Try a narrower request or disable tool use on the provider side.")
+    st = _assistant_append(st, "Assistant", "Assistant stopped after " + ASSISTANT_MAX_TOOL_ROUNDS + " tool rounds without a final answer. Try a narrower request or switch AI tool mode to read-only for analysis-only questions.")
   end if
   return _show_assistant_panel(st)
 end function
@@ -3119,7 +3208,7 @@ function _open_assistant_settings_window(st)
 
   _settings_label(dlg, st.font_ui, "Tool mode", 20, 276, 140, 24)
   tool_mode_edit = _settings_edit_id(dlg, st.font_ui, st.assistant_config.tool_mode, 180, 272, 220, 26, ID_AI_TOOL_MODE_EDIT)
-  _settings_label(dlg, st.font_ui, "read-only now; confirm-writes is reserved for patch preview.", 414, 276, 326, 24)
+  _settings_label(dlg, st.font_ui, "read-only or write. Write tools stay inside the project.", 414, 276, 326, 24)
 
   enabled = st.assistant_config.enabled
   allow_insecure_tls = st.assistant_config.allow_insecure_tls

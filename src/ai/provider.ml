@@ -111,16 +111,28 @@ function json_escape(text)
   return text
 end function
 
-function _system_prompt()
+function _write_tools_enabled(config)
+  if typeof(config) != "struct" then return false end if
+  mode = ""
+  if typeof(config.tool_mode) == "string" then mode = s.toLowerAscii(s.trim(config.tool_mode)) end if
+  return mode == "write" or mode == "confirm-writes"
+end function
+
+function _system_prompt(config)
   text = "You are MiniIDE's programming assistant for MiniLang projects. "
-  text = text + "Use the provided read-only tool context and available read-only tools as your source of truth. "
+  text = text + "Use the provided MiniIDE tool context and available tools as your source of truth. "
   text = text + "Be concise, concrete, and prefer MiniLang-specific guidance. "
-  text = text + "Do not claim that you changed files or ran commands. "
-  text = text + "If a write would be useful, describe the exact proposed change and wait for confirmation."
+  if _write_tools_enabled(config) then
+    text = text + "When the user asks for code changes, use MiniIDE write tools to update project files directly. "
+    text = text + "Only write paths inside the current project and summarize changed files afterwards."
+  else
+    text = text + "Write tools are disabled. Do not claim that you changed files or ran commands. "
+    text = text + "If a write would be useful, describe the exact proposed change and ask the user to enable tool mode write."
+  end if
   return text
 end function
 
-function _tool_schema_json()
+function _tool_schema_json(config)
   tools = "["
   tools = tools + "{\"type\":\"function\",\"function\":{\"name\":\"miniide_get_active_file\",\"description\":\"Return the active editor file path and a bounded text excerpt.\",\"parameters\":{\"type\":\"object\",\"properties\":{},\"additionalProperties\":false}}},"
   tools = tools + "{\"type\":\"function\",\"function\":{\"name\":\"miniide_get_open_tabs\",\"description\":\"Return open editor tabs, dirty flags, and active tab marker.\",\"parameters\":{\"type\":\"object\",\"properties\":{},\"additionalProperties\":false}}},"
@@ -132,11 +144,15 @@ function _tool_schema_json()
   tools = tools + "{\"type\":\"function\",\"function\":{\"name\":\"miniide_search_symbols\",\"description\":\"Search MiniLang project symbols by name or prefix.\",\"parameters\":{\"type\":\"object\",\"properties\":{\"query\":{\"type\":\"string\",\"description\":\"Symbol name or prefix to search for.\"}},\"additionalProperties\":false}}},"
   tools = tools + "{\"type\":\"function\",\"function\":{\"name\":\"miniide_find_references\",\"description\":\"Find lexical references for a MiniLang symbol name.\",\"parameters\":{\"type\":\"object\",\"properties\":{\"symbol\":{\"type\":\"string\",\"description\":\"Symbol name. If omitted, MiniIDE uses the symbol at the active cursor.\"}},\"additionalProperties\":false}}},"
   tools = tools + "{\"type\":\"function\",\"function\":{\"name\":\"miniide_get_selection\",\"description\":\"Return the current editor selection or cursor location with a small surrounding excerpt.\",\"parameters\":{\"type\":\"object\",\"properties\":{},\"additionalProperties\":false}}}"
+  if _write_tools_enabled(config) then
+    tools = tools + ",{\"type\":\"function\",\"function\":{\"name\":\"miniide_write_project_file\",\"description\":\"Overwrite or create a project file. The path must stay inside the current MiniLang project.\",\"parameters\":{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\",\"description\":\"Project-relative file path.\"},\"content\":{\"type\":\"string\",\"description\":\"Complete new file contents.\"}},\"required\":[\"path\",\"content\"],\"additionalProperties\":false}}}"
+    tools = tools + ",{\"type\":\"function\",\"function\":{\"name\":\"miniide_replace_in_project_file\",\"description\":\"Replace exact text in a project file. Use this for small edits when the existing text is known.\",\"parameters\":{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\",\"description\":\"Project-relative file path.\"},\"old_text\":{\"type\":\"string\",\"description\":\"Exact text to replace.\"},\"new_text\":{\"type\":\"string\",\"description\":\"Replacement text.\"}},\"required\":[\"path\",\"old_text\",\"new_text\"],\"additionalProperties\":false}}}"
+  end if
   tools = tools + "]"
   return tools
 end function
 
-function _request_body(model, prompt, context, transcript, tool_results, include_tools)
+function _request_body(model, config, prompt, context, transcript, tool_results, include_tools)
   if typeof(model) != "string" or model == "" then model = "gpt-5.1" end if
   if typeof(prompt) != "string" then prompt = "" end if
   if typeof(context) != "string" then context = "" end if
@@ -147,11 +163,11 @@ function _request_body(model, prompt, context, transcript, tool_results, include
   body = "{"
   body = body + "\"model\":\"" + json_escape(model) + "\","
   body = body + "\"messages\":["
-  body = body + "{\"role\":\"system\",\"content\":\"" + json_escape(_system_prompt()) + "\"},"
+  body = body + "{\"role\":\"system\",\"content\":\"" + json_escape(_system_prompt(config)) + "\"},"
   body = body + "{\"role\":\"user\",\"content\":\"" + json_escape(user) + "\"}"
   body = body + "]"
   if include_tools then
-    body = body + ",\"tools\":" + _tool_schema_json() + ",\"tool_choice\":\"auto\""
+    body = body + ",\"tools\":" + _tool_schema_json(config) + ",\"tool_choice\":\"auto\""
   end if
   body = body + "}"
   return body
@@ -566,7 +582,7 @@ function chat_completion(project_root, config, prompt, context, transcript, tool
   api_key = key_result[1]
 
   url = _chat_url(config)
-  body = _request_body(model, prompt, context, transcript, tool_results, include_tools)
+  body = _request_body(model, config, prompt, context, transcript, tool_results, include_tools)
   result = _http_post_json(url, api_key, body, _config_bool(config, "allow_insecure_tls", false))
   if result.ok == false then
     detail = result.error

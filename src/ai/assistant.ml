@@ -14,7 +14,7 @@
 
 package ai.assistant
 
-// Assistant configuration and read-only context assembly for MiniIDE.
+// Assistant configuration and IDE context assembly for MiniIDE.
 
 import std.string as s
 import "project/project.ml" as project_model
@@ -49,10 +49,10 @@ function normalize_api_key_mode(value)
   return "env"
 end function
 
-// Normalize future tool modes while keeping the current build read-only.
+// Normalize tool modes accepted by config and the settings dialog.
 function normalize_tool_mode(value)
   value = s.toLowerAscii(s.trim(value))
-  if value == "confirm-writes" or value == "confirm" then return "confirm-writes" end if
+  if value == "write" or value == "writes" or value == "edit" or value == "agent" or value == "confirm-writes" or value == "confirm" then return "write" end if
   return "read-only"
 end function
 
@@ -148,7 +148,7 @@ function build_log_text(log_text)
   return text + excerpt(log_text, 5000) + "\n"
 end function
 
-// Assemble the local read-only assistant context from IDE state snapshots.
+// Assemble the local assistant context from IDE state snapshots.
 function tool_context(project_value, compiler_path, config, current_file, open_files, open_dirty, active_tab, open_texts, latest_build_log)
   project_name = "MiniIDE"
   project_root = "."
@@ -164,6 +164,11 @@ function tool_context(project_value, compiler_path, config, current_file, open_f
   text = text + "provider: " + config.provider + "\n"
   text = text + "model: " + config.model + "\n"
   text = text + "tool_mode: " + config.tool_mode + "\n"
+  if config.tool_mode == "write" then
+    text = text + "write_tools: enabled for project files only\n"
+  else
+    text = text + "write_tools: disabled\n"
+  end if
   text = text + "enabled: " + config.enabled + "\n\n"
   text = text + active_file_text(project_root, current_file, active_tab, open_texts) + "\n"
   if config.include_tabs then
