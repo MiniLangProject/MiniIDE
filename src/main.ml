@@ -129,6 +129,7 @@ struct AppState
   build_mode,
   build_running,
   build_last_log,
+  build_log_prefix,
   build_last_poll_ms,
   live_diagnostics_text,
   live_diagnostics_key,
@@ -2248,14 +2249,16 @@ function _start_compile_job(st, mode)
   return st
 end function
 
-// Start run job.
-function _start_run_job(st)
+// Start run job, optionally keeping a previous compile log above live program output.
+function _start_run_job_with_prefix(st, prefix)
   // Keep process setup and state capture together for reliable polling.
   job = build_service.start_run_output(st.project)
   st.build_job = job
   st.build_mode = "run"
   st.build_running = build_service.job_started(job)
   st.build_last_poll_ms = 0
+  if typeof(prefix) != "string" then prefix = "" end if
+  st.build_log_prefix = prefix
   if st.build_running == false then
     log = _format_build_log(st, job.log_text, false, job.exit_code)
     st.build_last_log = log
@@ -2267,6 +2270,11 @@ function _start_run_job(st)
   return st
 end function
 
+// Start run job.
+function _start_run_job(st)
+  return _start_run_job_with_prefix(st, "")
+end function
+
 // Start test compile job.
 function _start_test_compile_job(st)
   // Keep process setup and state capture together for reliable polling.
@@ -2275,6 +2283,7 @@ function _start_test_compile_job(st)
   st.build_mode = "test-compile"
   st.build_running = build_service.job_started(job)
   st.build_last_poll_ms = 0
+  st.build_log_prefix = ""
   if st.build_running == false then
     log = _format_build_log(st, job.log_text, false, job.exit_code)
     st.build_last_log = log
@@ -2295,6 +2304,8 @@ function _start_test_file_compile_job(st, test_file, mode, label)
   st.build_mode = mode
   st.build_running = build_service.job_started(job)
   st.build_last_poll_ms = 0
+  st.build_log_prefix = ""
+  st.build_log_prefix = ""
   if st.build_running == false then
     log = _format_build_log(st, job.log_text, false, job.exit_code)
     st.build_last_log = log
@@ -2315,14 +2326,16 @@ function _start_related_test_compile_job(st, test_file)
   return _start_test_file_compile_job(st, test_file, "test-related-compile", "Run Related Test File")
 end function
 
-// Start test run job.
-function _start_test_run_job(st)
+// Start test run job, optionally keeping a previous test compile log above live test output.
+function _start_test_run_job_with_prefix(st, prefix)
   // Keep process setup and state capture together for reliable polling.
   job = build_service.start_test_output(st.project)
   st.build_job = job
   st.build_mode = "test-run"
   st.build_running = build_service.job_started(job)
   st.build_last_poll_ms = 0
+  if typeof(prefix) != "string" then prefix = "" end if
+  st.build_log_prefix = prefix
   if st.build_running == false then
     log = _format_build_log(st, job.log_text, false, job.exit_code)
     st.build_last_log = log
@@ -2331,6 +2344,11 @@ function _start_test_run_job(st)
   log = _format_build_log(st, "", true, build_service.STILL_ACTIVE)
   st.build_last_log = log
   return _set_log(st, log)
+end function
+
+// Start test run job.
+function _start_test_run_job(st)
+  return _start_test_run_job_with_prefix(st, "")
 end function
 
 // Build project.
@@ -2508,6 +2526,9 @@ function _format_build_log(st, log_text, running, exit_code)
       log = log + "\r\n" + fail_text + exit_code
     end if
   end if
+  if typeof(st.build_log_prefix) == "string" and st.build_log_prefix != "" then
+    log = st.build_log_prefix + "\r\n\r\n" + log
+  end if
   return log
 end function
 
@@ -2515,7 +2536,7 @@ end function
 function _poll_build(st)
   if st.build_running == false then return st end if
   now = win.GetTickCount()
-  if now - st.build_last_poll_ms < 250 then return st end if
+  if now - st.build_last_poll_ms < 100 then return st end if
   st.build_last_poll_ms = now
   running = build_service.job_is_running(st.build_job)
   log_text = build_service.job_log(st.build_job)
@@ -2531,10 +2552,10 @@ function _poll_build(st)
     st.build_job = build_service.close_job(st.build_job)
     st.build_running = false
     if finished_mode == "compile-run" and exit_code == 0 then
-      return _start_run_job(st)
+      return _start_run_job_with_prefix(st, st.build_last_log)
     end if
     if (finished_mode == "test-compile" or finished_mode == "test-current-compile" or finished_mode == "test-related-compile") and exit_code == 0 then
-      return _start_test_run_job(st)
+      return _start_test_run_job_with_prefix(st, st.build_last_log)
     end if
     if exit_code != 0 then
       if finished_mode == "compile" or finished_mode == "compile-run" or finished_mode == "rebuild" or finished_mode == "test-compile" or finished_mode == "test-current-compile" or finished_mode == "test-related-compile" then
@@ -5651,7 +5672,7 @@ function _create_state(root)
   win.set_control_font(btn_copy, font_ui)
   win.set_control_font(btn_paste, font_ui)
 
-  st = AppState(hwnd, menus[0], menus[1], menus[2], menus[3], menus[4], menus[5], toolbar_bg, tree_images, tree, tabbar, line_numbers, editor, editor, log, panel_title, result_list, autocomplete_list, assistant_output, assistant_input, assistant_send, status, btn_open, btn_save, btn_build, btn_run, btn_test, btn_reload, btn_cut, btn_copy, btn_paste, toolbar_icons, font_ui, font_code, p, compiler_path, build_keep_going, build_max_errors, build_subsystem, build_extra_args, build_profile, theme_mode, assistant_config, "", [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], -1, "", -1, [], [], [], 0, 0, "", "", -1, 0, 0, false, "", 0, "", -1, 0, false, 0, 0, array(256, 0), false, false, -1, "", 0, "", "log", [], [], [], [], "", void, "", false, "", 0, "", "", 0, true)
+  st = AppState(hwnd, menus[0], menus[1], menus[2], menus[3], menus[4], menus[5], toolbar_bg, tree_images, tree, tabbar, line_numbers, editor, editor, log, panel_title, result_list, autocomplete_list, assistant_output, assistant_input, assistant_send, status, btn_open, btn_save, btn_build, btn_run, btn_test, btn_reload, btn_cut, btn_copy, btn_paste, toolbar_icons, font_ui, font_code, p, compiler_path, build_keep_going, build_max_errors, build_subsystem, build_extra_args, build_profile, theme_mode, assistant_config, "", [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], -1, "", -1, [], [], [], 0, 0, "", "", -1, 0, 0, false, "", 0, "", -1, 0, false, 0, 0, array(256, 0), false, false, -1, "", 0, "", "log", [], [], [], [], "", void, "", false, "", "", 0, "", "", 0, true)
   st = _load_build_config(st)
   st = _populate_project_tree(st)
   st = _open_file(st, _entry_file(p))

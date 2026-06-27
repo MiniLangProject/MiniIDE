@@ -28,6 +28,7 @@ Win32 APIs and RichEdit.
 - MiniLang syntax highlighting.
 - Build, rebuild, clean, stop, run, and run-tests commands.
 - Background compiler and process execution without `cmd.exe`.
+- Live compiler, run, and test output in the bottom debug output panel.
 - Automatic compile-before-run when the target executable is missing or stale.
 - Captured stdout/stderr in the bottom log view.
 - Compiler diagnostics, project diagnostics, and code inspections parsed into a

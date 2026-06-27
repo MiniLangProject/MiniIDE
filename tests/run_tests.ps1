@@ -145,6 +145,10 @@ function Test-StaticWiring {
 
   Assert-True ($main.Contains("start_compile_with_options")) "Build command does not use configurable build options."
   Assert-True ($main.Contains("Diagnostics are also available through Navigation > Problems.")) "Failed background builds must keep console output visible."
+  Assert-True ($main.Contains("build_log_prefix")) "Chained run/test output must preserve the previous compiler log."
+  Assert-True ($main.Contains("_start_run_job_with_prefix(st, st.build_last_log)")) "Run-after-build must keep compiler output visible above live program output."
+  Assert-True ($main.Contains("_start_test_run_job_with_prefix(st, st.build_last_log)")) "Test run must keep test compiler output visible above live test output."
+  Assert-True ($main.Contains("now - st.build_last_poll_ms < 100")) "Build/run output polling should refresh live output frequently."
   Assert-True ($main.Contains("ID_FILE_RUN")) "Run command is missing."
   Assert-True ($main.Contains("ID_FILE_TEST")) "Test command is missing."
   Assert-True ($main.Contains("ID_FILE_TEST_CURRENT")) "Run Current Test File command is missing."
