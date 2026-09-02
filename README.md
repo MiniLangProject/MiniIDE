@@ -1,5 +1,8 @@
 # MiniIDE
 
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
+[![Language: MiniLang](https://img.shields.io/badge/written%20in-MiniLang-5b5bd6.svg)](.)
+
 MiniIDE is a small native Windows IDE for MiniLang, written in MiniLang.
 It is intentionally lightweight: no Electron shell, no web runtime, and no
 large framework. The application uses Win32 controls directly and focuses on
