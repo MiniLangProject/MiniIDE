@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Provides main facilities for this project.
+
 import std.fs as fs
 import std.string as s
 import "platform/win32.ml" as win
@@ -30,327 +32,633 @@ import "lang/symbols.ml" as symbols
 import "lang/index.ml" as lang_index
 import "lang/service.ml" as lang_service
 
+/// Represents the app state data used by the main module.
 struct AppState
+  /// Stores the hwnd value associated with app state.
   hwnd,
+  /// Stores the main menu value associated with app state.
   main_menu,
+  /// Stores the file menu value associated with app state.
   file_menu,
+  /// Stores the edit menu value associated with app state.
   edit_menu,
+  /// Stores the nav menu value associated with app state.
   nav_menu,
+  /// Stores the config menu value associated with app state.
   config_menu,
+  /// Stores the help menu value associated with app state.
   help_menu,
+  /// Stores the toolbar bg value associated with app state.
   toolbar_bg,
+  /// Stores the tree images value associated with app state.
   tree_images,
+  /// Stores the tree value associated with app state.
   tree,
+  /// Stores the tabbar value associated with app state.
   tabbar,
+  /// Stores the line numbers value associated with app state.
   line_numbers,
+  /// Stores the editor value associated with app state.
   editor,
+  /// Stores the code editor value associated with app state.
   code_editor,
+  /// Stores the log value associated with app state.
   log,
+  /// Stores the panel title value associated with app state.
   panel_title,
+  /// Stores the result list value associated with app state.
   result_list,
+  /// Stores the autocomplete list value associated with app state.
   autocomplete_list,
+  /// Stores the assistant output value associated with app state.
   assistant_output,
+  /// Stores the assistant input value associated with app state.
   assistant_input,
+  /// Stores the assistant send value associated with app state.
   assistant_send,
+  /// Stores the status value associated with app state.
   status,
+  /// Stores the btn open value associated with app state.
   btn_open,
+  /// Stores the btn save value associated with app state.
   btn_save,
+  /// Stores the btn build value associated with app state.
   btn_build,
+  /// Stores the btn run value associated with app state.
   btn_run,
+  /// Stores the btn test value associated with app state.
   btn_test,
+  /// Stores the btn reload value associated with app state.
   btn_reload,
+  /// Stores the btn cut value associated with app state.
   btn_cut,
+  /// Stores the btn copy value associated with app state.
   btn_copy,
+  /// Stores the btn paste value associated with app state.
   btn_paste,
+  /// Stores the toolbar icons value associated with app state.
   toolbar_icons,
+  /// Stores the font ui value associated with app state.
   font_ui,
+  /// Stores the font code value associated with app state.
   font_code,
+  /// Stores the project value associated with app state.
   project,
+  /// Stores the compiler path value associated with app state.
   compiler_path,
+  /// Stores the build keep going value associated with app state.
   build_keep_going,
+  /// Stores the build max errors value associated with app state.
   build_max_errors,
+  /// Stores the build subsystem value associated with app state.
   build_subsystem,
+  /// Stores the build extra args value associated with app state.
   build_extra_args,
+  /// Stores the build profile value associated with app state.
   build_profile,
+  /// Stores the theme mode value associated with app state.
   theme_mode,
+  /// Stores the assistant config value associated with app state.
   assistant_config,
+  /// Stores the assistant transcript value associated with app state.
   assistant_transcript,
+  /// Stores the tree handles value associated with app state.
   tree_handles,
+  /// Stores the tree paths value associated with app state.
   tree_paths,
+  /// Stores the tree is dir value associated with app state.
   tree_is_dir,
+  /// Stores the open files value associated with app state.
   open_files,
+  /// Stores the open texts value associated with app state.
   open_texts,
+  /// Stores the open saved texts value associated with app state.
   open_saved_texts,
+  /// Stores the open dirty value associated with app state.
   open_dirty,
+  /// Stores the open undo value associated with app state.
   open_undo,
+  /// Stores the open redo value associated with app state.
   open_redo,
+  /// Stores the open folds value associated with app state.
   open_folds,
+  /// Stores the open markdown sources value associated with app state.
   open_markdown_sources,
+  /// Stores the open markdown docs value associated with app state.
   open_markdown_docs,
+  /// Stores the open markdown views value associated with app state.
   open_markdown_views,
+  /// Stores the open markdown view sources value associated with app state.
   open_markdown_view_sources,
+  /// Stores the open markdown view themes value associated with app state.
   open_markdown_view_themes,
+  /// Stores the active tab value associated with app state.
   active_tab,
+  /// Stores the current file value associated with app state.
   current_file,
+  /// Stores the current sel value associated with app state.
   current_sel,
+  /// Stores the nav back value associated with app state.
   nav_back,
+  /// Stores the nav forward value associated with app state.
   nav_forward,
+  /// Stores the bookmarks value associated with app state.
   bookmarks,
+  /// Stores the last tree click ms value associated with app state.
   last_tree_click_ms,
+  /// Stores the last tree click item value associated with app state.
   last_tree_click_item,
+  /// Stores the last editor text value associated with app state.
   last_editor_text,
+  /// Stores the last highlight text value associated with app state.
   last_highlight_text,
+  /// Stores the last highlight first line value associated with app state.
   last_highlight_first_line,
+  /// Stores the last edit ms value associated with app state.
   last_edit_ms,
+  /// Stores the last undo ms value associated with app state.
   last_undo_ms,
+  /// Stores the highlight pending value associated with app state.
   highlight_pending,
+  /// Stores the last line numbers text value associated with app state.
   last_line_numbers_text,
+  /// Stores the last line numbers count value associated with app state.
   last_line_numbers_count,
+  /// Stores the last status text value associated with app state.
   last_status_text,
+  /// Stores the last first visible line value associated with app state.
   last_first_visible_line,
+  /// Stores the last scroll ms value associated with app state.
   last_scroll_ms,
+  /// Stores the line numbers pending value associated with app state.
   line_numbers_pending,
+  /// Stores the last w value associated with app state.
   last_w,
+  /// Stores the last h value associated with app state.
   last_h,
+  /// Stores the prev keys value associated with app state.
   prev_keys,
+  /// Stores the prev mouse value associated with app state.
   prev_mouse,
+  /// Stores the prev right mouse value associated with app state.
   prev_right_mouse,
+  /// Stores the context tab value associated with app state.
   context_tab,
+  /// Stores the file clipboard path value associated with app state.
   file_clipboard_path,
+  /// Stores the last context ms value associated with app state.
   last_context_ms,
+  /// Stores the last search text value associated with app state.
   last_search_text,
+  /// Stores the result mode value associated with app state.
   result_mode,
+  /// Stores the result files value associated with app state.
   result_files,
+  /// Stores the result lines value associated with app state.
   result_lines,
+  /// Stores the result cols value associated with app state.
   result_cols,
+  /// Stores the autocomplete items value associated with app state.
   autocomplete_items,
+  /// Stores the autocomplete prefix value associated with app state.
   autocomplete_prefix,
+  /// Stores the build job value associated with app state.
   build_job,
+  /// Stores the build mode value associated with app state.
   build_mode,
+  /// Stores the build running value associated with app state.
   build_running,
+  /// Stores the build last log value associated with app state.
   build_last_log,
+  /// Stores the build log prefix value associated with app state.
   build_log_prefix,
+  /// Stores the build last poll ms value associated with app state.
   build_last_poll_ms,
+  /// Stores the live diagnostics text value associated with app state.
   live_diagnostics_text,
+  /// Stores the live diagnostics key value associated with app state.
   live_diagnostics_key,
+  /// Stores the last live diagnostics ms value associated with app state.
   last_live_diagnostics_ms,
+  /// Stores the running value associated with app state.
   running,
 end struct
 
+/// Represents the fold range data used by the main module.
 struct FoldRange
+  /// Stores the start line value associated with fold range.
   start_line,
+  /// Stores the end line value associated with fold range.
   end_line,
 end struct
 
+/// Represents the compile settings controls data used by the main module.
 struct CompileSettingsControls
+  /// Stores the dlg value associated with compile settings controls.
   dlg,
+  /// Stores the entry edit value associated with compile settings controls.
   entry_edit,
+  /// Stores the output edit value associated with compile settings controls.
   output_edit,
+  /// Stores the test entry edit value associated with compile settings controls.
   test_entry_edit,
+  /// Stores the run args edit value associated with compile settings controls.
   run_args_edit,
+  /// Stores the working dir edit value associated with compile settings controls.
   working_dir_edit,
+  /// Stores the compiler edit value associated with compile settings controls.
   compiler_edit,
+  /// Stores the max edit value associated with compile settings controls.
   max_edit,
+  /// Stores the extra edit value associated with compile settings controls.
   extra_edit,
 end struct
 
+/// Represents the compile settings values data used by the main module.
 struct CompileSettingsValues
+  /// Stores the entry value associated with compile settings values.
   entry,
+  /// Stores the output value associated with compile settings values.
   output,
+  /// Stores the test entry value associated with compile settings values.
   test_entry,
+  /// Stores the run args value associated with compile settings values.
   run_args,
+  /// Stores the working dir value associated with compile settings values.
   working_dir,
+  /// Stores the compiler value associated with compile settings values.
   compiler,
+  /// Stores the max text value associated with compile settings values.
   max_text,
+  /// Stores the extra args value associated with compile settings values.
   extra_args,
 end struct
 
+/// Represents the nav location data used by the main module.
 struct NavLocation
+  /// Stores the file value associated with nav location.
   file,
+  /// Stores the line value associated with nav location.
   line,
+  /// Stores the col value associated with nav location.
   col,
 end struct
 
+/// Defines the menu h constant used by the main module.
 const MENU_H = 26
+/// Defines the tool h constant used by the main module.
 const TOOL_H = 70
+/// Defines the tab h constant used by the main module.
 const TAB_H = 30
+/// Defines the left w constant used by the main module.
 const LEFT_W = 300
+/// Defines the line no w constant used by the main module.
 const LINE_NO_W = 58
+/// Defines the log h constant used by the main module.
 const LOG_H = 190
+/// Defines the status h constant used by the main module.
 const STATUS_H = 24
+/// Defines the status pad constant used by the main module.
 const STATUS_PAD = 8
+/// Defines the max tabs constant used by the main module.
 const MAX_TABS = 8
+/// Defines the max undo constant used by the main module.
 const MAX_UNDO = 80
+/// Defines the undo group ms constant used by the main module.
 const UNDO_GROUP_MS = 900
+/// Defines the edit sync idle ms constant used by the main module.
 const EDIT_SYNC_IDLE_MS = 260
+/// Defines the highlight idle ms constant used by the main module.
 const HIGHLIGHT_IDLE_MS = 450
+/// Defines the live diagnostics idle ms constant used by the main module.
 const LIVE_DIAGNOSTICS_IDLE_MS = 850
+/// Defines the highlight visible lines constant used by the main module.
 const HIGHLIGHT_VISIBLE_LINES = 90
+/// Defines the scroll idle ms constant used by the main module.
 const SCROLL_IDLE_MS = 180
+/// Defines the context suppress ms constant used by the main module.
 const CONTEXT_SUPPRESS_MS = 650
+/// Defines the context force dup ms constant used by the main module.
 const CONTEXT_FORCE_DUP_MS = 120
 
+/// Defines the id project tree constant used by the main module.
 const ID_PROJECT_TREE = 1000
+/// Defines the id editor tabs constant used by the main module.
 const ID_EDITOR_TABS = 1005
+/// Defines the id result list constant used by the main module.
 const ID_RESULT_LIST = 1090
+/// Defines the id autocomplete list constant used by the main module.
 const ID_AUTOCOMPLETE_LIST = 1091
+/// Defines the id file open project constant used by the main module.
 const ID_FILE_OPEN_PROJECT = 1006
+/// Defines the id file save constant used by the main module.
 const ID_FILE_SAVE = 1001
+/// Defines the id file build constant used by the main module.
 const ID_FILE_BUILD = 1002
+/// Defines the id file reload constant used by the main module.
 const ID_FILE_RELOAD = 1003
+/// Defines the id file exit constant used by the main module.
 const ID_FILE_EXIT = 1004
+/// Defines the id file run constant used by the main module.
 const ID_FILE_RUN = 1007
+/// Defines the id file new project constant used by the main module.
 const ID_FILE_NEW_PROJECT = 1008
+/// Defines the id file test constant used by the main module.
 const ID_FILE_TEST = 1009
+/// Defines the id file clean constant used by the main module.
 const ID_FILE_CLEAN = 1040
+/// Defines the id file rebuild constant used by the main module.
 const ID_FILE_REBUILD = 1041
+/// Defines the id file stop constant used by the main module.
 const ID_FILE_STOP = 1042
+/// Defines the id file quick open constant used by the main module.
 const ID_FILE_QUICK_OPEN = 1056
+/// Defines the id edit cut constant used by the main module.
 const ID_EDIT_CUT = 1010
+/// Defines the id edit copy constant used by the main module.
 const ID_EDIT_COPY = 1011
+/// Defines the id edit paste constant used by the main module.
 const ID_EDIT_PASTE = 1012
+/// Defines the id edit undo constant used by the main module.
 const ID_EDIT_UNDO = 1013
+/// Defines the id edit redo constant used by the main module.
 const ID_EDIT_REDO = 1014
+/// Defines the id config compiler select constant used by the main module.
 const ID_CONFIG_COMPILER_SELECT = 1015
+/// Defines the id config compiler reset constant used by the main module.
 const ID_CONFIG_COMPILER_RESET = 1016
+/// Defines the id config show constant used by the main module.
 const ID_CONFIG_SHOW = 1017
+/// Defines the id config reload constant used by the main module.
 const ID_CONFIG_RELOAD = 1018
+/// Defines the id config toggle keep going constant used by the main module.
 const ID_CONFIG_TOGGLE_KEEP_GOING = 1019
+/// Defines the id config toggle subsystem constant used by the main module.
 const ID_CONFIG_TOGGLE_SUBSYSTEM = 1021
+/// Defines the id config toggle max errors constant used by the main module.
 const ID_CONFIG_TOGGLE_MAX_ERRORS = 1022
+/// Defines the id help about constant used by the main module.
 const ID_HELP_ABOUT = 1020
+/// Defines the id help language constant used by the main module.
 const ID_HELP_LANGUAGE = 1023
+/// Defines the id help language search constant used by the main module.
 const ID_HELP_LANGUAGE_SEARCH = 1045
+/// Defines the id config compile settings constant used by the main module.
 const ID_CONFIG_COMPILE_SETTINGS = 1024
+/// Defines the id config profile debug constant used by the main module.
 const ID_CONFIG_PROFILE_DEBUG = 1043
+/// Defines the id config profile release constant used by the main module.
 const ID_CONFIG_PROFILE_RELEASE = 1044
+/// Defines the id config theme light constant used by the main module.
 const ID_CONFIG_THEME_LIGHT = 1046
+/// Defines the id config theme dark constant used by the main module.
 const ID_CONFIG_THEME_DARK = 1047
+/// Defines the id nav outline constant used by the main module.
 const ID_NAV_OUTLINE = 1030
+/// Defines the id nav search word constant used by the main module.
 const ID_NAV_SEARCH_WORD = 1031
+/// Defines the id nav problems constant used by the main module.
 const ID_NAV_PROBLEMS = 1032
+/// Defines the id nav project index constant used by the main module.
 const ID_NAV_PROJECT_INDEX = 1048
+/// Defines the id nav find references constant used by the main module.
 const ID_NAV_FIND_REFERENCES = 1049
+/// Defines the id nav project symbols constant used by the main module.
 const ID_NAV_PROJECT_SYMBOLS = 1050
+/// Defines the id nav goto symbol constant used by the main module.
 const ID_NAV_GOTO_SYMBOL = 1051
+/// Defines the id command palette constant used by the main module.
 const ID_COMMAND_PALETTE = 1052
+/// Defines the id nav workspace health constant used by the main module.
 const ID_NAV_WORKSPACE_HEALTH = 1053
+/// Defines the id nav todos constant used by the main module.
 const ID_NAV_TODOS = 1054
+/// Defines the id nav test explorer constant used by the main module.
 const ID_NAV_TEST_EXPLORER = 1055
+/// Defines the id nav import graph constant used by the main module.
 const ID_NAV_IMPORT_GRAPH = 1057
+/// Defines the id nav call hierarchy constant used by the main module.
 const ID_NAV_CALL_HIERARCHY = 1058
+/// Defines the id nav symbol info constant used by the main module.
 const ID_NAV_SYMBOL_INFO = 1059
+/// Defines the id nav code inspections constant used by the main module.
 const ID_NAV_CODE_INSPECTIONS = 1060
+/// Defines the id nav related tests constant used by the main module.
 const ID_NAV_RELATED_TESTS = 1061
+/// Defines the id edit rename symbol constant used by the main module.
 const ID_EDIT_RENAME_SYMBOL = 1062
+/// Defines the id file test current constant used by the main module.
 const ID_FILE_TEST_CURRENT = 1063
+/// Defines the id file test related constant used by the main module.
 const ID_FILE_TEST_RELATED = 1064
+/// Defines the id file recent files constant used by the main module.
 const ID_FILE_RECENT_FILES = 1065
+/// Defines the id nav back constant used by the main module.
 const ID_NAV_BACK = 1066
+/// Defines the id nav forward constant used by the main module.
 const ID_NAV_FORWARD = 1067
+/// Defines the id nav toggle bookmark constant used by the main module.
 const ID_NAV_TOGGLE_BOOKMARK = 1068
+/// Defines the id nav bookmarks constant used by the main module.
 const ID_NAV_BOOKMARKS = 1069
+/// Defines the id nav next bookmark constant used by the main module.
 const ID_NAV_NEXT_BOOKMARK = 1070
+/// Defines the id nav prev bookmark constant used by the main module.
 const ID_NAV_PREV_BOOKMARK = 1071
+/// Defines the id nav file structure constant used by the main module.
 const ID_NAV_FILE_STRUCTURE = 1072
+/// Defines the id nav reveal active file constant used by the main module.
 const ID_NAV_REVEAL_ACTIVE_FILE = 1073
+/// Defines the id file save all constant used by the main module.
 const ID_FILE_SAVE_ALL = 1074
+/// Defines the id edit select all constant used by the main module.
 const ID_EDIT_SELECT_ALL = 1075
+/// Defines the id file close tab constant used by the main module.
 const ID_FILE_CLOSE_TAB = 1076
+/// Defines the id edit complete constant used by the main module.
 const ID_EDIT_COMPLETE = 1033
+/// Defines the id edit format constant used by the main module.
 const ID_EDIT_FORMAT = 1034
+/// Defines the id help welcome constant used by the main module.
 const ID_HELP_WELCOME = 1035
+/// Defines the id nav goto line constant used by the main module.
 const ID_NAV_GOTO_LINE = 1036
+/// Defines the id edit find constant used by the main module.
 const ID_EDIT_FIND = 1037
+/// Defines the id edit find next constant used by the main module.
 const ID_EDIT_FIND_NEXT = 1038
+/// Defines the id nav goto definition constant used by the main module.
 const ID_NAV_GOTO_DEFINITION = 1039
+/// Defines the id assistant panel constant used by the main module.
 const ID_ASSISTANT_PANEL = 1077
+/// Defines the id assistant send constant used by the main module.
 const ID_ASSISTANT_SEND = 1078
+/// Defines the id assistant context constant used by the main module.
 const ID_ASSISTANT_CONTEXT = 1079
+/// Defines the id config assistant settings constant used by the main module.
 const ID_CONFIG_ASSISTANT_SETTINGS = 1080
+/// Defines the id window minimize constant used by the main module.
 const ID_WINDOW_MINIMIZE = 1101
+/// Defines the id window maximize constant used by the main module.
 const ID_WINDOW_MAXIMIZE = 1102
+/// Defines the id window restore constant used by the main module.
 const ID_WINDOW_RESTORE = 1103
 
+/// Defines the id settings entry browse constant used by the main module.
 const ID_SETTINGS_ENTRY_BROWSE = 1401
+/// Defines the id settings compiler browse constant used by the main module.
 const ID_SETTINGS_COMPILER_BROWSE = 1402
+/// Defines the id settings keep going constant used by the main module.
 const ID_SETTINGS_KEEP_GOING = 1403
+/// Defines the id settings subsystem constant used by the main module.
 const ID_SETTINGS_SUBSYSTEM = 1404
+/// Defines the id settings ok constant used by the main module.
 const ID_SETTINGS_OK = 1405
+/// Defines the id settings cancel constant used by the main module.
 const ID_SETTINGS_CANCEL = 1406
+/// Defines the id settings entry edit constant used by the main module.
 const ID_SETTINGS_ENTRY_EDIT = 1411
+/// Defines the id settings output edit constant used by the main module.
 const ID_SETTINGS_OUTPUT_EDIT = 1412
+/// Defines the id settings compiler edit constant used by the main module.
 const ID_SETTINGS_COMPILER_EDIT = 1413
+/// Defines the id settings max edit constant used by the main module.
 const ID_SETTINGS_MAX_EDIT = 1414
+/// Defines the id settings extra edit constant used by the main module.
 const ID_SETTINGS_EXTRA_EDIT = 1415
+/// Defines the id settings test edit constant used by the main module.
 const ID_SETTINGS_TEST_EDIT = 1416
+/// Defines the id settings run args edit constant used by the main module.
 const ID_SETTINGS_RUN_ARGS_EDIT = 1417
+/// Defines the id settings workdir edit constant used by the main module.
 const ID_SETTINGS_WORKDIR_EDIT = 1418
 
+/// Defines the id new project name edit constant used by the main module.
 const ID_NEW_PROJECT_NAME_EDIT = 1501
+/// Defines the id new project parent edit constant used by the main module.
 const ID_NEW_PROJECT_PARENT_EDIT = 1502
+/// Defines the id new project kind constant used by the main module.
 const ID_NEW_PROJECT_KIND = 1503
+/// Defines the id new project ok constant used by the main module.
 const ID_NEW_PROJECT_OK = 1504
+/// Defines the id new project cancel constant used by the main module.
 const ID_NEW_PROJECT_CANCEL = 1505
+/// Defines the id goto line edit constant used by the main module.
 const ID_GOTO_LINE_EDIT = 1511
+/// Defines the id goto line ok constant used by the main module.
 const ID_GOTO_LINE_OK = 1512
+/// Defines the id goto line cancel constant used by the main module.
 const ID_GOTO_LINE_CANCEL = 1513
+/// Defines the id find text edit constant used by the main module.
 const ID_FIND_TEXT_EDIT = 1521
+/// Defines the id find ok constant used by the main module.
 const ID_FIND_OK = 1522
+/// Defines the id find cancel constant used by the main module.
 const ID_FIND_CANCEL = 1523
+/// Defines the id rename text edit constant used by the main module.
 const ID_RENAME_TEXT_EDIT = 1531
+/// Defines the id rename ok constant used by the main module.
 const ID_RENAME_OK = 1532
+/// Defines the id rename cancel constant used by the main module.
 const ID_RENAME_CANCEL = 1533
+/// Defines the id help search text edit constant used by the main module.
 const ID_HELP_SEARCH_TEXT_EDIT = 1541
+/// Defines the id help search ok constant used by the main module.
 const ID_HELP_SEARCH_OK = 1542
+/// Defines the id help search cancel constant used by the main module.
 const ID_HELP_SEARCH_CANCEL = 1543
+/// Defines the id symbol search text edit constant used by the main module.
 const ID_SYMBOL_SEARCH_TEXT_EDIT = 1551
+/// Defines the id symbol search ok constant used by the main module.
 const ID_SYMBOL_SEARCH_OK = 1552
+/// Defines the id symbol search cancel constant used by the main module.
 const ID_SYMBOL_SEARCH_CANCEL = 1553
+/// Defines the id command search text edit constant used by the main module.
 const ID_COMMAND_SEARCH_TEXT_EDIT = 1561
+/// Defines the id command list constant used by the main module.
 const ID_COMMAND_LIST = 1562
+/// Defines the id command run constant used by the main module.
 const ID_COMMAND_RUN = 1563
+/// Defines the id command cancel constant used by the main module.
 const ID_COMMAND_CANCEL = 1564
+/// Defines the id quick open text edit constant used by the main module.
 const ID_QUICK_OPEN_TEXT_EDIT = 1571
+/// Defines the id quick open ok constant used by the main module.
 const ID_QUICK_OPEN_OK = 1572
+/// Defines the id quick open cancel constant used by the main module.
 const ID_QUICK_OPEN_CANCEL = 1573
+/// Defines the id rename symbol text edit constant used by the main module.
 const ID_RENAME_SYMBOL_TEXT_EDIT = 1581
+/// Defines the id rename symbol ok constant used by the main module.
 const ID_RENAME_SYMBOL_OK = 1582
+/// Defines the id rename symbol cancel constant used by the main module.
 const ID_RENAME_SYMBOL_CANCEL = 1583
+/// Defines the id rename symbol apply constant used by the main module.
 const ID_RENAME_SYMBOL_APPLY = 1584
+/// Defines the id ai provider edit constant used by the main module.
 const ID_AI_PROVIDER_EDIT = 1591
+/// Defines the id ai base url edit constant used by the main module.
 const ID_AI_BASE_URL_EDIT = 1592
+/// Defines the id ai key env edit constant used by the main module.
 const ID_AI_KEY_ENV_EDIT = 1593
+/// Defines the id ai model edit constant used by the main module.
 const ID_AI_MODEL_EDIT = 1594
+/// Defines the id ai tool mode edit constant used by the main module.
 const ID_AI_TOOL_MODE_EDIT = 1595
+/// Defines the id ai enabled constant used by the main module.
 const ID_AI_ENABLED = 1596
+/// Defines the id ai include tabs constant used by the main module.
 const ID_AI_INCLUDE_TABS = 1597
+/// Defines the id ai include project constant used by the main module.
 const ID_AI_INCLUDE_PROJECT = 1598
+/// Defines the id ai include help constant used by the main module.
 const ID_AI_INCLUDE_HELP = 1599
+/// Defines the id ai settings ok constant used by the main module.
 const ID_AI_SETTINGS_OK = 1600
+/// Defines the id ai settings cancel constant used by the main module.
 const ID_AI_SETTINGS_CANCEL = 1601
+/// Defines the id ai allow insecure tls constant used by the main module.
 const ID_AI_ALLOW_INSECURE_TLS = 1602
+/// Defines the id ai key mode constant used by the main module.
 const ID_AI_KEY_MODE = 1603
+/// Defines the id ai api key edit constant used by the main module.
 const ID_AI_API_KEY_EDIT = 1604
+/// Defines the assistant max tool rounds constant used by the main module.
 const ASSISTANT_MAX_TOOL_ROUNDS = 12
 
+/// Defines the id ctx tab close constant used by the main module.
 const ID_CTX_TAB_CLOSE = 1201
+/// Defines the id ctx tab close others constant used by the main module.
 const ID_CTX_TAB_CLOSE_OTHERS = 1202
+/// Defines the id ctx tab close all constant used by the main module.
 const ID_CTX_TAB_CLOSE_ALL = 1203
+/// Defines the id ctx tree open constant used by the main module.
 const ID_CTX_TREE_OPEN = 1210
+/// Defines the id ctx tree new file constant used by the main module.
 const ID_CTX_TREE_NEW_FILE = 1211
+/// Defines the id ctx tree new folder constant used by the main module.
 const ID_CTX_TREE_NEW_FOLDER = 1212
+/// Defines the id ctx tree copy constant used by the main module.
 const ID_CTX_TREE_COPY = 1213
+/// Defines the id ctx tree paste constant used by the main module.
 const ID_CTX_TREE_PASTE = 1214
+/// Defines the id ctx tree rename constant used by the main module.
 const ID_CTX_TREE_RENAME = 1215
+/// Defines the id ctx tree delete constant used by the main module.
 const ID_CTX_TREE_DELETE = 1216
+/// Defines the id ctx tree new test constant used by the main module.
 const ID_CTX_TREE_NEW_TEST = 1217
+/// Defines the id ctx editor select all constant used by the main module.
 const ID_CTX_EDITOR_SELECT_ALL = 1220
+/// Defines the id ctx log copy constant used by the main module.
 const ID_CTX_LOG_COPY = 1230
+/// Defines the id ctx log select all constant used by the main module.
 const ID_CTX_LOG_SELECT_ALL = 1231
+/// Defines the id ctx log clear constant used by the main module.
 const ID_CTX_LOG_CLEAR = 1232
 
-// Return true when a path is already absolute.
+/// Return true when a path is already absolute.
+/// @param path Path of the file or directory used by the operation.
 function _is_abs(path)
   if typeof(path) != "string" then return false end if
   if len(path) > 2 and path[1] == ":" then return true end if
@@ -358,18 +666,23 @@ function _is_abs(path)
   return false
 end function
 
-// Resolve a possibly relative path against the project root.
+/// Resolve a possibly relative path against the project root.
+/// @param root root value consumed by this operation.
+/// @param path Path of the file or directory used by the operation.
 function _resolve(root, path)
   if _is_abs(path) then return path end if
   return project_model.path_join(root, path)
 end function
 
-// Return the file name portion of a path.
+/// Return the file name portion of a path.
+/// @param path Path of the file or directory used by the operation.
 function _basename(path)
   return project_model.basename(path)
 end function
 
-// Return the index of a path in an array, or -1 when absent.
+/// Return the index of a path in an array, or -1 when absent.
+/// @param paths paths value consumed by this operation.
+/// @param path Path of the file or directory used by the operation.
 function _path_index(paths, path)
   // Walk collections defensively because project data can be partially populated.
   if typeof(paths) != "array" then return -1 end if
@@ -381,30 +694,35 @@ function _path_index(paths, path)
   return -1
 end function
 
-// Return true when a path refers to a built-in virtual document.
+/// Return true when a path refers to a built-in virtual document.
+/// @param path Path of the file or directory used by the operation.
 function _is_virtual_doc_path(path)
   return typeof(path) == "string" and s.startsWith(path, "miniide://")
 end function
 
-// Return true when a path names a Markdown document.
+/// Return true when a path names a Markdown document.
+/// @param path Path of the file or directory used by the operation.
 function _is_markdown_path(path)
   if typeof(path) != "string" then return false end if
   lower = s.toLowerAscii(path)
   return s.endsWith(lower, ".md") or s.endsWith(lower, ".markdown")
 end function
 
-// Return true when a tab path is read-only.
+/// Return true when a tab path is read-only.
+/// @param path Path of the file or directory used by the operation.
 function _is_readonly_tab_path(path)
   return _is_virtual_doc_path(path)
 end function
 
-// Return true when a tab shows generated editor text instead of editable source.
+/// Return true when a tab shows generated editor text instead of editable source.
+/// @param path Path of the file or directory used by the operation.
 function _is_generated_editor_path(path)
   if _is_readonly_tab_path(path) then return true end if
   return _is_markdown_path(path)
 end function
 
-// Return true when the active tab has unsaved changes.
+/// Return true when the active tab has unsaved changes.
+/// @param st st value consumed by this operation.
 function _active_dirty(st)
   if typeof(st.open_dirty) != "array" then return false end if
   if st.active_tab < 0 or st.active_tab >= len(st.open_dirty) then return false end if
@@ -414,14 +732,18 @@ function _active_dirty(st)
   return st.open_dirty[st.active_tab]
 end function
 
-// Return the saved text at the requested location.
+/// Return the saved text at the requested location.
+/// @param st st value consumed by this operation.
+/// @param idx idx value consumed by this operation.
 function _saved_text_at(st, idx)
   if typeof(st.open_saved_texts) != "array" then return "" end if
   if idx < 0 or idx >= len(st.open_saved_texts) then return "" end if
   return st.open_saved_texts[idx]
 end function
 
-// Update a tab dirty flag by comparing it with the saved snapshot.
+/// Update a tab dirty flag by comparing it with the saved snapshot.
+/// @param st st value consumed by this operation.
+/// @param idx idx value consumed by this operation.
 function _set_dirty_from_saved(st, idx)
   if idx < 0 or idx >= len(st.open_texts) or idx >= len(st.open_dirty) then return st end if
   if idx < len(st.open_files) then
@@ -434,7 +756,9 @@ function _set_dirty_from_saved(st, idx)
   return st
 end function
 
-// Push a text snapshot onto an undo or redo stack.
+/// Push a text snapshot onto an undo or redo stack.
+/// @param stack stack value consumed by this operation.
+/// @param text Text consumed by the operation.
 function _push_snapshot(stack, text)
   // Walk collections defensively because project data can be partially populated.
   if typeof(stack) != "array" then stack = [] end if
@@ -450,7 +774,8 @@ function _push_snapshot(stack, text)
   return trimmed
 end function
 
-// Remove the top snapshot from an undo or redo stack.
+/// Remove the top snapshot from an undo or redo stack.
+/// @param stack stack value consumed by this operation.
 function _pop_snapshot(stack)
   // Walk collections defensively because project data can be partially populated.
   if typeof(stack) != "array" or len(stack) <= 0 then return [] end if
@@ -461,7 +786,8 @@ function _pop_snapshot(stack)
   return result_stack
 end function
 
-// Clear cached syntax highlighting so it will be recomputed.
+/// Clear cached syntax highlighting so it will be recomputed.
+/// @param st st value consumed by this operation.
 function _invalidate_highlight(st)
   st.last_highlight_text = ""
   st.last_highlight_first_line = -1
@@ -469,7 +795,8 @@ function _invalidate_highlight(st)
   return st
 end function
 
-// Record editor activity used for undo and dirty tracking.
+/// Record editor activity used for undo and dirty tracking.
+/// @param st st value consumed by this operation.
 function _record_edit_activity(st)
   now = win.GetTickCount()
   st.last_edit_ms = now
@@ -479,7 +806,9 @@ function _record_edit_activity(st)
   return st
 end function
 
-// Capture the current editor state on the undo stack when needed.
+/// Capture the current editor state on the undo stack when needed.
+/// @param st st value consumed by this operation.
+/// @param idx idx value consumed by this operation.
 function _record_undo_snapshot(st, idx)
   if idx < 0 or idx >= len(st.open_texts) or idx >= len(st.open_undo) then return st end if
   now = win.GetTickCount()
@@ -500,13 +829,15 @@ function _record_undo_snapshot(st, idx)
   return st
 end function
 
-// Return true when a cached Markdown view handle is still a live window.
+/// Return true when a cached Markdown view handle is still a live window.
+/// @param view view value consumed by this operation.
 function _markdown_view_is_live(view)
   if typeof(view) != "ptr" then return false end if
   return win.IsWindow(view)
 end function
 
-// Create a hidden RichEdit view used to cache one rendered Markdown tab.
+/// Create a hidden RichEdit view used to cache one rendered Markdown tab.
+/// @param st st value consumed by this operation.
 function _create_markdown_view(st)
   view = _create_editor(st.hwnd, st.font_ui)
   if view is void then return view end if
@@ -517,12 +848,14 @@ function _create_markdown_view(st)
   return view
 end function
 
-// Destroy a cached Markdown view when its tab is removed.
+/// Destroy a cached Markdown view when its tab is removed.
+/// @param view view value consumed by this operation.
 function _destroy_markdown_view(view)
   if _markdown_view_is_live(view) then win.DestroyWindow(view) end if
 end function
 
-// Destroy all cached Markdown views.
+/// Destroy all cached Markdown views.
+/// @param st st value consumed by this operation.
 function _destroy_all_markdown_views(st)
   if typeof(st.open_markdown_views) != "array" then return st end if
   for i = 0 to len(st.open_markdown_views) - 1
@@ -531,7 +864,8 @@ function _destroy_all_markdown_views(st)
   return st
 end function
 
-// Ensure the Markdown view cache arrays match the open tab list.
+/// Ensure the Markdown view cache arrays match the open tab list.
+/// @param st st value consumed by this operation.
 function _ensure_markdown_view_slots(st)
   if typeof(st.open_markdown_views) != "array" then st.open_markdown_views = [] end if
   if typeof(st.open_markdown_view_sources) != "array" then st.open_markdown_view_sources = [] end if
@@ -550,7 +884,9 @@ function _ensure_markdown_view_slots(st)
   return st
 end function
 
-// Hide every cached Markdown view except the requested tab.
+/// Hide every cached Markdown view except the requested tab.
+/// @param st st value consumed by this operation.
+/// @param keep_idx keep_idx value consumed by this operation.
 function _hide_markdown_views_except(st, keep_idx)
   if typeof(st.open_markdown_views) != "array" then return st end if
   for i = 0 to len(st.open_markdown_views) - 1
@@ -560,7 +896,9 @@ function _hide_markdown_views_except(st, keep_idx)
   return st
 end function
 
-// Mark one cached Markdown view stale without destroying the rendered document cache.
+/// Mark one cached Markdown view stale without destroying the rendered document cache.
+/// @param st st value consumed by this operation.
+/// @param idx idx value consumed by this operation.
 function _invalidate_markdown_view(st, idx)
   if idx < 0 then return st end if
   st = _ensure_markdown_view_slots(st)
@@ -569,7 +907,8 @@ function _invalidate_markdown_view(st, idx)
   return st
 end function
 
-// Mark the active tab dirty after a pending editor notification.
+/// Mark the active tab dirty after a pending editor notification.
+/// @param st st value consumed by this operation.
 function _mark_active_dirty_pending(st)
   idx = st.active_tab
   if idx < 0 or idx >= len(st.open_files) or idx >= len(st.open_dirty) then return st end if
@@ -590,7 +929,9 @@ function _mark_active_dirty_pending(st)
   return st
 end function
 
-// Replace the result log text and refresh the log control.
+/// Replace the result log text and refresh the log control.
+/// @param st st value consumed by this operation.
+/// @param text Text consumed by the operation.
 function _set_log(st, text)
   if typeof(text) != "string" then text = "" end if
   st.result_mode = "log"
@@ -609,7 +950,14 @@ function _set_log(st, text)
   return st
 end function
 
-// Show result panel.
+/// Show result panel.
+/// @param st st value consumed by this operation.
+/// @param mode Mode selecting the requested behavior.
+/// @param title Human-readable title presented to the user.
+/// @param rows rows value consumed by this operation.
+/// @param files files value consumed by this operation.
+/// @param lines lines value consumed by this operation.
+/// @param cols cols value consumed by this operation.
 function _show_result_panel(st, mode, title, rows, files, lines, cols)
   // Walk collections defensively because project data can be partially populated.
   if typeof(mode) != "string" then mode = "results" end if
@@ -641,7 +989,10 @@ function _show_result_panel(st, mode, title, rows, files, lines, cols)
   return st
 end function
 
-// Append text to the assistant transcript.
+/// Append text to the assistant transcript.
+/// @param st st value consumed by this operation.
+/// @param role role value consumed by this operation.
+/// @param text Text consumed by the operation.
 function _assistant_append(st, role, text)
   if typeof(role) != "string" or role == "" then role = "Assistant" end if
   if typeof(text) != "string" then text = "" end if
@@ -651,17 +1002,22 @@ function _assistant_append(st, role, text)
   return st
 end function
 
-// Return the current assistant tool context assembled by the AI module.
+/// Return the current assistant tool context assembled by the AI module.
+/// @param st st value consumed by this operation.
 function _assistant_tool_context(st)
   return assistant.tool_context(st.project, _effective_compiler(st), st.assistant_config, st.current_file, st.open_files, st.open_dirty, st.active_tab, st.open_texts, st.build_last_log)
 end function
 
-// Return a simple string argument from a JSON object produced by tool calling.
+/// Return a simple string argument from a JSON object produced by tool calling.
+/// @param args Command-line or caller-supplied arguments.
+/// @param name Name of the affected item.
 function _assistant_json_arg(args, name)
   return ai_provider.json_field_string(args, name)
 end function
 
-// Return true when a resolved path stays inside the current project root.
+/// Return true when a resolved path stays inside the current project root.
+/// @param st st value consumed by this operation.
+/// @param path Path of the file or directory used by the operation.
 function _assistant_path_inside_project(st, path)
   if typeof(st.project) != "struct" or typeof(path) != "string" or path == "" then return false end if
   root = project_model.abspath(st.project.root)
@@ -676,7 +1032,9 @@ function _assistant_path_inside_project(st, path)
   return false
 end function
 
-// Resolve a tool path against the project root and reject paths outside it.
+/// Resolve a tool path against the project root and reject paths outside it.
+/// @param st st value consumed by this operation.
+/// @param rel_path Path associated with rel.
 function _assistant_resolve_project_tool_path(st, rel_path)
   if typeof(rel_path) != "string" or s.trim(rel_path) == "" then return ["", "Missing required path argument."] end if
   rel_path = s.trim(rel_path)
@@ -686,14 +1044,18 @@ function _assistant_resolve_project_tool_path(st, rel_path)
   return [project_model.abspath(target), ""]
 end function
 
-// Return true when assistant tools may modify project files.
+/// Return true when assistant tools may modify project files.
+/// @param st st value consumed by this operation.
 function _assistant_write_tools_enabled(st)
   if typeof(st.assistant_config) != "struct" then return false end if
   mode = assistant.normalize_tool_mode(st.assistant_config.tool_mode)
   return mode == "write"
 end function
 
-// Keep open editor state in sync after an assistant file write.
+/// Keep open editor state in sync after an assistant file write.
+/// @param st st value consumed by this operation.
+/// @param path Path of the file or directory used by the operation.
+/// @param text Text consumed by the operation.
 function _assistant_sync_written_file(st, path, text)
   text = _normalize_editor_text(text)
   idx = _path_index(st.open_files, path)
@@ -715,7 +1077,10 @@ function _assistant_sync_written_file(st, path, text)
   return st
 end function
 
-// Write an assistant-provided project file after project-boundary validation.
+/// Write an assistant-provided project file after project-boundary validation.
+/// @param st st value consumed by this operation.
+/// @param rel_path Path associated with rel.
+/// @param content content value consumed by this operation.
 function _assistant_write_project_file(st, rel_path, content)
   if _assistant_write_tools_enabled(st) == false then return [st, "Write tools are disabled. Set AI tool mode to write in Configuration > AI Assistant Settings."] end if
   if typeof(content) != "string" then return [st, "Missing required content argument."] end if
@@ -730,7 +1095,11 @@ function _assistant_write_project_file(st, rel_path, content)
   return [st, "wrote: " + _project_relative_path(st, path) + "\nchars: " + len(content)]
 end function
 
-// Replace exact text in a project file for small assistant edits.
+/// Replace exact text in a project file for small assistant edits.
+/// @param st st value consumed by this operation.
+/// @param rel_path Path associated with rel.
+/// @param old_text old_text value consumed by this operation.
+/// @param new_text new_text value consumed by this operation.
 function _assistant_replace_in_project_file(st, rel_path, old_text, new_text)
   if _assistant_write_tools_enabled(st) == false then return [st, "Write tools are disabled. Set AI tool mode to write in Configuration > AI Assistant Settings."] end if
   if typeof(old_text) != "string" or old_text == "" then return [st, "Missing required old_text argument."] end if
@@ -750,7 +1119,8 @@ function _assistant_replace_in_project_file(st, rel_path, old_text, new_text)
   return [st, "replaced text in: " + _project_relative_path(st, path) + "\nold_chars: " + len(old_text) + "\nnew_chars: " + len(new_text)]
 end function
 
-// Return project diagnostics in assistant-friendly text form.
+/// Return project diagnostics in assistant-friendly text form.
+/// @param st st value consumed by this operation.
 function _assistant_diagnostics_text(st)
   snapshot = lang_service.analyze_project(st.project)
   diagnostics = lang_service.diagnostics(snapshot)
@@ -781,7 +1151,9 @@ function _assistant_diagnostics_text(st)
   return text
 end function
 
-// Return project symbols matching a query in assistant-friendly text form.
+/// Return project symbols matching a query in assistant-friendly text form.
+/// @param st st value consumed by this operation.
+/// @param query query value consumed by this operation.
 function _assistant_symbols_text(st, query)
   snapshot = lang_service.analyze_project(st.project)
   items = lang_service.symbol_items(snapshot, query, 80)
@@ -797,7 +1169,9 @@ function _assistant_symbols_text(st, query)
   return text
 end function
 
-// Return references for a symbol in assistant-friendly text form.
+/// Return references for a symbol in assistant-friendly text form.
+/// @param st st value consumed by this operation.
+/// @param word word value consumed by this operation.
 function _assistant_references_text(st, word)
   if typeof(word) != "string" or s.trim(word) == "" then
     editor_text = win.edit_get_text(st.editor)
@@ -818,7 +1192,8 @@ function _assistant_references_text(st, word)
   return text
 end function
 
-// Return current selection or cursor context.
+/// Return current selection or cursor context.
+/// @param st st value consumed by this operation.
 function _assistant_selection_text(st)
   if st.active_tab < 0 or st.active_tab >= len(st.open_texts) then return "selection:\n- no active editor tab\n" end if
   text = win.edit_get_text(st.editor)
@@ -848,7 +1223,9 @@ function _assistant_selection_text(st)
   return result
 end function
 
-// Execute one assistant tool call against the current IDE state.
+/// Execute one assistant tool call against the current IDE state.
+/// @param st st value consumed by this operation.
+/// @param call call value consumed by this operation.
 function _assistant_execute_tool_call(st, call)
   if typeof(call) != "struct" then return [st, "Invalid tool call."] end if
   name = call.name
@@ -898,7 +1275,9 @@ function _assistant_execute_tool_call(st, call)
   return [st, "Unsupported assistant tool: " + name]
 end function
 
-// Execute tool calls requested by the assistant model.
+/// Execute tool calls requested by the assistant model.
+/// @param st st value consumed by this operation.
+/// @param calls calls value consumed by this operation.
 function _assistant_execute_tool_calls(st, calls)
   text = ""
   if typeof(calls) != "array" or len(calls) <= 0 then return [st, text] end if
@@ -920,7 +1299,8 @@ function _assistant_execute_tool_calls(st, calls)
   return [st, text]
 end function
 
-// Show the assistant panel.
+/// Show the assistant panel.
+/// @param st st value consumed by this operation.
 function _show_assistant_panel(st)
   st.result_mode = "assistant"
   win.ShowWindow(st.log, win.SW_HIDE)
@@ -942,7 +1322,8 @@ function _show_assistant_panel(st)
   return st
 end function
 
-// Handle one assistant prompt through local read-only tooling.
+/// Handle one assistant prompt through local read-only tooling.
+/// @param st st value consumed by this operation.
 function _assistant_send(st)
   st = _sync_active_tab(st)
   prompt = s.trim(win.get_control_text(st.assistant_input))
@@ -1006,13 +1387,16 @@ function _assistant_send(st)
   return _show_assistant_panel(st)
 end function
 
-// Show assistant tool context in the assistant panel.
+/// Show assistant tool context in the assistant panel.
+/// @param st st value consumed by this operation.
 function _assistant_show_context(st)
   st = _assistant_append(st, "Assistant", _assistant_tool_context(st))
   return _show_assistant_panel(st)
 end function
 
-// Resolve result file.
+/// Resolve result file.
+/// @param st st value consumed by this operation.
+/// @param file file value consumed by this operation.
 function _resolve_result_file(st, file)
   if typeof(file) != "string" or file == "" then return "" end if
   if _is_abs(file) == false and typeof(st.project) == "struct" then
@@ -1021,7 +1405,8 @@ function _resolve_result_file(st, file)
   return file
 end function
 
-// Return the current editor location for navigation history.
+/// Return the current editor location for navigation history.
+/// @param st st value consumed by this operation.
 function _current_nav_location(st)
   if typeof(st.current_file) != "string" or st.current_file == "" then return end if
   if st.active_tab < 0 or st.active_tab >= len(st.open_files) then return end if
@@ -1036,13 +1421,17 @@ function _current_nav_location(st)
   return NavLocation(st.current_file, line, col)
 end function
 
-// Return true when two navigation locations point to the same place.
+/// Return true when two navigation locations point to the same place.
+/// @param a a value consumed by this operation.
+/// @param b b value consumed by this operation.
 function _same_nav_location(a, b)
   if typeof(a) != "struct" or typeof(b) != "struct" then return false end if
   return a.file == b.file and a.line == b.line and a.col == b.col
 end function
 
-// Push one location onto a bounded navigation stack.
+/// Push one location onto a bounded navigation stack.
+/// @param stack stack value consumed by this operation.
+/// @param loc loc value consumed by this operation.
 function _push_nav_stack(stack, loc)
   if typeof(stack) != "array" then stack = [] end if
   if typeof(loc) != "struct" then return stack end if
@@ -1056,7 +1445,8 @@ function _push_nav_stack(stack, loc)
   return trimmed
 end function
 
-// Return a stack without the last navigation item.
+/// Return a stack without the last navigation item.
+/// @param stack stack value consumed by this operation.
 function _pop_nav_stack(stack)
   if typeof(stack) != "array" or len(stack) <= 0 then return [] end if
   result = []
@@ -1066,7 +1456,8 @@ function _pop_nav_stack(stack)
   return result
 end function
 
-// Record the current location before an explicit navigation jump.
+/// Record the current location before an explicit navigation jump.
+/// @param st st value consumed by this operation.
 function _record_navigation(st)
   loc = _current_nav_location(st)
   if typeof(loc) != "struct" then return st end if
@@ -1075,14 +1466,17 @@ function _record_navigation(st)
   return st
 end function
 
-// Open a navigation location without recording a new history entry.
+/// Open a navigation location without recording a new history entry.
+/// @param st st value consumed by this operation.
+/// @param loc loc value consumed by this operation.
 function _open_nav_location(st, loc)
   if typeof(loc) != "struct" then return st end if
   st = _open_file(st, loc.file)
   return _jump_to_line_col(st, loc.line, loc.col)
 end function
 
-// Navigate backward through jump history.
+/// Navigate backward through jump history.
+/// @param st st value consumed by this operation.
 function _navigate_back(st)
   if typeof(st.nav_back) != "array" or len(st.nav_back) <= 0 then return _set_log(st, "Navigation Back: no previous location.") end if
   current = _current_nav_location(st)
@@ -1093,7 +1487,8 @@ function _navigate_back(st)
   return _set_log(st, "Navigation Back: " + _project_relative_path(st, loc.file) + ":" + loc.line + ":" + loc.col)
 end function
 
-// Navigate forward through jump history.
+/// Navigate forward through jump history.
+/// @param st st value consumed by this operation.
 function _navigate_forward(st)
   if typeof(st.nav_forward) != "array" or len(st.nav_forward) <= 0 then return _set_log(st, "Navigation Forward: no next location.") end if
   current = _current_nav_location(st)
@@ -1104,7 +1499,8 @@ function _navigate_forward(st)
   return _set_log(st, "Navigation Forward: " + _project_relative_path(st, loc.file) + ":" + loc.line + ":" + loc.col)
 end function
 
-// Toggle a bookmark at the current editor line.
+/// Toggle a bookmark at the current editor line.
+/// @param st st value consumed by this operation.
 function _toggle_bookmark(st)
   loc = _current_nav_location(st)
   if typeof(loc) != "struct" then return _set_log(st, "Toggle Bookmark: no file is open.") end if
@@ -1128,7 +1524,8 @@ function _toggle_bookmark(st)
   return _set_log(st, "Bookmark added: " + label)
 end function
 
-// Show all session bookmarks in the result panel.
+/// Show all session bookmarks in the result panel.
+/// @param st st value consumed by this operation.
 function _show_bookmarks(st)
   if typeof(st.bookmarks) != "array" or len(st.bookmarks) <= 0 then return _set_log(st, "Bookmarks: no bookmarks set.") end if
 
@@ -1149,7 +1546,9 @@ function _show_bookmarks(st)
   return _show_result_panel(st, "bookmarks", "Bookmarks", rows, files, lines_out, cols)
 end function
 
-// Jump to the next or previous session bookmark.
+/// Jump to the next or previous session bookmark.
+/// @param st st value consumed by this operation.
+/// @param step step value consumed by this operation.
 function _goto_bookmark(st, step)
   if typeof(st.bookmarks) != "array" or len(st.bookmarks) <= 0 then return _set_log(st, "Bookmarks: no bookmarks set.") end if
   current = _current_nav_location(st)
@@ -1180,7 +1579,11 @@ function _goto_bookmark(st, step)
   return _set_log(st, label + ": " + _project_relative_path(st, loc.file) + ":" + loc.line + ":" + loc.col)
 end function
 
-// Open problem location.
+/// Open problem location.
+/// @param st st value consumed by this operation.
+/// @param file file value consumed by this operation.
+/// @param line_no line_no value consumed by this operation.
+/// @param col_no col_no value consumed by this operation.
 function _open_problem_location(st, file, line_no, col_no)
   file = _resolve_result_file(st, file)
   if typeof(file) != "string" or file == "" then return st end if
@@ -1193,7 +1596,8 @@ function _open_problem_location(st, file, line_no, col_no)
   return _jump_to_line_col(st, line_no, col_no)
 end function
 
-// Open result selection.
+/// Open result selection.
+/// @param st st value consumed by this operation.
 function _open_result_selection(st)
   idx = win.listbox_getsel(st.result_list)
   if typeof(idx) != "int" or idx < 0 then return st end if
@@ -1207,7 +1611,8 @@ function _open_result_selection(st)
   return _open_problem_location(st, file, line_no, col_no)
 end function
 
-// Split the result log into individual display lines.
+/// Split the result log into individual display lines.
+/// @param text Text consumed by the operation.
 function _log_lines(text)
   if typeof(text) != "string" then text = "" end if
   text = s.replaceAll(text, "\r\n", "\n")
@@ -1215,7 +1620,9 @@ function _log_lines(text)
   return s.split(text, "\n")
 end function
 
-// Find the diagnostic associated with a result-log line.
+/// Find the diagnostic associated with a result-log line.
+/// @param lines lines value consumed by this operation.
+/// @param line_idx line_idx value consumed by this operation.
 function _diagnostic_near_log_line(lines, line_idx)
   // Walk collections defensively because project data can be partially populated.
   if typeof(lines) != "array" or len(lines) <= 0 then return end if
@@ -1233,14 +1640,20 @@ function _diagnostic_near_log_line(lines, line_idx)
   if typeof(items) == "array" and len(items) > 0 then return items[0] end if
 end function
 
-// Open log diagnostic at.
+/// Open log diagnostic at.
+/// @param st st value consumed by this operation.
+/// @param x Horizontal coordinate used by the operation.
+/// @param y Vertical coordinate used by the operation.
 function _open_log_diagnostic_at(st, x, y)
   d = _log_diagnostic_at(st, x, y)
   if typeof(d) != "struct" then return st end if
   return _open_problem_location(st, d.file, d.line, d.col)
 end function
 
-// Return the log diagnostic at the requested location.
+/// Return the log diagnostic at the requested location.
+/// @param st st value consumed by this operation.
+/// @param x Horizontal coordinate used by the operation.
+/// @param y Vertical coordinate used by the operation.
 function _log_diagnostic_at(st, x, y)
   line_idx = win.edit_line_from_pos(st.log, x, y)
   if typeof(line_idx) != "int" or line_idx < 0 then return end if
@@ -1248,12 +1661,16 @@ function _log_diagnostic_at(st, x, y)
   return _diagnostic_near_log_line(lines, line_idx)
 end function
 
-// Return true when the mouse is over a clickable log diagnostic.
+/// Return true when the mouse is over a clickable log diagnostic.
+/// @param st st value consumed by this operation.
+/// @param x Horizontal coordinate used by the operation.
+/// @param y Vertical coordinate used by the operation.
 function _mouse_over_log_diagnostic(st, x, y)
   return typeof(_log_diagnostic_at(st, x, y)) == "struct"
 end function
 
-// Normalize editor text so RichEdit and MiniLang use the same line endings.
+/// Normalize editor text so RichEdit and MiniLang use the same line endings.
+/// @param text Text consumed by the operation.
 function _normalize_editor_text(text)
   if typeof(text) != "string" then return "" end if
   text = s.replaceAll(text, "\r\n", "\n")
@@ -1261,18 +1678,22 @@ function _normalize_editor_text(text)
   return text
 end function
 
-// Convert internal editor text to the display form expected by RichEdit.
+/// Convert internal editor text to the display form expected by RichEdit.
+/// @param text Text consumed by the operation.
 function _editor_display_text(text)
   text = _normalize_editor_text(text)
   return s.replaceAll(text, "\n", "\r\n")
 end function
 
-// Return the active folds.
+/// Return the active folds.
+/// @param st st value consumed by this operation.
 function _active_folds(st)
   return []
 end function
 
-// Return the fold index at the requested location.
+/// Return the fold index at the requested location.
+/// @param folds folds value consumed by this operation.
+/// @param source_line source_line value consumed by this operation.
 function _fold_index_at(folds, source_line)
   // Walk collections defensively because project data can be partially populated.
   if typeof(folds) != "array" or len(folds) <= 0 then return -1 end if
@@ -1283,14 +1704,17 @@ function _fold_index_at(folds, source_line)
   return -1
 end function
 
-// Return the fold end at the requested location.
+/// Return the fold end at the requested location.
+/// @param folds folds value consumed by this operation.
+/// @param source_line source_line value consumed by this operation.
 function _fold_end_at(folds, source_line)
   idx = _fold_index_at(folds, source_line)
   if idx < 0 then return -1 end if
   return folds[idx].end_line
 end function
 
-// Return the fold start kind.
+/// Return the fold start kind.
+/// @param line line value consumed by this operation.
 function _fold_start_kind(line)
   line = s.trim(s.toLowerAscii(_strip_cr(line)))
   if s.startsWith(line, "function ") then return "function" end if
@@ -1301,7 +1725,8 @@ function _fold_start_kind(line)
   return ""
 end function
 
-// Return the fold end kind.
+/// Return the fold end kind.
+/// @param line line value consumed by this operation.
 function _fold_end_kind(line)
   line = s.trim(s.toLowerAscii(_strip_cr(line)))
   if line == "end function" then return "function" end if
@@ -1312,7 +1737,9 @@ function _fold_end_kind(line)
   return ""
 end function
 
-// Find the matching end line for a fold starting at start_line.
+/// Find the matching end line for a fold starting at start_line.
+/// @param lines lines value consumed by this operation.
+/// @param start_line start_line value consumed by this operation.
 function _find_fold_end(lines, start_line)
   if typeof(lines) != "array" or start_line < 0 or start_line >= len(lines) then return -1 end if
   kind = _fold_start_kind(lines[start_line])
@@ -1332,7 +1759,9 @@ function _find_fold_end(lines, start_line)
   return -1
 end function
 
-// Return source text with folded line ranges collapsed.
+/// Return source text with folded line ranges collapsed.
+/// @param text Text consumed by the operation.
+/// @param folds folds value consumed by this operation.
 function _visible_text_from_source(text, folds)
   text = _normalize_editor_text(text)
   if typeof(folds) != "array" or len(folds) <= 0 then return text end if
@@ -1353,7 +1782,10 @@ function _visible_text_from_source(text, folds)
   return visible_text
 end function
 
-// Map a visible editor line back to its original source line.
+/// Map a visible editor line back to its original source line.
+/// @param text Text consumed by the operation.
+/// @param folds folds value consumed by this operation.
+/// @param display_line display_line value consumed by this operation.
 function _display_to_source_line(text, folds, display_line)
   text = _normalize_editor_text(text)
   if display_line <= 0 then return 0 end if
@@ -1374,7 +1806,10 @@ function _display_to_source_line(text, folds, display_line)
   return len(lines) - 1
 end function
 
-// Map an original source line to its visible editor line.
+/// Map an original source line to its visible editor line.
+/// @param text Text consumed by the operation.
+/// @param folds folds value consumed by this operation.
+/// @param source_line source_line value consumed by this operation.
 function _source_line_to_display_line(text, folds, source_line)
   text = _normalize_editor_text(text)
   lines = s.split(text, "\n")
@@ -1394,12 +1829,15 @@ function _source_line_to_display_line(text, folds, source_line)
   return visible
 end function
 
-// Read the active editor, routing Markdown tabs through their cached source.
+/// Read the active editor, routing Markdown tabs through their cached source.
+/// @param st st value consumed by this operation.
 function _read_editor(st)
   return _normalize_editor_text(win.edit_get_text(st.editor))
 end function
 
-// Write text to the active editor control without changing tab metadata.
+/// Write text to the active editor control without changing tab metadata.
+/// @param st st value consumed by this operation.
+/// @param text Text consumed by the operation.
 function _write_editor(st, text)
   win.edit_set_readonly(st.editor, false)
   win.set_window_text(st.editor, _editor_display_text(text))
@@ -1411,7 +1849,10 @@ function _write_editor(st, text)
   return st
 end function
 
-// Activate and populate the cached view for the current Markdown tab.
+/// Activate and populate the cached view for the current Markdown tab.
+/// @param st st value consumed by this operation.
+/// @param text Text consumed by the operation.
+/// @param preserve_view preserve_view value consumed by this operation.
 function _write_markdown_active_editor(st, text, preserve_view)
   idx = st.active_tab
   source = _normalize_editor_text(text)
@@ -1447,7 +1888,9 @@ function _write_markdown_active_editor(st, text, preserve_view)
   return st
 end function
 
-// Write active editor.
+/// Write active editor.
+/// @param st st value consumed by this operation.
+/// @param text Text consumed by the operation.
 function _write_active_editor(st, text)
   if _active_is_markdown(st) then return _write_markdown_active_editor(st, text, false) end if
   st = _hide_markdown_views_except(st, -1)
@@ -1458,7 +1901,8 @@ function _write_active_editor(st, text)
   return _write_editor(st, _visible_text_from_source(text, folds))
 end function
 
-// Remove carriage returns from editor or log text.
+/// Remove carriage returns from editor or log text.
+/// @param line line value consumed by this operation.
 function _strip_cr(line)
   if typeof(line) != "string" then return "" end if
   if len(line) > 0 and line[len(line) - 1] == "\r" then
@@ -1467,13 +1911,16 @@ function _strip_cr(line)
   return line
 end function
 
-// Return true when the active tab displays Markdown content.
+/// Return true when the active tab displays Markdown content.
+/// @param st st value consumed by this operation.
 function _active_is_markdown(st)
   if st.active_tab < 0 or st.active_tab >= len(st.open_files) then return false end if
   return _is_markdown_path(st.open_files[st.active_tab])
 end function
 
-// Re-render the active Markdown tab with the current theme.
+/// Re-render the active Markdown tab with the current theme.
+/// @param st st value consumed by this operation.
+/// @param preserve_view preserve_view value consumed by this operation.
 function _refresh_active_markdown_view(st, preserve_view)
   raw = ""
   if st.active_tab >= 0 then
@@ -1493,7 +1940,8 @@ function _refresh_active_markdown_view(st, preserve_view)
   return st
 end function
 
-// Apply syntax highlight.
+/// Apply syntax highlight.
+/// @param st st value consumed by this operation.
 function _apply_syntax_highlight(st)
   // Walk collections defensively because project data can be partially populated.
   if _active_is_markdown(st) then
@@ -1550,7 +1998,8 @@ function _apply_syntax_highlight(st)
   return st
 end function
 
-// Refresh the window title with project, active file, and dirty marker.
+/// Refresh the window title with project, active file, and dirty marker.
+/// @param st st value consumed by this operation.
 function _set_title(st)
   name = "MiniIDE"
   if typeof(st.project) == "struct" then name = st.project.name end if
@@ -1563,21 +2012,27 @@ function _set_title(st)
   end if
 end function
 
-// Load build profile.
+/// Load build profile.
+/// @param p p value consumed by this operation.
 function _load_build_profile(p)
   value = s.toLowerAscii(project_config.load_value(p, "profile", "debug"))
   if value == "release" then return "release" end if
   return "debug"
 end function
 
-// Load theme mode.
+/// Load theme mode.
+/// @param p p value consumed by this operation.
 function _load_theme_mode(p)
   value = s.toLowerAscii(project_config.load_value(p, "theme", "dark"))
   if value == "light" then return "light" end if
   return "dark"
 end function
 
-// Return the profile config value.
+/// Return the profile config value.
+/// @param p p value consumed by this operation.
+/// @param profile profile value consumed by this operation.
+/// @param key key value consumed by this operation.
+/// @param default_value default_value value consumed by this operation.
 function _profile_config_value(p, profile, key, default_value)
   if typeof(profile) != "string" or profile == "" then return default_value end if
   value = project_config.load_value(p, profile + "." + key, "")
@@ -1585,76 +2040,90 @@ function _profile_config_value(p, profile, key, default_value)
   return default_value
 end function
 
-// Load compiler path.
+/// Load compiler path.
+/// @param p p value consumed by this operation.
 function _load_compiler_path(p)
   return project_config.load_value(p, "compiler", "")
 end function
 
-// Load build keep going.
+/// Load build keep going.
+/// @param p p value consumed by this operation.
 function _load_build_keep_going(p)
   return project_config.load_bool(p, "keepGoing", true)
 end function
 
-// Load build max errors.
+/// Load build max errors.
+/// @param p p value consumed by this operation.
 function _load_build_max_errors(p)
   n = project_config.load_int(p, "maxErrors", 20)
   if n < 1 then n = 1 end if
   return n
 end function
 
-// Load build subsystem.
+/// Load build subsystem.
+/// @param p p value consumed by this operation.
 function _load_build_subsystem(p)
   value = s.toLowerAscii(project_config.load_value(p, "subsystem", "windows"))
   if value == "console" or value == "cui" then return "console" end if
   return "windows"
 end function
 
-// Load build extra args.
+/// Load build extra args.
+/// @param p p value consumed by this operation.
 function _load_build_extra_args(p)
   return project_config.load_value(p, "extraArgs", "")
 end function
 
-// Load assistant provider.
+/// Load assistant provider.
+/// @param p p value consumed by this operation.
 function _load_assistant_provider(p)
   return assistant.normalize_provider(project_config.load_value(p, "ai.provider", "openai"))
 end function
 
-// Load assistant base URL.
+/// Load assistant base URL.
+/// @param p p value consumed by this operation.
 function _load_assistant_base_url(p)
   return project_config.load_value(p, "ai.baseUrl", "https://api.openai.com/v1")
 end function
 
-// Load whether the assistant API key is read from an environment variable or config.
+/// Load whether the assistant API key is read from an environment variable or config.
+/// @param p p value consumed by this operation.
 function _load_assistant_api_key_mode(p)
   return assistant.normalize_api_key_mode(project_config.load_value(p, "ai.apiKeyMode", "env"))
 end function
 
-// Load assistant API key environment variable name.
+/// Load assistant API key environment variable name.
+/// @param p p value consumed by this operation.
 function _load_assistant_api_key_env(p)
   return project_config.load_value(p, "ai.apiKeyEnv", "OPENAI_API_KEY")
 end function
 
-// Load the optional direct assistant API key.
+/// Load the optional direct assistant API key.
+/// @param p p value consumed by this operation.
 function _load_assistant_api_key(p)
   return project_config.load_value(p, "ai.apiKey", "")
 end function
 
-// Load assistant model.
+/// Load assistant model.
+/// @param p p value consumed by this operation.
 function _load_assistant_model(p)
   return project_config.load_value(p, "ai.model", "gpt-5.1")
 end function
 
-// Load assistant tool mode.
+/// Load assistant tool mode.
+/// @param p p value consumed by this operation.
 function _load_assistant_tool_mode(p)
   return assistant.normalize_tool_mode(project_config.load_value(p, "ai.toolMode", "read-only"))
 end function
 
-// Load whether assistant HTTPS certificate validation may be relaxed.
+/// Load whether assistant HTTPS certificate validation may be relaxed.
+/// @param p p value consumed by this operation.
 function _load_assistant_allow_insecure_tls(p)
   return project_config.load_bool(p, "ai.allowInsecureTls", false)
 end function
 
-// Load build configuration.
+/// Load build configuration.
+/// @param st st value consumed by this operation.
 function _load_build_config(st)
   profile = _load_build_profile(st.project)
   st.build_profile = profile
@@ -1690,7 +2159,8 @@ function _load_build_config(st)
   return st
 end function
 
-// Save configuration.
+/// Save configuration.
+/// @param st st value consumed by this operation.
 function _save_config(st)
   cfg = project_config.path(st.project)
   text = "# MiniIDE project configuration\n"
@@ -1728,18 +2198,21 @@ function _save_config(st)
   return _set_log(st, "Saved configuration: " + cfg)
 end function
 
-// Save compiler path.
+/// Save compiler path.
+/// @param st st value consumed by this operation.
 function _save_compiler_path(st)
   return _save_config(st)
 end function
 
-// Return the effective compiler.
+/// Return the effective compiler.
+/// @param st st value consumed by this operation.
 function _effective_compiler(st)
   if typeof(st.compiler_path) == "string" and st.compiler_path != "" then return st.compiler_path end if
   return build_service.default_compiler(st.project)
 end function
 
-// Apply theme.
+/// Apply theme.
+/// @param st st value consumed by this operation.
 function _apply_theme(st)
   // Walk collections defensively because project data can be partially populated.
   dark = theme.is_dark(st)
@@ -1787,7 +2260,9 @@ function _apply_theme(st)
   return st
 end function
 
-// Select theme.
+/// Select theme.
+/// @param st st value consumed by this operation.
+/// @param mode Mode selecting the requested behavior.
 function _select_theme(st, mode)
   if mode != "light" then mode = "dark" end if
   st.theme_mode = mode
@@ -1797,7 +2272,8 @@ function _select_theme(st, mode)
   return _set_log(st, "Theme active: " + mode)
 end function
 
-// Join imports.
+/// Join imports.
+/// @param imports imports value consumed by this operation.
 function _join_imports(imports)
   // Walk collections defensively because project data can be partially populated.
   if typeof(imports) != "array" or len(imports) <= 0 then return "(none)" end if
@@ -1809,7 +2285,7 @@ function _join_imports(imports)
   return text
 end function
 
-// Create menus.
+/// Create menus.
 function _create_menus()
   // Keep validation near the top so callers can treat invalid input as a no-op.
   main_menu = win.CreateMenu()
@@ -1921,7 +2397,8 @@ function _create_menus()
   return [main_menu, file_menu, edit_menu, nav_menu, config_menu, help_menu]
 end function
 
-// Return the first project file.
+/// Return the first project file.
+/// @param p p value consumed by this operation.
 function _first_project_file(p)
   // Walk collections defensively because project data can be partially populated.
   if typeof(p) != "struct" or typeof(p.files) != "array" then return "" end if
@@ -1935,14 +2412,17 @@ function _first_project_file(p)
   return ""
 end function
 
-// Return the entry file.
+/// Return the entry file.
+/// @param p p value consumed by this operation.
 function _entry_file(p)
   path = project_model.project_entry_path(p)
   if fs.exists(path) then return path end if
   return _first_project_file(p)
 end function
 
-// Send the label operation to a tab control.
+/// Send the label operation to a tab control.
+/// @param st st value consumed by this operation.
+/// @param idx idx value consumed by this operation.
 function _tab_label(st, idx)
   if typeof(st.open_files) != "array" or idx < 0 or idx >= len(st.open_files) then return "" end if
   label = _basename(st.open_files[idx])
@@ -1957,7 +2437,8 @@ function _tab_label(st, idx)
   return label
 end function
 
-// Refresh tabs.
+/// Refresh tabs.
+/// @param st st value consumed by this operation.
 function _refresh_tabs(st)
   // Walk collections defensively because project data can be partially populated.
   win.tab_clear(st.tabbar)
@@ -1971,7 +2452,8 @@ function _refresh_tabs(st)
   return st
 end function
 
-// Synchronize active tab.
+/// Synchronize active tab.
+/// @param st st value consumed by this operation.
 function _sync_active_tab(st)
   if typeof(st.open_files) != "array" then return st end if
   idx = st.active_tab
@@ -2003,7 +2485,9 @@ function _sync_active_tab(st)
   return st
 end function
 
-// Switch to tab.
+/// Switch to tab.
+/// @param st st value consumed by this operation.
+/// @param idx idx value consumed by this operation.
 function _activate_tab(st, idx)
   if typeof(st.open_files) != "array" then return st end if
   if idx < 0 or idx >= len(st.open_files) then return st end if
@@ -2027,7 +2511,9 @@ function _activate_tab(st, idx)
   return st
 end function
 
-// Open file.
+/// Open file.
+/// @param st st value consumed by this operation.
+/// @param path Path of the file or directory used by the operation.
 function _open_file(st, path)
   if typeof(path) != "string" or path == "" then return st end if
   if s.endsWith(s.toLowerAscii(path), ".mlproj") then return _open_project_file(st, path) end if
@@ -2060,7 +2546,10 @@ function _open_file(st, path)
   return _activate_tab(st, len(st.open_files) - 1)
 end function
 
-// Open virtual tab.
+/// Open virtual tab.
+/// @param st st value consumed by this operation.
+/// @param path Path of the file or directory used by the operation.
+/// @param text Text consumed by the operation.
 function _open_virtual_tab(st, path, text)
   if typeof(path) != "string" or path == "" then return st end if
   if typeof(text) != "string" then text = "" end if
@@ -2098,7 +2587,8 @@ function _open_virtual_tab(st, path, text)
   return _activate_tab(st, len(st.open_files) - 1)
 end function
 
-// Check editor dirty.
+/// Check editor dirty.
+/// @param st st value consumed by this operation.
 function _check_editor_dirty(st)
   if st.active_tab < 0 or st.active_tab >= len(st.open_files) then return st end if
   if _is_generated_editor_path(st.open_files[st.active_tab]) then
@@ -2141,7 +2631,9 @@ function _check_editor_dirty(st)
   return st
 end function
 
-// Send the handle index operation to a tree-view control.
+/// Send the handle index operation to a tree-view control.
+/// @param st st value consumed by this operation.
+/// @param handle Native or runtime handle used by the operation.
 function _tree_handle_index(st, handle)
   // Walk collections defensively because project data can be partially populated.
   if typeof(st.tree_handles) != "array" then return -1 end if
@@ -2152,14 +2644,17 @@ function _tree_handle_index(st, handle)
   return -1
 end function
 
-// Send the icon operation to a tree-view control.
+/// Send the icon operation to a tree-view control.
+/// @param path Path of the file or directory used by the operation.
+/// @param is_dir is_dir value consumed by this operation.
 function _tree_icon(path, is_dir)
   if is_dir then return 0 end if
   if s.endsWith(s.toLowerAscii(path), ".mlproj") then return 2 end if
   return 1
 end function
 
-// Populate project tree.
+/// Populate project tree.
+/// @param st st value consumed by this operation.
 function _populate_project_tree(st)
   // Walk collections defensively because project data can be partially populated.
   win.tree_clear(st.tree)
@@ -2211,7 +2706,8 @@ function _populate_project_tree(st)
   return st
 end function
 
-// Save current.
+/// Save current.
+/// @param st st value consumed by this operation.
 function _save_current(st)
   if typeof(st.current_file) != "string" or st.current_file == "" then
     return _set_log(st, "No file is open.")
@@ -2242,7 +2738,8 @@ function _save_current(st)
   return _set_log(st, "Saved " + st.current_file)
 end function
 
-// Return the dirty tab names.
+/// Return the dirty tab names.
+/// @param st st value consumed by this operation.
 function _dirty_tab_names(st)
   // Walk collections defensively because project data can be partially populated.
   if typeof(st.open_files) != "array" or typeof(st.open_dirty) != "array" then return "" end if
@@ -2257,12 +2754,15 @@ function _dirty_tab_names(st)
   return names
 end function
 
-// Return true when any open tab has unsaved changes.
+/// Return true when any open tab has unsaved changes.
+/// @param st st value consumed by this operation.
 function _has_dirty_tabs(st)
   return _dirty_tab_names(st) != ""
 end function
 
-// Guard no dirty.
+/// Guard no dirty.
+/// @param st st value consumed by this operation.
+/// @param action_name action_name value consumed by this operation.
 function _guard_no_dirty(st, action_name)
   dirty = _dirty_tab_names(st)
   if dirty == "" then return [st, true] end if
@@ -2270,7 +2770,8 @@ function _guard_no_dirty(st, action_name)
   return [st, false]
 end function
 
-// Confirm exit with dirty tabs.
+/// Confirm exit with dirty tabs.
+/// @param st st value consumed by this operation.
 function _confirm_exit_with_dirty_tabs(st)
   st = _sync_active_tab(st)
   dirty = _dirty_tab_names(st)
@@ -2282,7 +2783,8 @@ function _confirm_exit_with_dirty_tabs(st)
   return [st, false]
 end function
 
-// Save all open.
+/// Save all open.
+/// @param st st value consumed by this operation.
 function _save_all_open(st)
   // Walk collections defensively because project data can be partially populated.
   st = _sync_active_tab(st)
@@ -2306,7 +2808,8 @@ function _save_all_open(st)
   return [st, true, ""]
 end function
 
-// Save all dirty editable tabs.
+/// Save all dirty editable tabs.
+/// @param st st value consumed by this operation.
 function _save_all(st)
   dirty = _dirty_tab_names(st)
   result = _save_all_open(st)
@@ -2316,7 +2819,9 @@ function _save_all(st)
   return _set_log(st, "Save All: saved " + dirty + ".")
 end function
 
-// Start compile job.
+/// Start compile job.
+/// @param st st value consumed by this operation.
+/// @param mode Mode selecting the requested behavior.
 function _start_compile_job(st, mode)
   // Keep process setup and state capture together for reliable polling.
   job = build_service.start_compile_with_options(st.project, st.compiler_path, st.build_keep_going, st.build_max_errors, st.build_subsystem, st.build_extra_args)
@@ -2338,7 +2843,9 @@ function _start_compile_job(st, mode)
   return st
 end function
 
-// Start run job, optionally keeping a previous compile log above live program output.
+/// Start run job, optionally keeping a previous compile log above live program output.
+/// @param st st value consumed by this operation.
+/// @param prefix prefix value consumed by this operation.
 function _start_run_job_with_prefix(st, prefix)
   // Keep process setup and state capture together for reliable polling.
   job = build_service.start_run_output(st.project)
@@ -2359,12 +2866,14 @@ function _start_run_job_with_prefix(st, prefix)
   return st
 end function
 
-// Start run job.
+/// Start run job.
+/// @param st st value consumed by this operation.
 function _start_run_job(st)
   return _start_run_job_with_prefix(st, "")
 end function
 
-// Start test compile job.
+/// Start test compile job.
+/// @param st st value consumed by this operation.
 function _start_test_compile_job(st)
   // Keep process setup and state capture together for reliable polling.
   job = build_service.start_test_compile_with_options(st.project, st.compiler_path, st.build_keep_going, st.build_max_errors, "console", st.build_extra_args)
@@ -2383,7 +2892,11 @@ function _start_test_compile_job(st)
   return _set_log(st, log)
 end function
 
-// Start compiling a specific test file.
+/// Start compiling a specific test file.
+/// @param st st value consumed by this operation.
+/// @param test_file test_file value consumed by this operation.
+/// @param mode Mode selecting the requested behavior.
+/// @param label label value consumed by this operation.
 function _start_test_file_compile_job(st, test_file, mode, label)
   // Keep process setup and state capture together for reliable polling.
   if typeof(mode) != "string" or mode == "" then mode = "test-current-compile" end if
@@ -2405,17 +2918,23 @@ function _start_test_file_compile_job(st, test_file, mode, label)
   return _set_log(st, log)
 end function
 
-// Start compiling the current test file.
+/// Start compiling the current test file.
+/// @param st st value consumed by this operation.
+/// @param test_file test_file value consumed by this operation.
 function _start_current_test_compile_job(st, test_file)
   return _start_test_file_compile_job(st, test_file, "test-current-compile", "Run Current Test File")
 end function
 
-// Start compiling a related test file.
+/// Start compiling a related test file.
+/// @param st st value consumed by this operation.
+/// @param test_file test_file value consumed by this operation.
 function _start_related_test_compile_job(st, test_file)
   return _start_test_file_compile_job(st, test_file, "test-related-compile", "Run Related Test File")
 end function
 
-// Start test run job, optionally keeping a previous test compile log above live test output.
+/// Start test run job, optionally keeping a previous test compile log above live test output.
+/// @param st st value consumed by this operation.
+/// @param prefix prefix value consumed by this operation.
 function _start_test_run_job_with_prefix(st, prefix)
   // Keep process setup and state capture together for reliable polling.
   job = build_service.start_test_output(st.project)
@@ -2435,12 +2954,14 @@ function _start_test_run_job_with_prefix(st, prefix)
   return _set_log(st, log)
 end function
 
-// Start test run job.
+/// Start test run job.
+/// @param st st value consumed by this operation.
 function _start_test_run_job(st)
   return _start_test_run_job_with_prefix(st, "")
 end function
 
-// Build project.
+/// Build project.
+/// @param st st value consumed by this operation.
 function _build_project(st)
   if st.build_running then
     return _set_log(st, st.build_last_log + "\r\n\r\nA background process is already running.")
@@ -2451,7 +2972,8 @@ function _build_project(st)
   return _start_compile_job(st, "compile")
 end function
 
-// Run project.
+/// Run project.
+/// @param st st value consumed by this operation.
 function _run_project(st)
   if st.build_running then
     return _set_log(st, st.build_last_log + "\r\n\r\nA background process is already running.")
@@ -2465,7 +2987,8 @@ function _run_project(st)
   return _start_run_job(st)
 end function
 
-// Run tests.
+/// Run tests.
+/// @param st st value consumed by this operation.
 function _run_tests(st)
   if st.build_running then
     return _set_log(st, st.build_last_log + "\r\n\r\nA background process is already running.")
@@ -2476,14 +2999,16 @@ function _run_tests(st)
   return _start_test_compile_job(st)
 end function
 
-// Return true when a path looks like a MiniLang test file.
+/// Return true when a path looks like a MiniLang test file.
+/// @param path Path of the file or directory used by the operation.
 function _is_test_file_path(path)
   if typeof(path) != "string" or path == "" then return false end if
   lower = s.toLowerAscii(path)
   return s.indexOf(lower, "\\tests\\", 0) >= 0 or s.indexOf(lower, "/tests/", 0) >= 0 or s.endsWith(lower, "_test.ml") or s.endsWith(lower, "\\test.ml") or s.endsWith(lower, "/test.ml")
 end function
 
-// Run the currently open test file.
+/// Run the currently open test file.
+/// @param st st value consumed by this operation.
 function _run_current_test_file(st)
   if st.build_running then
     return _set_log(st, st.build_last_log + "\r\n\r\nA background process is already running.")
@@ -2496,7 +3021,8 @@ function _run_current_test_file(st)
   return _start_current_test_compile_job(st, st.current_file)
 end function
 
-// Run the first test file related to the currently open source file.
+/// Run the first test file related to the currently open source file.
+/// @param st st value consumed by this operation.
 function _run_related_test_file(st)
   if st.build_running then
     return _set_log(st, st.build_last_log + "\r\n\r\nA background process is already running.")
@@ -2511,7 +3037,8 @@ function _run_related_test_file(st)
   return _start_related_test_compile_job(st, test_file)
 end function
 
-// Clean project.
+/// Clean project.
+/// @param st st value consumed by this operation.
 function _clean_project(st)
   if st.build_running then
     return _set_log(st, st.build_last_log + "\r\n\r\nPlease stop the running process first.")
@@ -2520,7 +3047,8 @@ function _clean_project(st)
   return _set_log(st, text)
 end function
 
-// Rebuild project.
+/// Rebuild project.
+/// @param st st value consumed by this operation.
 function _rebuild_project(st)
   if st.build_running then
     return _set_log(st, st.build_last_log + "\r\n\r\nPlease stop the running process first.")
@@ -2534,7 +3062,8 @@ function _rebuild_project(st)
   return _set_log(st, st.build_last_log)
 end function
 
-// Stop build job.
+/// Stop build job.
+/// @param st st value consumed by this operation.
 function _stop_build_job(st)
   if st.build_running == false then return _set_log(st, "No background process is running.") end if
   st.build_job = build_service.stop_job(st.build_job)
@@ -2545,7 +3074,9 @@ function _stop_build_job(st)
   return _set_log(st, st.build_last_log)
 end function
 
-// Select build profile.
+/// Select build profile.
+/// @param st st value consumed by this operation.
+/// @param profile profile value consumed by this operation.
 function _select_build_profile(st, profile)
   if profile != "release" then profile = "debug" end if
   st.build_profile = profile
@@ -2562,7 +3093,11 @@ function _select_build_profile(st, profile)
   return _set_log(st, "Build profile active: " + label)
 end function
 
-// Format build log.
+/// Format build log.
+/// @param st st value consumed by this operation.
+/// @param log_text log_text value consumed by this operation.
+/// @param running running value consumed by this operation.
+/// @param exit_code exit_code value consumed by this operation.
 function _format_build_log(st, log_text, running, exit_code)
   // Keep validation near the top so callers can treat invalid input as a no-op.
   compiler = _effective_compiler(st)
@@ -2621,7 +3156,8 @@ function _format_build_log(st, log_text, running, exit_code)
   return log
 end function
 
-// Poll build_service.
+/// Poll build_service.
+/// @param st st value consumed by this operation.
 function _poll_build(st)
   if st.build_running == false then return st end if
   now = win.GetTickCount()
@@ -2656,7 +3192,8 @@ function _poll_build(st)
   return st
 end function
 
-// Reload project.
+/// Reload project.
+/// @param st st value consumed by this operation.
 function _reload_project(st)
   guard = _guard_no_dirty(st, "reloading the project")
   st = guard[0]
@@ -2700,7 +3237,9 @@ function _reload_project(st)
   return st
 end function
 
-// Open project file.
+/// Open project file.
+/// @param st st value consumed by this operation.
+/// @param path Path of the file or directory used by the operation.
 function _open_project_file(st, path)
   if typeof(path) != "string" or path == "" then return st end if
   guard = _guard_no_dirty(st, "opening a project")
@@ -2758,14 +3297,16 @@ function _open_project_file(st, path)
   return st
 end function
 
-// Open project dialog.
+/// Open project dialog.
+/// @param st st value consumed by this operation.
 function _open_project_dialog(st)
   path = win.open_project_dialog(st.hwnd)
   if typeof(path) != "string" or path == "" then return st end if
   return _open_project_file(st, path)
 end function
 
-// Normalize project kind.
+/// Normalize project kind.
+/// @param value Value consumed or transformed by the operation.
 function _normalize_project_kind(value)
   if typeof(value) != "string" then return "console" end if
   value = s.toLowerAscii(s.trim(value))
@@ -2773,14 +3314,20 @@ function _normalize_project_kind(value)
   return "console"
 end function
 
-// Return the selected project kind.
+/// Return the selected project kind.
+/// @param kind_combo kind_combo value consumed by this operation.
 function _selected_project_kind(kind_combo)
   idx = win.combo_getsel(kind_combo)
   if idx == 1 then return "library" end if
   return "console"
 end function
 
-// Try to create a project from the New Project dialog fields.
+/// Try to create a project from the New Project dialog fields.
+/// @param dlg dlg value consumed by this operation.
+/// @param name_edit name_edit value consumed by this operation.
+/// @param parent_edit parent_edit value consumed by this operation.
+/// @param kind_combo kind_combo value consumed by this operation.
+/// @param default_parent default_parent value consumed by this operation.
 function _new_project_create_from_dialog(dlg, name_edit, parent_edit, kind_combo, default_parent)
   name = s.trim(win.get_control_text(name_edit))
   target_parent = s.trim(win.get_control_text(parent_edit))
@@ -2803,7 +3350,8 @@ function _new_project_create_from_dialog(dlg, name_edit, parent_edit, kind_combo
   return created
 end function
 
-// Return a compact project index summary.
+/// Return a compact project index summary.
+/// @param st st value consumed by this operation.
 function _project_index_summary(st)
   if typeof(st.project) != "struct" then return "Project index unavailable." end if
   idx = try(lang_index.build_project_index(st.project))
@@ -2811,7 +3359,8 @@ function _project_index_summary(st)
   return lang_index.summary(idx)
 end function
 
-// Create standard project.
+/// Create standard project.
+/// @param st st value consumed by this operation.
 function _new_standard_project(st)
   // Run a local message loop so the modal UI stays responsive.
   guard = _guard_no_dirty(st, "creating a new project")
@@ -2927,7 +3476,8 @@ function _new_standard_project(st)
   return st
 end function
 
-// Show welcome.
+/// Show welcome.
+/// @param st st value consumed by this operation.
 function _show_welcome(st)
   root = "."
   name = "MiniIDE"
@@ -2959,7 +3509,8 @@ function _show_welcome(st)
   return _open_virtual_tab(st, "miniide://MiniIDE Home.md", text)
 end function
 
-// Select compiler.
+/// Select compiler.
+/// @param st st value consumed by this operation.
 function _select_compiler(st)
   path = win.open_compiler_dialog(st.hwnd)
   if typeof(path) != "string" or path == "" then return st end if
@@ -2968,28 +3519,32 @@ function _select_compiler(st)
   return _set_log(st, "Compiler set: " + path)
 end function
 
-// Reset compiler.
+/// Reset compiler.
+/// @param st st value consumed by this operation.
 function _reset_compiler(st)
   st.compiler_path = ""
   st = _save_config(st)
   return _set_log(st, "Compiler reset to default: " + build_service.default_compiler(st.project))
 end function
 
-// Reload config.
+/// Reload config.
+/// @param st st value consumed by this operation.
 function _reload_config(st)
   st = _load_build_config(st)
   st = _apply_theme(st)
   return _set_log(st, "Configuration reloaded: " + project_config.path(st.project))
 end function
 
-// Toggle keep going.
+/// Toggle keep going.
+/// @param st st value consumed by this operation.
 function _toggle_keep_going(st)
   st.build_keep_going = st.build_keep_going == false
   st = _save_config(st)
   return _set_log(st, "Keep-going: " + st.build_keep_going)
 end function
 
-// Toggle subsystem.
+/// Toggle subsystem.
+/// @param st st value consumed by this operation.
 function _toggle_subsystem(st)
   if st.build_subsystem == "windows" then
     st.build_subsystem = "console"
@@ -3000,7 +3555,8 @@ function _toggle_subsystem(st)
   return _set_log(st, "Subsystem: " + st.build_subsystem)
 end function
 
-// Toggle max errors.
+/// Toggle max errors.
+/// @param st st value consumed by this operation.
 function _toggle_max_errors(st)
   if st.build_max_errors <= 20 then
     st.build_max_errors = 80
@@ -3011,14 +3567,16 @@ function _toggle_max_errors(st)
   return _set_log(st, "Max errors: " + st.build_max_errors)
 end function
 
-// Return a redacted value for secrets shown in diagnostics dialogs.
+/// Return a redacted value for secrets shown in diagnostics dialogs.
+/// @param text Text consumed by the operation.
 function _mask_secret(text)
   if typeof(text) != "string" or text == "" then return "(empty)" end if
   if len(text) <= 4 then return "****" end if
   return "****" + s.substr(text, len(text) - 4, 4)
 end function
 
-// Show configuration.
+/// Show configuration.
+/// @param st st value consumed by this operation.
 function _show_config(st)
   msg = "Project: " + st.project.name + "\n"
   msg = msg + "Config: " + project_config.path(st.project) + "\n"
@@ -3050,14 +3608,28 @@ function _show_config(st)
   return st
 end function
 
-// Create a static label for settings dialogs.
+/// Create a static label for settings dialogs.
+/// @param parent parent value consumed by this operation.
+/// @param font font value consumed by this operation.
+/// @param text Text consumed by the operation.
+/// @param x Horizontal coordinate used by the operation.
+/// @param y Vertical coordinate used by the operation.
+/// @param w w value consumed by this operation.
+/// @param h h value consumed by this operation.
 function _settings_label(parent, font, text, x, y, w, h)
   hwnd = win.create_child(parent, "STATIC", text, 0, win.SS_NOPREFIX, x, y, w, h)
   win.set_control_font(hwnd, font)
   return hwnd
 end function
 
-// Create a standard settings edit control.
+/// Create a standard settings edit control.
+/// @param parent parent value consumed by this operation.
+/// @param font font value consumed by this operation.
+/// @param text Text consumed by the operation.
+/// @param x Horizontal coordinate used by the operation.
+/// @param y Vertical coordinate used by the operation.
+/// @param w w value consumed by this operation.
+/// @param h h value consumed by this operation.
 function _settings_edit(parent, font, text, x, y, w, h)
   style = win.WS_TABSTOP | win.ES_AUTOHSCROLL
   hwnd = win.create_child(parent, "EDIT", text, win.WS_EX_CLIENTEDGE, style, x, y, w, h)
@@ -3065,7 +3637,15 @@ function _settings_edit(parent, font, text, x, y, w, h)
   return hwnd
 end function
 
-// Create a settings edit control with a stable command ID.
+/// Create a settings edit control with a stable command ID.
+/// @param parent parent value consumed by this operation.
+/// @param font font value consumed by this operation.
+/// @param text Text consumed by the operation.
+/// @param x Horizontal coordinate used by the operation.
+/// @param y Vertical coordinate used by the operation.
+/// @param w w value consumed by this operation.
+/// @param h h value consumed by this operation.
+/// @param control_id Identifier of control.
 function _settings_edit_id(parent, font, text, x, y, w, h, control_id)
   style = win.WS_TABSTOP | win.ES_AUTOHSCROLL
   hwnd = win.create_child_id(parent, "EDIT", text, win.WS_EX_CLIENTEDGE, style, x, y, w, h, control_id)
@@ -3073,7 +3653,15 @@ function _settings_edit_id(parent, font, text, x, y, w, h, control_id)
   return hwnd
 end function
 
-// Create a password-style settings edit control for direct API keys.
+/// Create a password-style settings edit control for direct API keys.
+/// @param parent parent value consumed by this operation.
+/// @param font font value consumed by this operation.
+/// @param text Text consumed by the operation.
+/// @param x Horizontal coordinate used by the operation.
+/// @param y Vertical coordinate used by the operation.
+/// @param w w value consumed by this operation.
+/// @param h h value consumed by this operation.
+/// @param control_id Identifier of control.
 function _settings_password_id(parent, font, text, x, y, w, h, control_id)
   style = win.WS_TABSTOP | win.ES_AUTOHSCROLL | win.ES_PASSWORD
   hwnd = win.create_child_id(parent, "EDIT", text, win.WS_EX_CLIENTEDGE, style, x, y, w, h, control_id)
@@ -3081,7 +3669,14 @@ function _settings_password_id(parent, font, text, x, y, w, h, control_id)
   return hwnd
 end function
 
-// Create a settings combo box with fixed choices.
+/// Create a settings combo box with fixed choices.
+/// @param parent parent value consumed by this operation.
+/// @param font font value consumed by this operation.
+/// @param x Horizontal coordinate used by the operation.
+/// @param y Vertical coordinate used by the operation.
+/// @param w w value consumed by this operation.
+/// @param h h value consumed by this operation.
+/// @param control_id Identifier of control.
 function _settings_combo_id(parent, font, x, y, w, h, control_id)
   style = win.WS_TABSTOP | win.CBS_DROPDOWNLIST | win.CBS_HASSTRINGS | win.WS_VSCROLL
   hwnd = win.create_child_id(parent, "COMBOBOX", "", win.WS_EX_CLIENTEDGE, style, x, y, w, h, control_id)
@@ -3089,7 +3684,15 @@ function _settings_combo_id(parent, font, x, y, w, h, control_id)
   return hwnd
 end function
 
-// Return the settings button.
+/// Return the settings button.
+/// @param parent parent value consumed by this operation.
+/// @param font font value consumed by this operation.
+/// @param text Text consumed by the operation.
+/// @param x Horizontal coordinate used by the operation.
+/// @param y Vertical coordinate used by the operation.
+/// @param w w value consumed by this operation.
+/// @param h h value consumed by this operation.
+/// @param control_id Identifier of control.
 function _settings_button(parent, font, text, x, y, w, h, control_id)
   style = win.WS_TABSTOP | win.BS_PUSHBUTTON
   hwnd = win.create_child_id(parent, "BUTTON", text, 0, style, x, y, w, h, control_id)
@@ -3097,61 +3700,84 @@ function _settings_button(parent, font, text, x, y, w, h, control_id)
   return hwnd
 end function
 
-// Return a compact On/Off label for toggle buttons.
+/// Return a compact On/Off label for toggle buttons.
+/// @param value Value consumed or transformed by the operation.
 function _on_off(value)
   if value then return "On" end if
   return "Off"
 end function
 
-// Refresh settings buttons.
+/// Refresh settings buttons.
+/// @param keep_btn keep_btn value consumed by this operation.
+/// @param subsystem_btn subsystem_btn value consumed by this operation.
+/// @param keep_going keep_going value consumed by this operation.
+/// @param subsystem subsystem value consumed by this operation.
 function _refresh_settings_buttons(keep_btn, subsystem_btn, keep_going, subsystem)
   win.set_window_text(keep_btn, "Keep-going: " + _on_off(keep_going))
   win.set_window_text(subsystem_btn, "Subsystem: " + subsystem)
 end function
 
-// Return the combo-box index for a provider type.
+/// Return the combo-box index for a provider type.
+/// @param provider provider value consumed by this operation.
 function _provider_combo_index(provider)
   provider = assistant.normalize_provider(provider)
   if provider == "openai-compatible" then return 1 end if
   return 0
 end function
 
-// Return the provider type represented by the combo-box selection.
+/// Return the provider type represented by the combo-box selection.
+/// @param provider_combo provider_combo value consumed by this operation.
 function _provider_from_combo(provider_combo)
   idx = win.combo_getsel(provider_combo)
   if idx == 1 then return "openai-compatible" end if
   return "openai"
 end function
 
-// Populate the provider type combo box.
+/// Populate the provider type combo box.
+/// @param provider_combo provider_combo value consumed by this operation.
+/// @param provider provider value consumed by this operation.
 function _populate_provider_combo(provider_combo, provider)
   win.combo_add(provider_combo, "openai")
   win.combo_add(provider_combo, "openai-compatible")
   win.combo_setsel(provider_combo, _provider_combo_index(provider))
 end function
 
-// Return the combo-box index for the assistant API-key source.
+/// Return the combo-box index for the assistant API-key source.
+/// @param mode Mode selecting the requested behavior.
 function _api_key_mode_combo_index(mode)
   mode = assistant.normalize_api_key_mode(mode)
   if mode == "direct" then return 1 end if
   return 0
 end function
 
-// Return the API-key source represented by the combo-box selection.
+/// Return the API-key source represented by the combo-box selection.
+/// @param key_mode_combo key_mode_combo value consumed by this operation.
 function _api_key_mode_from_combo(key_mode_combo)
   idx = win.combo_getsel(key_mode_combo)
   if idx == 1 then return "direct" end if
   return "env"
 end function
 
-// Populate the API-key source combo box.
+/// Populate the API-key source combo box.
+/// @param key_mode_combo key_mode_combo value consumed by this operation.
+/// @param mode Mode selecting the requested behavior.
 function _populate_api_key_mode_combo(key_mode_combo, mode)
   win.combo_add(key_mode_combo, "Environment variable")
   win.combo_add(key_mode_combo, "Direct key")
   win.combo_setsel(key_mode_combo, _api_key_mode_combo_index(mode))
 end function
 
-// Refresh assistant settings toggle buttons.
+/// Refresh assistant settings toggle buttons.
+/// @param enabled_btn enabled_btn value consumed by this operation.
+/// @param tls_btn tls_btn value consumed by this operation.
+/// @param tabs_btn tabs_btn value consumed by this operation.
+/// @param project_btn project_btn value consumed by this operation.
+/// @param help_btn help_btn value consumed by this operation.
+/// @param enabled enabled value consumed by this operation.
+/// @param allow_insecure_tls allow_insecure_tls value consumed by this operation.
+/// @param include_tabs include_tabs value consumed by this operation.
+/// @param include_project include_project value consumed by this operation.
+/// @param include_help include_help value consumed by this operation.
 function _refresh_assistant_settings_buttons(enabled_btn, tls_btn, tabs_btn, project_btn, help_btn, enabled, allow_insecure_tls, include_tabs, include_project, include_help)
   win.set_window_text(enabled_btn, "Assistant: " + _on_off(enabled))
   win.set_window_text(tls_btn, "Allow self-signed TLS: " + _on_off(allow_insecure_tls))
@@ -3160,7 +3786,19 @@ function _refresh_assistant_settings_buttons(enabled_btn, tls_btn, tabs_btn, pro
   win.set_window_text(help_btn, "MiniLang help: " + _on_off(include_help))
 end function
 
-// Read assistant settings from controls.
+/// Read assistant settings from controls.
+/// @param provider_combo provider_combo value consumed by this operation.
+/// @param base_url_edit base_url_edit value consumed by this operation.
+/// @param key_mode_combo key_mode_combo value consumed by this operation.
+/// @param key_env_edit key_env_edit value consumed by this operation.
+/// @param api_key_edit api_key_edit value consumed by this operation.
+/// @param model_edit model_edit value consumed by this operation.
+/// @param tool_mode_edit tool_mode_edit value consumed by this operation.
+/// @param enabled enabled value consumed by this operation.
+/// @param allow_insecure_tls allow_insecure_tls value consumed by this operation.
+/// @param include_tabs include_tabs value consumed by this operation.
+/// @param include_project include_project value consumed by this operation.
+/// @param include_help include_help value consumed by this operation.
 function _read_assistant_dialog_config(provider_combo, base_url_edit, key_mode_combo, key_env_edit, api_key_edit, model_edit, tool_mode_edit, enabled, allow_insecure_tls, include_tabs, include_project, include_help)
   return assistant.AssistantConfig(
     enabled,
@@ -3177,7 +3815,8 @@ function _read_assistant_dialog_config(provider_combo, base_url_edit, key_mode_c
     include_help)
 end function
 
-// Open assistant settings window.
+/// Open assistant settings window.
+/// @param st st value consumed by this operation.
 function _open_assistant_settings_window(st)
   dlg = win.create_main_window("AI Assistant Settings", 800, 540)
   if dlg is void then return _set_log(st, "AI Assistant Settings could not be opened.") end if
@@ -3319,7 +3958,9 @@ function _open_assistant_settings_window(st)
   return st
 end function
 
-// Return the project relative path.
+/// Return the project relative path.
+/// @param st st value consumed by this operation.
+/// @param path Path of the file or directory used by the operation.
 function _project_relative_path(st, path)
   if typeof(path) != "string" or path == "" then return "" end if
   abs = project_model.abspath(path)
@@ -3336,7 +3977,12 @@ function _project_relative_path(st, path)
   return abs
 end function
 
-// Read compile settings values.
+/// Read compile settings values.
+/// @param st st value consumed by this operation.
+/// @param controls controls value consumed by this operation.
+/// @param entry_value entry_value value consumed by this operation.
+/// @param output_value output_value value consumed by this operation.
+/// @param compiler_value compiler_value value consumed by this operation.
 function _read_compile_settings_values(st, controls, entry_value, output_value, compiler_value)
   entry = entry_value
   output = output_value
@@ -3361,7 +4007,12 @@ function _read_compile_settings_values(st, controls, entry_value, output_value, 
   return CompileSettingsValues(entry, output, test_entry, run_args, working_dir, compiler, max_text, extra_args)
 end function
 
-// Apply compile settings.
+/// Apply compile settings.
+/// @param st st value consumed by this operation.
+/// @param dlg dlg value consumed by this operation.
+/// @param values values value consumed by this operation.
+/// @param keep_going keep_going value consumed by this operation.
+/// @param subsystem subsystem value consumed by this operation.
 function _apply_compile_settings(st, dlg, values, keep_going, subsystem)
   // Keep validation near the top so callers can treat invalid input as a no-op.
   entry = s.trim(values.entry)
@@ -3413,7 +4064,8 @@ function _apply_compile_settings(st, dlg, values, keep_going, subsystem)
   return [st, true]
 end function
 
-// Open compile settings window.
+/// Open compile settings window.
+/// @param st st value consumed by this operation.
 function _open_compile_settings_window(st)
   // Run a local message loop so the modal UI stays responsive.
   st = _sync_active_tab(st)
@@ -3593,14 +4245,16 @@ function _open_compile_settings_window(st)
   return st
 end function
 
-// Return the language help path.
+/// Return the language help path.
+/// @param st st value consumed by this operation.
 function _language_help_path(st)
   root = "."
   if typeof(st.project) == "struct" then root = st.project.root end if
   return help_lang.reference_path(root, _effective_compiler(st))
 end function
 
-// Open language help.
+/// Open language help.
+/// @param st st value consumed by this operation.
 function _open_language_help(st)
   root = "."
   if typeof(st.project) == "struct" then root = st.project.root end if
@@ -3609,7 +4263,9 @@ function _open_language_help(st)
   return _open_virtual_tab(st, "miniide://MiniLang Language Reference.md", loaded[1])
 end function
 
-// Search language help.
+/// Search language help.
+/// @param st st value consumed by this operation.
+/// @param query query value consumed by this operation.
 function _search_language_help(st, query)
   query = s.trim(query)
   if query == "" then return _set_log(st, "Help search: the search text is empty.") end if
@@ -3621,7 +4277,8 @@ function _search_language_help(st, query)
   return _open_virtual_tab(st, "miniide://MiniLang Help Search.md", doc)
 end function
 
-// Open language help search.
+/// Open language help search.
+/// @param st st value consumed by this operation.
 function _open_language_help_search(st)
   // Run a local message loop so the modal UI stays responsive.
   initial = _initial_find_text(st)
@@ -3709,7 +4366,8 @@ function _open_language_help_search(st)
   return st
 end function
 
-// Return true when a character belongs to an editor word.
+/// Return true when a character belongs to an editor word.
+/// @param ch ch value consumed by this operation.
 function _is_word_char(ch)
   if typeof(ch) != "string" or ch == "" then return false end if
   if ch == "_" or ch == "." then return true end if
@@ -3719,7 +4377,9 @@ function _is_word_char(ch)
   return (c >= 65 and c <= 90) or (c >= 97 and c <= 122) or (c >= 48 and c <= 57)
 end function
 
-// Return the word prefix before.
+/// Return the word prefix before.
+/// @param text Text consumed by the operation.
+/// @param pos pos value consumed by this operation.
 function _word_prefix_before(text, pos)
   if typeof(text) != "string" then return "" end if
   if typeof(pos) != "int" then pos = len(text) end if
@@ -3734,7 +4394,9 @@ function _word_prefix_before(text, pos)
   return s.substr(text, start, pos - start)
 end function
 
-// Return the word at position.
+/// Return the word at position.
+/// @param text Text consumed by the operation.
+/// @param pos pos value consumed by this operation.
 function _word_at_pos(text, pos)
   if typeof(text) != "string" then return "" end if
   if typeof(pos) != "int" then pos = 0 end if
@@ -3753,7 +4415,8 @@ function _word_at_pos(text, pos)
   return s.substr(text, start, right - start)
 end function
 
-// Return the trim trailing whitespace.
+/// Return the trim trailing whitespace.
+/// @param line line value consumed by this operation.
 function _trim_trailing_ws(line)
   if typeof(line) != "string" then return "" end if
   end_pos = len(line)
@@ -3764,7 +4427,8 @@ function _trim_trailing_ws(line)
   return s.substr(line, 0, end_pos)
 end function
 
-// Format text basic.
+/// Format text basic.
+/// @param text Text consumed by the operation.
 function _format_text_basic(text)
   // Walk collections defensively because project data can be partially populated.
   text = _normalize_editor_text(text)
@@ -3787,7 +4451,8 @@ function _format_text_basic(text)
   return result_text
 end function
 
-// Format current.
+/// Format current.
+/// @param st st value consumed by this operation.
 function _format_current(st)
   if st.active_tab < 0 or st.active_tab >= len(st.open_texts) then return _set_log(st, "No file is open.") end if
   st = _sync_active_tab(st)
@@ -3801,7 +4466,8 @@ function _format_current(st)
   return _set_log(st, "Document formatted: " + _basename(st.current_file))
 end function
 
-// Hide autocomplete.
+/// Hide autocomplete.
+/// @param st st value consumed by this operation.
 function _hide_autocomplete(st)
   win.ShowWindow(st.autocomplete_list, win.SW_HIDE)
   st.autocomplete_items = []
@@ -3809,7 +4475,10 @@ function _hide_autocomplete(st)
   return st
 end function
 
-// Show autocomplete popup.
+/// Show autocomplete popup.
+/// @param st st value consumed by this operation.
+/// @param items Items consumed or updated by the operation.
+/// @param prefix prefix value consumed by this operation.
 function _show_autocomplete_popup(st, items, prefix)
   // Walk collections defensively because project data can be partially populated.
   if typeof(items) != "array" or len(items) <= 0 then return st end if
@@ -3835,7 +4504,8 @@ function _show_autocomplete_popup(st, items, prefix)
   return st
 end function
 
-// Return the user-facing label for a completion item.
+/// Return the user-facing label for a completion item.
+/// @param item item value consumed by this operation.
 function _completion_item_label(item)
   if typeof(item) == "struct" then
     if typeof(item.label) == "string" and item.label != "" then return item.label end if
@@ -3846,7 +4516,9 @@ function _completion_item_label(item)
   return ""
 end function
 
-// Return the popup display text for a completion item.
+/// Return the popup display text for a completion item.
+/// @param st st value consumed by this operation.
+/// @param item item value consumed by this operation.
 function _completion_display_text(st, item)
   label = _completion_item_label(item)
   if typeof(item) == "struct" and typeof(item.kind) == "string" and item.kind != "" then
@@ -3857,7 +4529,9 @@ function _completion_display_text(st, item)
   return label
 end function
 
-// Return the text to insert for a completion item.
+/// Return the text to insert for a completion item.
+/// @param item item value consumed by this operation.
+/// @param prefix prefix value consumed by this operation.
 function _completion_insert_text(item, prefix)
   item_text = _completion_item_label(item)
   if typeof(item) == "struct" and typeof(item.insert_text) == "string" and item.insert_text != "" then item_text = item.insert_text end if
@@ -3869,7 +4543,9 @@ function _completion_insert_text(item, prefix)
   return item_text
 end function
 
-// Select the current prefix when a fuzzy completion replaces it.
+/// Select the current prefix when a fuzzy completion replaces it.
+/// @param editor editor value consumed by this operation.
+/// @param prefix prefix value consumed by this operation.
 function _select_completion_prefix(editor, prefix)
   if typeof(prefix) != "string" or prefix == "" then return end if
   sel = win.edit_getsel(editor)
@@ -3878,7 +4554,8 @@ function _select_completion_prefix(editor, prefix)
   win.edit_setsel(editor, sel[0] - len(prefix), sel[0])
 end function
 
-// Accept autocomplete.
+/// Accept autocomplete.
+/// @param st st value consumed by this operation.
 function _accept_autocomplete(st)
   idx = win.listbox_getsel(st.autocomplete_list)
   if typeof(idx) != "int" or idx < 0 then idx = 0 end if
@@ -3897,7 +4574,8 @@ function _accept_autocomplete(st)
   return _set_log(st, "Completed: " + label)
 end function
 
-// Return the autocomplete.
+/// Return the autocomplete.
+/// @param st st value consumed by this operation.
 function _autocomplete(st)
   if st.active_tab < 0 or st.active_tab >= len(st.open_texts) then return _set_log(st, "No file is open.") end if
   display_text = win.edit_get_text(st.editor)
@@ -3924,7 +4602,7 @@ function _autocomplete(st)
   return _show_autocomplete_popup(st, items, prefix)
 end function
 
-// Return the command IDs exposed by the command palette.
+/// Return the command IDs exposed by the command palette.
 function _command_palette_ids()
   return [
     ID_FILE_OPEN_PROJECT, ID_FILE_QUICK_OPEN, ID_FILE_RECENT_FILES, ID_FILE_NEW_PROJECT, ID_FILE_RELOAD, ID_FILE_CLOSE_TAB, ID_FILE_SAVE, ID_FILE_SAVE_ALL, ID_CTX_TAB_CLOSE_OTHERS, ID_CTX_TAB_CLOSE_ALL, ID_CTX_LOG_COPY, ID_CTX_LOG_SELECT_ALL, ID_CTX_LOG_CLEAR,
@@ -3939,12 +4617,19 @@ function _command_palette_ids()
   ]
 end function
 
-// Dispatch a command selected through the command palette through the normal command path.
+/// Dispatch a command selected through the command palette through the normal command path.
+/// @param st st value consumed by this operation.
+/// @param id Stable identifier of the affected item.
 function _perform_palette_command(st, id)
   return _perform_command(st, id)
 end function
 
-// Refresh the visible command palette list and return visible command IDs.
+/// Refresh the visible command palette list and return visible command IDs.
+/// @param command_list command_list value consumed by this operation.
+/// @param ids ids value consumed by this operation.
+/// @param labels labels value consumed by this operation.
+/// @param search_texts search_texts value consumed by this operation.
+/// @param query query value consumed by this operation.
 function _refresh_command_palette_list(command_list, ids, labels, search_texts, query)
   visible_ids = []
   win.listbox_reset(command_list)
@@ -3964,13 +4649,18 @@ function _refresh_command_palette_list(command_list, ids, labels, search_texts, 
   return visible_ids
 end function
 
-// Return the selected command ID from a filtered command palette list.
+/// Return the selected command ID from a filtered command palette list.
+/// @param visible_ids visible_ids value consumed by this operation.
+/// @param selected selected value consumed by this operation.
 function _selected_command_palette_id(visible_ids, selected)
   if typeof(visible_ids) != "array" or selected < 0 or selected >= len(visible_ids) then return 0 end if
   return visible_ids[selected]
 end function
 
-// Move the selected command palette row.
+/// Move the selected command palette row.
+/// @param command_list command_list value consumed by this operation.
+/// @param visible_ids visible_ids value consumed by this operation.
+/// @param delta delta value consumed by this operation.
 function _move_command_palette_selection(command_list, visible_ids, delta)
   if typeof(visible_ids) != "array" or len(visible_ids) <= 0 then return end if
   selected = win.listbox_getsel(command_list)
@@ -3980,7 +4670,10 @@ function _move_command_palette_selection(command_list, visible_ids, delta)
   win.listbox_setsel(command_list, selected)
 end function
 
-// Set the selected command palette row.
+/// Set the selected command palette row.
+/// @param command_list command_list value consumed by this operation.
+/// @param visible_ids visible_ids value consumed by this operation.
+/// @param selected selected value consumed by this operation.
 function _set_command_palette_selection(command_list, visible_ids, selected)
   if typeof(visible_ids) != "array" or len(visible_ids) <= 0 then return end if
   if selected < 0 then selected = 0 end if
@@ -3988,7 +4681,8 @@ function _set_command_palette_selection(command_list, visible_ids, selected)
   win.listbox_setsel(command_list, selected)
 end function
 
-// Open command palette window.
+/// Open command palette window.
+/// @param st st value consumed by this operation.
 function _open_command_palette(st)
   // Run a local message loop so the modal UI stays responsive.
   ids = _command_palette_ids()
@@ -4116,7 +4810,9 @@ function _open_command_palette(st)
   return st
 end function
 
-// Show or open project files matching a query.
+/// Show or open project files matching a query.
+/// @param st st value consumed by this operation.
+/// @param query query value consumed by this operation.
 function _quick_open_query(st, query)
   if typeof(query) != "string" then query = "" end if
   query = s.trim(query)
@@ -4149,7 +4845,8 @@ function _quick_open_query(st, query)
   return _show_result_panel(st, "quick-open", title, rows, files, lines_out, cols)
 end function
 
-// Show the files currently open in this session.
+/// Show the files currently open in this session.
+/// @param st st value consumed by this operation.
 function _show_recent_files(st)
   if typeof(st.open_files) != "array" or len(st.open_files) <= 0 then return _set_log(st, "Recent Files: no files are open.") end if
 
@@ -4181,7 +4878,8 @@ function _show_recent_files(st)
   return _show_result_panel(st, "recent-files", title, rows, files, lines_out, cols)
 end function
 
-// Open quick file window.
+/// Open quick file window.
+/// @param st st value consumed by this operation.
 function _open_quick_open_window(st)
   // Run a local message loop so the modal UI stays responsive.
   dlg = win.create_main_window("Quick Open File", 520, 180)
@@ -4272,7 +4970,8 @@ function _open_quick_open_window(st)
   return st
 end function
 
-// Show outline.
+/// Show outline.
+/// @param st st value consumed by this operation.
 function _show_outline(st)
   // Walk collections defensively because project data can be partially populated.
   st = _sync_active_tab(st)
@@ -4311,7 +5010,9 @@ function _show_outline(st)
   return _show_result_panel(st, "outline", title, rows, files, lines_out, cols)
 end function
 
-// Show project symbols matching a query.
+/// Show project symbols matching a query.
+/// @param st st value consumed by this operation.
+/// @param query query value consumed by this operation.
 function _show_project_symbols_query(st, query)
   // Walk collections defensively because project data can be partially populated.
   if typeof(query) != "string" then query = "" end if
@@ -4341,12 +5042,14 @@ function _show_project_symbols_query(st, query)
   return _show_result_panel(st, "project-symbols", title, rows, files, lines_out, cols)
 end function
 
-// Show all project symbols.
+/// Show all project symbols.
+/// @param st st value consumed by this operation.
 function _show_project_symbols(st)
   return _show_project_symbols_query(st, "")
 end function
 
-// Return the initial symbol search text.
+/// Return the initial symbol search text.
+/// @param st st value consumed by this operation.
 function _initial_symbol_search_text(st)
   if st.active_tab < 0 or st.active_tab >= len(st.open_texts) then return "" end if
   text = win.edit_get_text(st.editor)
@@ -4356,7 +5059,8 @@ function _initial_symbol_search_text(st)
   return ""
 end function
 
-// Open goto symbol window.
+/// Open goto symbol window.
+/// @param st st value consumed by this operation.
 function _open_goto_symbol_window(st)
   // Run a local message loop so the modal UI stays responsive.
   initial = _initial_symbol_search_text(st)
@@ -4449,12 +5153,14 @@ function _open_goto_symbol_window(st)
   return st
 end function
 
-// Show current file structure.
+/// Show current file structure.
+/// @param st st value consumed by this operation.
 function _open_file_structure_window(st)
   return _show_outline(st)
 end function
 
-// Show workspace health.
+/// Show workspace health.
+/// @param st st value consumed by this operation.
 function _show_workspace_health(st)
   // Walk collections defensively because project data can be partially populated.
   snapshot = lang_service.analyze_project(st.project)
@@ -4502,7 +5208,8 @@ function _show_workspace_health(st)
   return _show_result_panel(st, "workspace-health", "Workspace Health", rows, files, lines_out, cols)
 end function
 
-// Show TODO and FIXME items.
+/// Show TODO and FIXME items.
+/// @param st st value consumed by this operation.
 function _show_todos(st)
   // Walk collections defensively because project data can be partially populated.
   snapshot = lang_service.analyze_project(st.project)
@@ -4531,7 +5238,8 @@ function _show_todos(st)
   return _show_result_panel(st, "todos", title, rows, files, lines_out, cols)
 end function
 
-// Show test explorer.
+/// Show test explorer.
+/// @param st st value consumed by this operation.
 function _show_test_explorer(st)
   // Walk collections defensively because project data can be partially populated.
   snapshot = lang_service.analyze_project(st.project)
@@ -4562,7 +5270,8 @@ function _show_test_explorer(st)
   return _show_result_panel(st, "test-explorer", title, rows, files, lines_out, cols)
 end function
 
-// Show tests related to the current file.
+/// Show tests related to the current file.
+/// @param st st value consumed by this operation.
 function _show_related_tests(st)
   // Walk collections defensively because project data can be partially populated.
   if typeof(st.current_file) != "string" or st.current_file == "" then return _set_log(st, "Related Tests: no file is open.") end if
@@ -4592,7 +5301,8 @@ function _show_related_tests(st)
   return _show_result_panel(st, "related-tests", title, rows, files, lines_out, cols)
 end function
 
-// Show import graph.
+/// Show import graph.
+/// @param st st value consumed by this operation.
 function _show_import_graph(st)
   // Walk collections defensively because project data can be partially populated.
   snapshot = lang_service.analyze_project(st.project)
@@ -4630,7 +5340,8 @@ function _show_import_graph(st)
   return _show_result_panel(st, "import-graph", title, rows, files, lines_out, cols)
 end function
 
-// Show project index.
+/// Show project index.
+/// @param st st value consumed by this operation.
 function _show_project_index(st)
   // Walk collections defensively because project data can be partially populated.
   idx = try(lang_index.build_project_index(st.project))
@@ -4690,7 +5401,8 @@ function _show_project_index(st)
   return _show_result_panel(st, "project-index", "Project Index", rows, files, lines_out, cols)
 end function
 
-// Show problems.
+/// Show problems.
+/// @param st st value consumed by this operation.
 function _show_problems(st)
   // Walk collections defensively because project data can be partially populated.
   rows = []
@@ -4756,7 +5468,8 @@ function _show_problems(st)
   return _show_result_panel(st, "problems", title, rows, files, lines_out, cols)
 end function
 
-// Show code inspections.
+/// Show code inspections.
+/// @param st st value consumed by this operation.
 function _show_code_inspections(st)
   // Walk collections defensively because project data can be partially populated.
   snapshot = lang_service.analyze_project(st.project)
@@ -4787,7 +5500,8 @@ function _show_code_inspections(st)
   return _show_result_panel(st, "code-inspections", title, rows, files, lines_out, cols)
 end function
 
-// Search current word.
+/// Search current word.
+/// @param st st value consumed by this operation.
 function _search_current_word(st)
   // Walk collections defensively because project data can be partially populated.
   if st.active_tab < 0 or st.active_tab >= len(st.open_texts) then return _set_log(st, "No file is open.") end if
@@ -4829,7 +5543,10 @@ function _search_current_word(st)
   return _show_result_panel(st, "search", title, rows, files, lines_out, cols)
 end function
 
-// Show a preview of the references that would be renamed.
+/// Show a preview of the references that would be renamed.
+/// @param st st value consumed by this operation.
+/// @param word word value consumed by this operation.
+/// @param new_name new_name value consumed by this operation.
 function _show_rename_symbol_preview(st, word, new_name)
   if typeof(word) != "string" or word == "" then return _set_log(st, "No symbol under the cursor.") end if
   if typeof(new_name) != "string" or s.trim(new_name) == "" then return _set_log(st, "Rename Symbol: no new name provided.") end if
@@ -4858,7 +5575,8 @@ function _show_rename_symbol_preview(st, word, new_name)
   return _show_result_panel(st, "rename-preview", title, rows, files, lines_out, cols)
 end function
 
-// Return a compact rename error message.
+/// Return a compact rename error message.
+/// @param result Result object populated or inspected by the operation.
 function _rename_error_text(result)
   if typeof(result) != "struct" or typeof(result.errors) != "array" or len(result.errors) <= 0 then return "Rename Symbol failed." end if
   text = "Rename Symbol failed: " + result.errors[0]
@@ -4866,7 +5584,9 @@ function _rename_error_text(result)
   return text
 end function
 
-// Refresh open tabs for files changed by a project-wide rename.
+/// Refresh open tabs for files changed by a project-wide rename.
+/// @param st st value consumed by this operation.
+/// @param files files value consumed by this operation.
 function _refresh_renamed_open_files(st, files)
   if typeof(files) != "array" or len(files) <= 0 then return st end if
   if typeof(st.open_files) != "array" then return st end if
@@ -4896,7 +5616,10 @@ function _refresh_renamed_open_files(st, files)
   return st
 end function
 
-// Apply a symbol rename to project files.
+/// Apply a symbol rename to project files.
+/// @param st st value consumed by this operation.
+/// @param word word value consumed by this operation.
+/// @param new_name new_name value consumed by this operation.
 function _apply_rename_symbol(st, word, new_name)
   st = _sync_active_tab(st)
   guard = _guard_no_dirty(st, "applying rename")
@@ -4916,7 +5639,8 @@ function _apply_rename_symbol(st, word, new_name)
   return _set_log(st, "Renamed " + word + " -> " + s.trim(new_name) + ": " + result.replacements + " replacements in " + len(result.files) + " files.")
 end function
 
-// Open rename symbol preview window.
+/// Open rename symbol preview window.
+/// @param st st value consumed by this operation.
 function _open_rename_symbol_window(st)
   // Run a local message loop so the modal UI stays responsive.
   if st.active_tab < 0 or st.active_tab >= len(st.open_texts) then return _set_log(st, "No file is open.") end if
@@ -5033,7 +5757,8 @@ function _open_rename_symbol_window(st)
   return st
 end function
 
-// Find references for the current symbol-like word.
+/// Find references for the current symbol-like word.
+/// @param st st value consumed by this operation.
 function _find_references(st)
   // Walk collections defensively because project data can be partially populated.
   if st.active_tab < 0 or st.active_tab >= len(st.open_texts) then return _set_log(st, "No file is open.") end if
@@ -5066,7 +5791,8 @@ function _find_references(st)
   return _show_result_panel(st, "references", title, rows, files, lines_out, cols)
 end function
 
-// Show call hierarchy for the current symbol-like word.
+/// Show call hierarchy for the current symbol-like word.
+/// @param st st value consumed by this operation.
 function _show_call_hierarchy(st)
   // Walk collections defensively because project data can be partially populated.
   if st.active_tab < 0 or st.active_tab >= len(st.open_texts) then return _set_log(st, "No file is open.") end if
@@ -5101,7 +5827,8 @@ function _show_call_hierarchy(st)
   return _show_result_panel(st, "call-hierarchy", title, rows, files, lines_out, cols)
 end function
 
-// Show symbol info for the current symbol-like word.
+/// Show symbol info for the current symbol-like word.
+/// @param st st value consumed by this operation.
 function _show_symbol_info(st)
   // Walk collections defensively because project data can be partially populated.
   if st.active_tab < 0 or st.active_tab >= len(st.open_texts) then return _set_log(st, "No file is open.") end if
@@ -5130,7 +5857,10 @@ function _show_symbol_info(st)
   return _show_result_panel(st, "symbol-info", "Symbol Info: " + word, rows, files, lines_out, cols)
 end function
 
-// Move the editor caret to line col.
+/// Move the editor caret to line col.
+/// @param st st value consumed by this operation.
+/// @param line_no line_no value consumed by this operation.
+/// @param col_no col_no value consumed by this operation.
 function _jump_to_line_col(st, line_no, col_no)
   if st.active_tab < 0 or st.active_tab >= len(st.open_texts) then return _set_log(st, "No file is open.") end if
   count = win.edit_line_count(st.editor)
@@ -5150,19 +5880,26 @@ function _jump_to_line_col(st, line_no, col_no)
   return st
 end function
 
-// Move the editor caret to line col.
+/// Move the editor caret to line col.
+/// @param st st value consumed by this operation.
+/// @param line_no line_no value consumed by this operation.
+/// @param col_no col_no value consumed by this operation.
 function _goto_line_col(st, line_no, col_no)
   st = _record_navigation(st)
   st = _jump_to_line_col(st, line_no, col_no)
   return _set_log(st, "Go to line " + line_no + ", column " + col_no + ".")
 end function
 
-// Move the editor caret to line number.
+/// Move the editor caret to line number.
+/// @param st st value consumed by this operation.
+/// @param line_no line_no value consumed by this operation.
 function _goto_line_number(st, line_no)
   return _goto_line_col(st, line_no, 1)
 end function
 
-// Read goto line.
+/// Read goto line.
+/// @param dlg dlg value consumed by this operation.
+/// @param edit edit value consumed by this operation.
 function _read_goto_line(dlg, edit)
   text = s.trim(win.get_control_text(edit))
   line_no = toNumber(text)
@@ -5173,7 +5910,8 @@ function _read_goto_line(dlg, edit)
   return line_no
 end function
 
-// Open goto line window.
+/// Open goto line window.
+/// @param st st value consumed by this operation.
 function _open_goto_line_window(st)
   // Run a local message loop so the modal UI stays responsive.
   if st.active_tab < 0 or st.active_tab >= len(st.open_texts) then return _set_log(st, "No file is open.") end if
@@ -5276,7 +6014,8 @@ function _open_goto_line_window(st)
   return st
 end function
 
-// Return the selected editor text.
+/// Return the selected editor text.
+/// @param st st value consumed by this operation.
 function _selected_editor_text(st)
   if st.active_tab < 0 or st.active_tab >= len(st.open_texts) then return "" end if
   sel = win.edit_getsel(st.editor)
@@ -5286,7 +6025,8 @@ function _selected_editor_text(st)
   return s.substr(text, sel[0], sel[1] - sel[0])
 end function
 
-// Return the initial find text.
+/// Return the initial find text.
+/// @param st st value consumed by this operation.
 function _initial_find_text(st)
   selected = _selected_editor_text(st)
   if selected != "" and s.indexOf(selected, "\n", 0) < 0 and s.indexOf(selected, "\r", 0) < 0 then return selected end if
@@ -5298,7 +6038,9 @@ function _initial_find_text(st)
   return ""
 end function
 
-// Find next in editor.
+/// Find next in editor.
+/// @param st st value consumed by this operation.
+/// @param query query value consumed by this operation.
 function _find_next_in_editor(st, query)
   if st.active_tab < 0 or st.active_tab >= len(st.open_texts) then return _set_log(st, "No file is open.") end if
   if typeof(query) != "string" then query = "" end if
@@ -5325,7 +6067,8 @@ function _find_next_in_editor(st, query)
   return _set_log(st, msg)
 end function
 
-// Open find window.
+/// Open find window.
+/// @param st st value consumed by this operation.
 function _open_find_window(st)
   // Run a local message loop so the modal UI stays responsive.
   if st.active_tab < 0 or st.active_tab >= len(st.open_texts) then return _set_log(st, "No file is open.") end if
@@ -5414,13 +6157,15 @@ function _open_find_window(st)
   return st
 end function
 
-// Find next.
+/// Find next.
+/// @param st st value consumed by this operation.
 function _find_next(st)
   if typeof(st.last_search_text) != "string" or st.last_search_text == "" then return _open_find_window(st) end if
   return _find_next_in_editor(st, st.last_search_text)
 end function
 
-// Return the short symbol name.
+/// Return the short symbol name.
+/// @param name Name of the affected item.
 function _short_symbol_name(name)
   if typeof(name) != "string" then return "" end if
   i = len(name) - 1
@@ -5431,7 +6176,9 @@ function _short_symbol_name(name)
   return name
 end function
 
-// Find symbol.
+/// Find symbol.
+/// @param index Zero-based index of the affected item.
+/// @param name Name of the affected item.
 function _find_symbol(index, name)
   // Walk collections defensively because project data can be partially populated.
   if typeof(index) != "struct" or typeof(index.symbols) != "array" then return end if
@@ -5452,7 +6199,8 @@ function _find_symbol(index, name)
   end for
 end function
 
-// Move the editor caret to definition.
+/// Move the editor caret to definition.
+/// @param st st value consumed by this operation.
 function _goto_definition(st)
   if st.active_tab < 0 or st.active_tab >= len(st.open_texts) then return _set_log(st, "No file is open.") end if
   text = win.edit_get_text(st.editor)
@@ -5468,7 +6216,8 @@ function _goto_definition(st)
   return _set_log(st, "Definition: " + sym.name + " in " + _project_relative_path(st, sym.file) + ":" + (sym.line + 1))
 end function
 
-// Send the cut operation to a edit control.
+/// Send the cut operation to a edit control.
+/// @param st st value consumed by this operation.
 function _edit_cut(st)
   win.SetFocus(st.editor)
   win.edit_cut(st.editor)
@@ -5476,14 +6225,16 @@ function _edit_cut(st)
   return st
 end function
 
-// Send the copy operation to a edit control.
+/// Send the copy operation to a edit control.
+/// @param st st value consumed by this operation.
 function _edit_copy(st)
   win.SetFocus(st.editor)
   win.edit_copy(st.editor)
   return st
 end function
 
-// Send the paste operation to a edit control.
+/// Send the paste operation to a edit control.
+/// @param st st value consumed by this operation.
 function _edit_paste(st)
   win.SetFocus(st.editor)
   win.edit_paste(st.editor)
@@ -5491,14 +6242,17 @@ function _edit_paste(st)
   return st
 end function
 
-// Send the select all operation to a edit control.
+/// Send the select all operation to a edit control.
+/// @param st st value consumed by this operation.
 function _edit_select_all(st)
   win.SetFocus(st.editor)
   win.edit_select_all(st.editor)
   return st
 end function
 
-// Replace active text.
+/// Replace active text.
+/// @param st st value consumed by this operation.
+/// @param text Text consumed by the operation.
 function _replace_active_text(st, text)
   idx = st.active_tab
   if idx < 0 or idx >= len(st.open_texts) then return st end if
@@ -5520,7 +6274,8 @@ function _replace_active_text(st, text)
   return st
 end function
 
-// Send the undo operation to a edit control.
+/// Send the undo operation to a edit control.
+/// @param st st value consumed by this operation.
 function _edit_undo(st)
   idx = st.active_tab
   if idx < 0 or idx >= len(st.open_texts) then return st end if
@@ -5536,7 +6291,8 @@ function _edit_undo(st)
   return _set_log(st, "Undo.")
 end function
 
-// Send the redo operation to a edit control.
+/// Send the redo operation to a edit control.
+/// @param st st value consumed by this operation.
 function _edit_redo(st)
   idx = st.active_tab
   if idx < 0 or idx >= len(st.open_texts) then return st end if
@@ -5551,39 +6307,45 @@ function _edit_redo(st)
   return _set_log(st, "Redo.")
 end function
 
-// Return the log copy.
+/// Return the log copy.
+/// @param st st value consumed by this operation.
 function _log_copy(st)
   win.SetFocus(st.log)
   win.edit_copy(st.log)
   return st
 end function
 
-// Return the log select all.
+/// Return the log select all.
+/// @param st st value consumed by this operation.
 function _log_select_all(st)
   win.SetFocus(st.log)
   win.edit_select_all(st.log)
   return st
 end function
 
-// Return the log clear.
+/// Return the log clear.
+/// @param st st value consumed by this operation.
 function _log_clear(st)
   win.set_window_text(st.log, "")
   return st
 end function
 
-// Show the MiniIDE About dialog.
+/// Show the MiniIDE About dialog.
+/// @param st st value consumed by this operation.
 function _about(st)
   win.MessageBoxW(st.hwnd, "MiniIDE\nMiniLang IDE written in MiniLang.", "About MiniIDE", 0)
   return st
 end function
 
-// Load RichEdit library.
+/// Load RichEdit library.
 function _load_msftedit()
   Load = win.LoadLibraryW("Msftedit.dll")
   return Load
 end function
 
-// Create editor.
+/// Create editor.
+/// @param parent parent value consumed by this operation.
+/// @param font font value consumed by this operation.
 function _create_editor(parent, font)
   _load_msftedit()
   style = win.WS_TABSTOP | win.WS_VSCROLL | win.WS_HSCROLL | win.ES_MULTILINE | win.ES_AUTOVSCROLL | win.ES_AUTOHSCROLL | win.ES_WANTRETURN | win.ES_NOHIDESEL
@@ -5596,7 +6358,9 @@ function _create_editor(parent, font)
   return hwnd
 end function
 
-// Create log.
+/// Create log.
+/// @param parent parent value consumed by this operation.
+/// @param font font value consumed by this operation.
 function _create_log(parent, font)
   _load_msftedit()
   style = win.WS_VSCROLL | win.ES_MULTILINE | win.ES_AUTOVSCROLL | win.ES_READONLY | win.ES_NOHIDESEL
@@ -5609,7 +6373,9 @@ function _create_log(parent, font)
   return hwnd
 end function
 
-// Create line numbers.
+/// Create line numbers.
+/// @param parent parent value consumed by this operation.
+/// @param font font value consumed by this operation.
 function _create_line_numbers(parent, font)
   _load_msftedit()
   style = win.ES_MULTILINE | win.ES_READONLY | win.ES_NOHIDESEL | win.ES_RIGHT
@@ -5622,14 +6388,20 @@ function _create_line_numbers(parent, font)
   return hwnd
 end function
 
-// Create tab strip.
+/// Create tab strip.
+/// @param parent parent value consumed by this operation.
+/// @param font font value consumed by this operation.
 function _create_tab_strip(parent, font)
   hwnd = win.create_tab(parent, ID_EDITOR_TABS)
   win.set_control_font(hwnd, font)
   return hwnd
 end function
 
-// Create toolbar button.
+/// Create toolbar button.
+/// @param parent parent value consumed by this operation.
+/// @param font font value consumed by this operation.
+/// @param text Text consumed by the operation.
+/// @param control_id Identifier of control.
 function _create_toolbar_button(parent, font, text, control_id)
   _load_msftedit()
   style = win.ES_READONLY | win.ES_NOHIDESEL
@@ -5640,7 +6412,10 @@ function _create_toolbar_button(parent, font, text, control_id)
   return hwnd
 end function
 
-// Create toolbar icon.
+/// Create toolbar icon.
+/// @param parent parent value consumed by this operation.
+/// @param font font value consumed by this operation.
+/// @param glyph_code glyph_code value consumed by this operation.
 function _create_toolbar_icon(parent, font, glyph_code)
   _load_msftedit()
   text = win.char_from_code(glyph_code)
@@ -5654,7 +6429,10 @@ function _create_toolbar_icon(parent, font, glyph_code)
   return hwnd
 end function
 
-// Create menu label.
+/// Create menu label.
+/// @param parent parent value consumed by this operation.
+/// @param font font value consumed by this operation.
+/// @param text Text consumed by the operation.
 function _create_menu_label(parent, font, text)
   _load_msftedit()
   style = win.ES_READONLY | win.ES_NOHIDESEL
@@ -5664,7 +6442,8 @@ function _create_menu_label(parent, font, text)
   return hwnd
 end function
 
-// Create state.
+/// Create state.
+/// @param root root value consumed by this operation.
 function _create_state(root)
   // Keep validation near the top so callers can treat invalid input as a no-op.
   p = project_model.load_project(root)
@@ -5775,7 +6554,11 @@ function _create_state(root)
   return st
 end function
 
-// Move toolbar icon.
+/// Move toolbar icon.
+/// @param st st value consumed by this operation.
+/// @param idx idx value consumed by this operation.
+/// @param x Horizontal coordinate used by the operation.
+/// @param y Vertical coordinate used by the operation.
 function _move_toolbar_icon(st, idx, x, y)
   if typeof(st.toolbar_icons) != "array" then return end if
   if idx < 0 or idx >= len(st.toolbar_icons) then return end if
@@ -5785,7 +6568,11 @@ function _move_toolbar_icon(st, idx, x, y)
   win.BringWindowToTop(icon)
 end function
 
-// Move menu label.
+/// Move menu label.
+/// @param st st value consumed by this operation.
+/// @param idx idx value consumed by this operation.
+/// @param x Horizontal coordinate used by the operation.
+/// @param w w value consumed by this operation.
 function _move_menu_label(st, idx, x, w)
   if typeof(st.toolbar_icons) != "array" then return end if
   if idx < 0 or idx >= len(st.toolbar_icons) then return end if
@@ -5795,7 +6582,8 @@ function _move_menu_label(st, idx, x, w)
   win.BringWindowToTop(item)
 end function
 
-// Resize and position all child controls for the current window size.
+/// Resize and position all child controls for the current window size.
+/// @param st st value consumed by this operation.
 function _layout(st)
   // Keep validation near the top so callers can treat invalid input as a no-op.
   size = win.client_size(st.hwnd)
@@ -5888,7 +6676,9 @@ function _layout(st)
   return st
 end function
 
-// Return the key pressed.
+/// Return the key pressed.
+/// @param st st value consumed by this operation.
+/// @param vk vk value consumed by this operation.
 function _key_pressed(st, vk)
   down = win.key_down(vk)
   was = false
@@ -5897,22 +6687,25 @@ function _key_pressed(st, vk)
   return down and was == false
 end function
 
-// Return the control down.
+/// Return the control down.
 function _ctrl_down()
   return win.key_down(win.VK_CONTROL)
 end function
 
-// Return the shift down.
+/// Return the shift down.
 function _shift_down()
   return win.key_down(win.VK_SHIFT)
 end function
 
-// Return the alt down.
+/// Return the alt down.
 function _alt_down()
   return win.key_down(win.VK_MENU)
 end function
 
-// Return the toolbar command at a mouse position.
+/// Return the toolbar command at a mouse position.
+/// @param st st value consumed by this operation.
+/// @param mx mx value consumed by this operation.
+/// @param my my value consumed by this operation.
 function _button_hit(st, mx, my)
   if my < 0 or my > 32 then return 0 end if
   size = win.client_size(st.hwnd)
@@ -5926,7 +6719,11 @@ function _button_hit(st, mx, my)
   return 0
 end function
 
-// Handle tree click.
+/// Handle tree click.
+/// @param st st value consumed by this operation.
+/// @param clicked clicked value consumed by this operation.
+/// @param mx mx value consumed by this operation.
+/// @param my my value consumed by this operation.
 function _handle_tree_click(st, clicked, mx, my)
   if clicked == false then return st end if
   if mx < 0 or mx >= LEFT_W or my < TOOL_H then return st end if
@@ -5954,7 +6751,9 @@ function _handle_tree_click(st, clicked, mx, my)
   return st
 end function
 
-// Open tree file index.
+/// Open tree file index.
+/// @param st st value consumed by this operation.
+/// @param idx idx value consumed by this operation.
 function _open_tree_file_index(st, idx)
   if idx < 0 or idx >= len(st.tree_paths) then return st end if
   is_dir = true
@@ -5964,7 +6763,10 @@ function _open_tree_file_index(st, idx)
   return _open_file(st, st.tree_paths[idx])
 end function
 
-// Open tree file at.
+/// Open tree file at.
+/// @param st st value consumed by this operation.
+/// @param mx mx value consumed by this operation.
+/// @param my my value consumed by this operation.
 function _open_tree_file_at(st, mx, my)
   if mx < 0 or mx >= LEFT_W or my < TOOL_H then return st end if
   item = win.tree_hit_test(st.tree, mx - STATUS_PAD, my - TOOL_H)
@@ -5975,7 +6777,8 @@ function _open_tree_file_at(st, mx, my)
   return _open_tree_file_index(st, idx)
 end function
 
-// Handle tab selection.
+/// Handle tab selection.
+/// @param st st value consumed by this operation.
 function _handle_tab_selection(st)
   sel = win.tab_get_cur_sel(st.tabbar)
   if typeof(sel) != "int" then return st end if
@@ -5985,7 +6788,10 @@ function _handle_tab_selection(st)
   return _activate_tab(st, sel)
 end function
 
-// Handle tab click.
+/// Handle tab click.
+/// @param st st value consumed by this operation.
+/// @param tx tx value consumed by this operation.
+/// @param ty ty value consumed by this operation.
 function _handle_tab_click(st, tx, ty)
   idx = _tab_at(st, tx + LEFT_W, ty + TOOL_H)
   if idx < 0 or idx >= len(st.open_files) then return st end if
@@ -5994,7 +6800,8 @@ function _handle_tab_click(st, tx, ty)
   return _activate_tab(st, idx)
 end function
 
-// Open selected tree file.
+/// Open selected tree file.
+/// @param st st value consumed by this operation.
 function _open_selected_tree_file(st)
   if st.current_sel >= 0 and st.current_sel < len(st.tree_paths) then
     return _open_tree_file_index(st, st.current_sel)
@@ -6005,7 +6812,8 @@ function _open_selected_tree_file(st)
   return _open_tree_file_index(st, idx)
 end function
 
-// Reveal the active editor file in the project tree.
+/// Reveal the active editor file in the project tree.
+/// @param st st value consumed by this operation.
 function _reveal_active_file(st)
   if typeof(st.current_file) != "string" or st.current_file == "" then return _set_log(st, "Reveal Active File: no file is open.") end if
   if typeof(st.tree_paths) != "array" or typeof(st.tree_handles) != "array" then return _set_log(st, "Reveal Active File: project tree is unavailable.") end if
@@ -6024,7 +6832,9 @@ function _reveal_active_file(st)
   return _set_log(st, "Reveal Active File: current file is not in the project tree.")
 end function
 
-// Close tab.
+/// Close tab.
+/// @param st st value consumed by this operation.
+/// @param idx idx value consumed by this operation.
 function _close_tab(st, idx)
   // Walk collections defensively because project data can be partially populated.
   if typeof(st.open_files) != "array" then return st end if
@@ -6111,12 +6921,14 @@ function _close_tab(st, idx)
   return _activate_tab(st, target)
 end function
 
-// Close the active editor tab.
+/// Close the active editor tab.
+/// @param st st value consumed by this operation.
 function _close_current_tab(st)
   return _close_tab(st, st.active_tab)
 end function
 
-// Close other tabs.
+/// Close other tabs.
+/// @param st st value consumed by this operation.
 function _close_other_tabs(st)
   // Walk collections defensively because project data can be partially populated.
   keep = st.context_tab
@@ -6176,7 +6988,8 @@ function _close_other_tabs(st)
   return _activate_tab(st, 0)
 end function
 
-// Close all tabs.
+/// Close all tabs.
+/// @param st st value consumed by this operation.
 function _close_all_tabs(st)
   // Walk collections defensively because project data can be partially populated.
   if typeof(st.open_files) != "array" then return st end if
@@ -6217,7 +7030,8 @@ function _close_all_tabs(st)
   return _set_log(st, "Closed all tabs.")
 end function
 
-// Return the selected tree index.
+/// Return the selected tree index.
+/// @param st st value consumed by this operation.
 function _selected_tree_index(st)
   if st.current_sel >= 0 and st.current_sel < len(st.tree_paths) then return st.current_sel end if
   item = win.tree_get_selection(st.tree)
@@ -6227,7 +7041,8 @@ function _selected_tree_index(st)
   return idx
 end function
 
-// Send the target directory operation to a tree-view control.
+/// Send the target directory operation to a tree-view control.
+/// @param st st value consumed by this operation.
 function _tree_target_dir(st)
   idx = _selected_tree_index(st)
   path = "."
@@ -6239,7 +7054,8 @@ function _tree_target_dir(st)
   return project_model.dirname(path)
 end function
 
-// Reload tree only.
+/// Reload tree only.
+/// @param st st value consumed by this operation.
 function _reload_tree_only(st)
   root = "."
   if typeof(st.project) == "struct" then root = st.project.root end if
@@ -6250,7 +7066,10 @@ function _reload_tree_only(st)
   return st
 end function
 
-// Return the unique file path.
+/// Return the unique file path.
+/// @param dir dir value consumed by this operation.
+/// @param stem stem value consumed by this operation.
+/// @param ext ext value consumed by this operation.
 function _unique_file_path(dir, stem, ext)
   candidate = project_model.path_join(dir, stem + ext)
   if fs.exists(candidate) == false then return candidate end if
@@ -6263,7 +7082,9 @@ function _unique_file_path(dir, stem, ext)
   return project_model.path_join(dir, stem + "_" + win.GetTickCount() + ext)
 end function
 
-// Return the unique named path.
+/// Return the unique named path.
+/// @param dir dir value consumed by this operation.
+/// @param name Name of the affected item.
 function _unique_named_path(dir, name)
   candidate = project_model.path_join(dir, name)
   if fs.exists(candidate) == false then return candidate end if
@@ -6276,14 +7097,17 @@ function _unique_named_path(dir, name)
   return project_model.path_join(dir, "copy_" + win.GetTickCount() + "_" + name)
 end function
 
-// Return the norm path key.
+/// Return the norm path key.
+/// @param path Path of the file or directory used by the operation.
 function _norm_path_key(path)
   if typeof(path) != "string" then return "" end if
   key = s.replaceAll(path, "/", "\\")
   return s.toLowerAscii(key)
 end function
 
-// Return the same or child path.
+/// Return the same or child path.
+/// @param parent parent value consumed by this operation.
+/// @param child child value consumed by this operation.
 function _same_or_child_path(parent, child)
   p = _norm_path_key(parent)
   c = _norm_path_key(child)
@@ -6293,7 +7117,9 @@ function _same_or_child_path(parent, child)
   return s.startsWith(c, p)
 end function
 
-// Return true when open path under.
+/// Return true when open path under.
+/// @param st st value consumed by this operation.
+/// @param path Path of the file or directory used by the operation.
 function _has_open_path_under(st, path)
   // Walk collections defensively because project data can be partially populated.
   if typeof(st.open_files) != "array" then return false end if
@@ -6304,7 +7130,8 @@ function _has_open_path_under(st, path)
   return false
 end function
 
-// Return the safe identifier.
+/// Return the safe identifier.
+/// @param name Name of the affected item.
 function _safe_identifier(name)
   if typeof(name) != "string" or name == "" then return "new_module" end if
   name = s.replaceAll(name, ".ml", "")
@@ -6315,18 +7142,22 @@ function _safe_identifier(name)
   return name
 end function
 
-// Return the module source.
+/// Return the module source.
+/// @param path Path of the file or directory used by the operation.
 function _module_source(path)
   id = _safe_identifier(_basename(path))
   return "function " + id + "()\n  return 0\nend function\n"
 end function
 
-// Return the test file source.
+/// Return the test file source.
+/// @param path Path of the file or directory used by the operation.
 function _test_file_source(path)
   return "function main(args)\n  print \"Running " + _basename(path) + "\"\n  return 0\nend function\n"
 end function
 
-// Copy path recursive.
+/// Copy path recursive.
+/// @param src src value consumed by this operation.
+/// @param dest dest value consumed by this operation.
 function _copy_path_recursive(src, dest)
   // Walk collections defensively because project data can be partially populated.
   if fs.isDir(src) then
@@ -6352,7 +7183,8 @@ function _copy_path_recursive(src, dest)
   return ""
 end function
 
-// Delete path recursive.
+/// Delete path recursive.
+/// @param path Path of the file or directory used by the operation.
 function _delete_path_recursive(path)
   // Walk collections defensively because project data can be partially populated.
   if fs.isDir(path) then
@@ -6372,7 +7204,8 @@ function _delete_path_recursive(path)
   return ""
 end function
 
-// Create tree file.
+/// Create tree file.
+/// @param st st value consumed by this operation.
 function _new_tree_file(st)
   dir = _tree_target_dir(st)
   path = _unique_file_path(dir, "new_file", ".ml")
@@ -6383,7 +7216,8 @@ function _new_tree_file(st)
   return _set_log(st, "Created " + path)
 end function
 
-// Create tree test file.
+/// Create tree test file.
+/// @param st st value consumed by this operation.
 function _new_tree_test_file(st)
   dir = _tree_target_dir(st)
   path = _unique_file_path(dir, "new_test", ".ml")
@@ -6394,7 +7228,8 @@ function _new_tree_test_file(st)
   return _set_log(st, "Created test " + path)
 end function
 
-// Create tree folder.
+/// Create tree folder.
+/// @param st st value consumed by this operation.
 function _new_tree_folder(st)
   dir = _tree_target_dir(st)
   path = _unique_file_path(dir, "NewFolder", "")
@@ -6404,7 +7239,9 @@ function _new_tree_folder(st)
   return _set_log(st, "Created folder " + path)
 end function
 
-// Read rename name.
+/// Read rename name.
+/// @param dlg dlg value consumed by this operation.
+/// @param edit edit value consumed by this operation.
 function _read_rename_name(dlg, edit)
   name = s.trim(win.get_control_text(edit))
   if name == "" then
@@ -6418,7 +7255,8 @@ function _read_rename_name(dlg, edit)
   return name
 end function
 
-// Return the rename tree item.
+/// Return the rename tree item.
+/// @param st st value consumed by this operation.
 function _rename_tree_item(st)
   // Run a local message loop so the modal UI stays responsive.
   idx = _selected_tree_index(st)
@@ -6513,7 +7351,8 @@ function _rename_tree_item(st)
   return _set_log(st, "Renamed: " + dest)
 end function
 
-// Delete tree item.
+/// Delete tree item.
+/// @param st st value consumed by this operation.
 function _delete_tree_item(st)
   idx = _selected_tree_index(st)
   if idx <= 0 or idx >= len(st.tree_paths) then return _set_log(st, "The project root cannot be deleted.") end if
@@ -6527,7 +7366,8 @@ function _delete_tree_item(st)
   return _set_log(st, "Deleted: " + path)
 end function
 
-// Copy tree item.
+/// Copy tree item.
+/// @param st st value consumed by this operation.
 function _copy_tree_item(st)
   idx = _selected_tree_index(st)
   if idx < 0 or idx >= len(st.tree_paths) then return st end if
@@ -6536,7 +7376,8 @@ function _copy_tree_item(st)
   return _set_log(st, "Copied " + st.file_clipboard_path)
 end function
 
-// Paste tree item.
+/// Paste tree item.
+/// @param st st value consumed by this operation.
 function _paste_tree_item(st)
   if typeof(st.file_clipboard_path) != "string" or st.file_clipboard_path == "" then
     return _set_log(st, "Nothing to paste.")
@@ -6555,12 +7396,15 @@ function _paste_tree_item(st)
   return _set_log(st, "Pasted " + dest)
 end function
 
-// Return the unfold all.
+/// Return the unfold all.
+/// @param st st value consumed by this operation.
 function _unfold_all(st)
   return st
 end function
 
-// Return the remove fold at the requested location.
+/// Return the remove fold at the requested location.
+/// @param folds folds value consumed by this operation.
+/// @param source_line source_line value consumed by this operation.
 function _remove_fold_at(folds, source_line)
   // Walk collections defensively because project data can be partially populated.
   remaining = []
@@ -6574,12 +7418,15 @@ function _remove_fold_at(folds, source_line)
   return remaining
 end function
 
-// Toggle fold line.
+/// Toggle fold line.
+/// @param st st value consumed by this operation.
+/// @param source_line source_line value consumed by this operation.
 function _toggle_fold_line(st, source_line)
   return st
 end function
 
-// Toggle fold at the caret.
+/// Toggle fold at the caret.
+/// @param st st value consumed by this operation.
 function _toggle_fold_at_caret(st)
   if st.active_tab < 0 or st.active_tab >= len(st.open_texts) then return st end if
   sel = win.edit_getsel(st.editor)
@@ -6588,7 +7435,9 @@ function _toggle_fold_at_caret(st)
   return _toggle_fold_line(st, source_line)
 end function
 
-// Toggle fold from the y.
+/// Toggle fold from the y.
+/// @param st st value consumed by this operation.
+/// @param my my value consumed by this operation.
 function _toggle_fold_from_y(st, my)
   if st.active_tab < 0 or st.active_tab >= len(st.open_texts) then return st end if
   editor_y = TOOL_H + TAB_H
@@ -6598,7 +7447,9 @@ function _toggle_fold_from_y(st, my)
   return _toggle_fold_line(st, source_line)
 end function
 
-// Return the line label.
+/// Return the line label.
+/// @param line_no line_no value consumed by this operation.
+/// @param marker marker value consumed by this operation.
 function _line_label(line_no, marker)
   num = "" + line_no
   while len(num) < 4
@@ -6607,7 +7458,9 @@ function _line_label(line_no, marker)
   return " " + num
 end function
 
-// Return the simple line numbers text.
+/// Return the simple line numbers text.
+/// @param first_visible first_visible value consumed by this operation.
+/// @param count Number of items or units to process.
 function _simple_line_numbers_text(first_visible, count)
   if typeof(count) != "int" or count <= 0 then count = 1 end if
   if first_visible < 0 then first_visible = 0 end if
@@ -6623,7 +7476,8 @@ function _simple_line_numbers_text(first_visible, count)
   return text_out
 end function
 
-// Return the all line numbers text.
+/// Return the all line numbers text.
+/// @param count Number of items or units to process.
 function _all_line_numbers_text(count)
   if typeof(count) != "int" or count <= 0 then count = 1 end if
   text_out = ""
@@ -6636,7 +7490,8 @@ function _all_line_numbers_text(count)
   return text_out
 end function
 
-// Synchronize line numbers.
+/// Synchronize line numbers.
+/// @param st st value consumed by this operation.
 function _sync_line_numbers(st)
   if _active_is_markdown(st) or st.active_tab < 0 or st.active_tab >= len(st.open_texts) then
     if st.last_line_numbers_text != "" then
@@ -6663,7 +7518,8 @@ function _sync_line_numbers(st)
   return st
 end function
 
-// Return the caret status text.
+/// Return the caret status text.
+/// @param st st value consumed by this operation.
 function _caret_status_text(st)
   if st.active_tab < 0 or st.active_tab >= len(st.open_texts) then return "Line 1, Column 1" end if
   sel = win.edit_getsel(st.editor)
@@ -6677,7 +7533,8 @@ function _caret_status_text(st)
   return "Line " + (source_line + 1) + ", Column " + col
 end function
 
-// Return a key that invalidates the active-file live diagnostics cache.
+/// Return a key that invalidates the active-file live diagnostics cache.
+/// @param st st value consumed by this operation.
 function _live_diagnostics_key(st)
   if st.active_tab < 0 or st.active_tab >= len(st.open_files) then return "" end if
   text = ""
@@ -6687,7 +7544,8 @@ function _live_diagnostics_key(st)
   return st.open_files[st.active_tab] + "|" + dirty + "|" + len(text) + "|" + text
 end function
 
-// Count lightweight diagnostics for the active file.
+/// Count lightweight diagnostics for the active file.
+/// @param st st value consumed by this operation.
 function _active_live_diagnostics_text(st)
   if st.active_tab < 0 or st.active_tab >= len(st.open_files) then return "" end if
   if _active_is_markdown(st) then return "" end if
@@ -6743,7 +7601,9 @@ function _active_live_diagnostics_text(st)
   return "Live: " + error_count + " errors, " + warning_count + " warnings, " + info_count + " info"
 end function
 
-// Refresh cached active-file live diagnostics after editor idle.
+/// Refresh cached active-file live diagnostics after editor idle.
+/// @param st st value consumed by this operation.
+/// @param now now value consumed by this operation.
 function _update_live_diagnostics(st, now)
   key = _live_diagnostics_key(st)
   if key == "" then
@@ -6759,7 +7619,8 @@ function _update_live_diagnostics(st, now)
   return st
 end function
 
-// Update editor aux.
+/// Update editor aux.
+/// @param st st value consumed by this operation.
 function _update_editor_aux(st)
   now = win.GetTickCount()
   first = win.edit_first_visible_line(st.editor)
@@ -6784,7 +7645,10 @@ function _update_editor_aux(st)
   return st
 end function
 
-// Return the tab at the requested location.
+/// Return the tab at the requested location.
+/// @param st st value consumed by this operation.
+/// @param mx mx value consumed by this operation.
+/// @param my my value consumed by this operation.
 function _tab_at(st, mx, my)
   if typeof(st.open_files) != "array" or len(st.open_files) <= 0 then return -1 end if
   if mx < LEFT_W or my < TOOL_H or my >= TOOL_H + TAB_H + 6 then return -1 end if
@@ -6794,7 +7658,11 @@ function _tab_at(st, mx, my)
   return idx
 end function
 
-// Return the popup command.
+/// Return the popup command.
+/// @param st st value consumed by this operation.
+/// @param menu menu value consumed by this operation.
+/// @param mx mx value consumed by this operation.
+/// @param my my value consumed by this operation.
 function _popup_command(st, menu, mx, my)
   cmd = win.track_popup(st.hwnd, menu, mx, my)
   win.destroy_menu(menu)
@@ -6807,7 +7675,11 @@ function _popup_command(st, menu, mx, my)
   return st
 end function
 
-// Return the popup existing command.
+/// Return the popup existing command.
+/// @param st st value consumed by this operation.
+/// @param menu menu value consumed by this operation.
+/// @param mx mx value consumed by this operation.
+/// @param my my value consumed by this operation.
 function _popup_existing_command(st, menu, mx, my)
   cmd = win.track_popup(st.hwnd, menu, mx, my)
   st.last_context_ms = win.GetTickCount()
@@ -6819,7 +7691,9 @@ function _popup_existing_command(st, menu, mx, my)
   return st
 end function
 
-// Return the menu label index for a window handle.
+/// Return the menu label index for a window handle.
+/// @param st st value consumed by this operation.
+/// @param hwnd hwnd value consumed by this operation.
 function _menu_label_index_for_hwnd(st, hwnd)
   // Walk collections defensively because project data can be partially populated.
   if typeof(st.toolbar_icons) != "array" or len(st.toolbar_icons) < 14 then return -1 end if
@@ -6829,7 +7703,9 @@ function _menu_label_index_for_hwnd(st, hwnd)
   return -1
 end function
 
-// Show top menu.
+/// Show top menu.
+/// @param st st value consumed by this operation.
+/// @param idx idx value consumed by this operation.
 function _show_top_menu(st, idx)
   menu = st.file_menu
   x = 8
@@ -6849,7 +7725,10 @@ function _show_top_menu(st, idx)
   return _popup_existing_command(st, menu, x, MENU_H)
 end function
 
-// Show tab context.
+/// Show tab context.
+/// @param st st value consumed by this operation.
+/// @param mx mx value consumed by this operation.
+/// @param my my value consumed by this operation.
 function _show_tab_context(st, mx, my)
   idx = _tab_at(st, mx, my)
   if idx < 0 then idx = st.active_tab end if
@@ -6867,7 +7746,10 @@ function _show_tab_context(st, mx, my)
   return _popup_command(st, menu, mx, my)
 end function
 
-// Select tree item at.
+/// Select tree item at.
+/// @param st st value consumed by this operation.
+/// @param mx mx value consumed by this operation.
+/// @param my my value consumed by this operation.
 function _select_tree_item_at(st, mx, my)
   if mx < 0 or mx >= LEFT_W or my < TOOL_H then return st end if
   item = win.tree_hit_test(st.tree, mx - STATUS_PAD, my - TOOL_H)
@@ -6879,7 +7761,10 @@ function _select_tree_item_at(st, mx, my)
   return st
 end function
 
-// Show tree context.
+/// Show tree context.
+/// @param st st value consumed by this operation.
+/// @param mx mx value consumed by this operation.
+/// @param my my value consumed by this operation.
 function _show_tree_context(st, mx, my)
   st = _select_tree_item_at(st, mx, my)
   menu = win.CreatePopupMenu()
@@ -6899,7 +7784,10 @@ function _show_tree_context(st, mx, my)
   return _popup_command(st, menu, mx, my)
 end function
 
-// Show editor context.
+/// Show editor context.
+/// @param st st value consumed by this operation.
+/// @param mx mx value consumed by this operation.
+/// @param my my value consumed by this operation.
 function _show_editor_context(st, mx, my)
   menu = win.CreatePopupMenu()
   win.AppendMenuWId(menu, win.MF_STRING, ID_EDIT_UNDO, "Undo")
@@ -6923,7 +7811,10 @@ function _show_editor_context(st, mx, my)
   return _popup_command(st, menu, mx, my)
 end function
 
-// Show log context.
+/// Show log context.
+/// @param st st value consumed by this operation.
+/// @param mx mx value consumed by this operation.
+/// @param my my value consumed by this operation.
 function _show_log_context(st, mx, my)
   menu = win.CreatePopupMenu()
   win.AppendMenuWId(menu, win.MF_STRING, ID_CTX_LOG_COPY, "Copy")
@@ -6933,7 +7824,11 @@ function _show_log_context(st, mx, my)
   return _popup_command(st, menu, mx, my)
 end function
 
-// Handle context menu at the force.
+/// Handle context menu at the force.
+/// @param st st value consumed by this operation.
+/// @param mx mx value consumed by this operation.
+/// @param my my value consumed by this operation.
+/// @param force force value consumed by this operation.
 function _handle_context_menu_at_force(st, mx, my, force)
   now = win.GetTickCount()
   if force then
@@ -6955,18 +7850,23 @@ function _handle_context_menu_at_force(st, mx, my, force)
   return st
 end function
 
-// Handle context menu at.
+/// Handle context menu at.
+/// @param st st value consumed by this operation.
+/// @param mx mx value consumed by this operation.
+/// @param my my value consumed by this operation.
 function _handle_context_menu_at(st, mx, my)
   return _handle_context_menu_at_force(st, mx, my, false)
 end function
 
-// Handle context menu.
+/// Handle context menu.
+/// @param st st value consumed by this operation.
 function _handle_context_menu(st)
   pos = win.mouse_client(st.hwnd)
   return _handle_context_menu_at(st, pos[0], pos[1])
 end function
 
-// Request application shutdown after checking unsaved tabs.
+/// Request application shutdown after checking unsaved tabs.
+/// @param st st value consumed by this operation.
 function _request_exit(st)
   confirm = _confirm_exit_with_dirty_tabs(st)
   st = confirm[0]
@@ -6976,7 +7876,9 @@ function _request_exit(st)
   return st
 end function
 
-// Dispatch a menu, toolbar, or context-menu command.
+/// Dispatch a menu, toolbar, or context-menu command.
+/// @param st st value consumed by this operation.
+/// @param id Stable identifier of the affected item.
 function _perform_command(st, id)
   // Keep validation near the top so callers can treat invalid input as a no-op.
   if id == ID_FILE_OPEN_PROJECT then return _open_project_dialog(st) end if
@@ -7086,7 +7988,9 @@ function _perform_command(st, id)
   return st
 end function
 
-// Handle notify.
+/// Handle notify.
+/// @param st st value consumed by this operation.
+/// @param msg msg value consumed by this operation.
 function _handle_notify(st, msg)
   id = win.notify_id(msg)
   code = win.notify_code(msg)
@@ -7104,7 +8008,9 @@ function _handle_notify(st, msg)
   return st
 end function
 
-// Handle command.
+/// Handle command.
+/// @param st st value consumed by this operation.
+/// @param msg msg value consumed by this operation.
 function _handle_command(st, msg)
   id = win.msg_command_id(msg)
   if id == ID_ASSISTANT_SEND and win.msg_command_notify(msg) == 0 then return _assistant_send(st) end if
@@ -7121,7 +8027,9 @@ function _handle_command(st, msg)
   return _perform_command(st, id)
 end function
 
-// Update cursor for mouse.
+/// Update cursor for mouse.
+/// @param st st value consumed by this operation.
+/// @param msg msg value consumed by this operation.
 function _update_cursor_for_mouse(st, msg)
   hwnd = win.msg_hwnd(msg)
   if hwnd == st.tabbar or hwnd == st.toolbar_bg or _toolbar_command_for_hwnd(st, hwnd) != 0 or _menu_label_index_for_hwnd(st, hwnd) >= 0 then
@@ -7144,7 +8052,9 @@ function _update_cursor_for_mouse(st, msg)
   return st
 end function
 
-// Handle set cursor.
+/// Handle set cursor.
+/// @param st st value consumed by this operation.
+/// @param msg msg value consumed by this operation.
 function _handle_set_cursor(st, msg)
   hwnd = win.msg_hwnd(msg)
   if hwnd == st.tabbar or hwnd == st.toolbar_bg or _toolbar_command_for_hwnd(st, hwnd) != 0 or _menu_label_index_for_hwnd(st, hwnd) >= 0 then
@@ -7176,7 +8086,9 @@ function _handle_set_cursor(st, msg)
   return false
 end function
 
-// Handle window button.
+/// Handle window button.
+/// @param st st value consumed by this operation.
+/// @param hit hit value consumed by this operation.
 function _handle_window_button(st, hit)
   if hit == win.HTCLOSE then
     return _request_exit(st)
@@ -7198,7 +8110,9 @@ function _handle_window_button(st, hit)
   return st
 end function
 
-// Handle syscommand.
+/// Handle syscommand.
+/// @param st st value consumed by this operation.
+/// @param msg msg value consumed by this operation.
 function _handle_syscommand(st, msg)
   code = win.msg_wparam_u32(msg)
   cmd = code & 0xFFF0
@@ -7224,7 +8138,8 @@ function _handle_syscommand(st, msg)
   return st
 end function
 
-// Handle hotkeys.
+/// Handle hotkeys.
+/// @param st st value consumed by this operation.
 function _handle_hotkeys(st)
   ctrl = _ctrl_down()
   shift = _shift_down()
@@ -7259,7 +8174,9 @@ function _handle_hotkeys(st)
   return st
 end function
 
-// Return the toolbar command at the requested location.
+/// Return the toolbar command at the requested location.
+/// @param mx mx value consumed by this operation.
+/// @param my my value consumed by this operation.
 function _toolbar_command_at(mx, my)
   toolbar_y = MENU_H + 5
   button_h = 32
@@ -7286,7 +8203,9 @@ function _toolbar_command_at(mx, my)
   return 0
 end function
 
-// Return the top menu at the requested location.
+/// Return the top menu at the requested location.
+/// @param mx mx value consumed by this operation.
+/// @param my my value consumed by this operation.
 function _top_menu_at(mx, my)
   if my < 0 or my >= MENU_H then return -1 end if
   if mx >= 8 and mx < 62 then return 0 end if
@@ -7297,7 +8216,9 @@ function _top_menu_at(mx, my)
   return -1
 end function
 
-// Return the toolbar command for a window handle.
+/// Return the toolbar command for a window handle.
+/// @param st st value consumed by this operation.
+/// @param hwnd hwnd value consumed by this operation.
 function _toolbar_command_for_hwnd(st, hwnd)
   // Walk collections defensively because project data can be partially populated.
   if hwnd == st.btn_open then return ID_FILE_OPEN_PROJECT end if
@@ -7318,7 +8239,9 @@ function _toolbar_command_for_hwnd(st, hwnd)
   return 0
 end function
 
-// Return the toolbar button window handle.
+/// Return the toolbar button window handle.
+/// @param st st value consumed by this operation.
+/// @param hwnd hwnd value consumed by this operation.
 function _toolbar_button_hwnd(st, hwnd)
   if hwnd == st.btn_open then return true end if
   if hwnd == st.btn_save then return true end if
@@ -7332,7 +8255,9 @@ function _toolbar_button_hwnd(st, hwnd)
   return false
 end function
 
-// Return the toolbar icon window handle.
+/// Return the toolbar icon window handle.
+/// @param st st value consumed by this operation.
+/// @param hwnd hwnd value consumed by this operation.
 function _toolbar_icon_hwnd(st, hwnd)
   // Walk collections defensively because project data can be partially populated.
   if typeof(st.toolbar_icons) != "array" then return false end if
@@ -7342,7 +8267,9 @@ function _toolbar_icon_hwnd(st, hwnd)
   return false
 end function
 
-// Return the toolbar glyph window handle.
+/// Return the toolbar glyph window handle.
+/// @param st st value consumed by this operation.
+/// @param hwnd hwnd value consumed by this operation.
 function _toolbar_glyph_hwnd(st, hwnd)
   // Walk collections defensively because project data can be partially populated.
   if typeof(st.toolbar_icons) != "array" then return false end if
@@ -7354,7 +8281,9 @@ function _toolbar_glyph_hwnd(st, hwnd)
   return false
 end function
 
-// Extract the toolbar command from a Win32 message.
+/// Extract the toolbar command from a Win32 message.
+/// @param st st value consumed by this operation.
+/// @param msg msg value consumed by this operation.
 function _toolbar_command_from_message(st, msg)
   cmd = _toolbar_command_for_hwnd(st, win.msg_hwnd(msg))
   if cmd != 0 then return cmd end if
@@ -7362,14 +8291,18 @@ function _toolbar_command_from_message(st, msg)
   return _toolbar_command_at(pos[0], pos[1])
 end function
 
-// Handle left click.
+/// Handle left click.
+/// @param st st value consumed by this operation.
+/// @param mx mx value consumed by this operation.
+/// @param my my value consumed by this operation.
 function _handle_left_click(st, mx, my)
   cmd = _toolbar_command_at(mx, my)
   if cmd != 0 then return _perform_command(st, cmd) end if
   return st
 end function
 
-// Handle mouse.
+/// Handle mouse.
+/// @param st st value consumed by this operation.
 function _handle_mouse(st)
   left = win.key_down(win.VK_LBUTTON)
   right = win.key_down(win.VK_RBUTTON)
@@ -7388,7 +8321,8 @@ function _handle_mouse(st)
   return st
 end function
 
-// Run the Win32 message loop and dispatch MiniIDE UI events.
+/// Run the Win32 message loop and dispatch MiniIDE UI events.
+/// @param st st value consumed by this operation.
 function _pump_messages(st)
   // Run a local message loop so the modal UI stays responsive.
   msg = bytes(48, 0)
@@ -7586,7 +8520,8 @@ function _pump_messages(st)
   return st
 end function
 
-// Return the default project root used at startup.
+/// Return the default project root used at startup.
+/// @param args Command-line or caller-supplied arguments.
 function _default_root(args)
   if typeof(args) == "array" and len(args) > 0 and typeof(args[0]) == "string" and args[0] != "" then
     return args[0]
@@ -7596,7 +8531,8 @@ function _default_root(args)
   return "."
 end function
 
-// Initialize MiniIDE, open the initial project, and start the message loop.
+/// Initialize MiniIDE, open the initial project, and start the message loop.
+/// @param root root value consumed by this operation.
 function _run(root)
   st = _create_state(root)
   if st.hwnd is void then
@@ -7618,7 +8554,8 @@ function _run(root)
   return 0
 end function
 
-// Run the program entry point.
+/// Run the program entry point.
+/// @param args Command-line or caller-supplied arguments.
 function main(args)
   root = _default_root(args)
   result = try(_run(root))

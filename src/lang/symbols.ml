@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Provides lang symbols facilities for this project.
+
 package lang.symbols
 
 // Simple project symbol index and completion provider.
@@ -20,18 +22,26 @@ import std.fs as fs
 import std.string as s
 import lang.syntax as syntax
 
+/// Represents the symbol data used by the lang symbols module.
 struct Symbol
+  /// Stores the name value associated with symbol.
   name,
+  /// Stores the kind value associated with symbol.
   kind,
+  /// Stores the file value associated with symbol.
   file,
+  /// Stores the line value associated with symbol.
   line,
 end struct
 
+/// Represents the symbol index data used by the lang symbols module.
 struct SymbolIndex
+  /// Stores the symbols value associated with symbol index.
   symbols,
 end struct
 
-// Return true when a character belongs to an editor word.
+/// Return true when a character belongs to an editor word.
+/// @param ch ch value consumed by this operation.
 function _is_word_char(ch)
   b = bytes(ch)
   if len(b) <= 0 then return false end if
@@ -39,7 +49,9 @@ function _is_word_char(ch)
   return (c >= 65 and c <= 90) or (c >= 97 and c <= 122) or (c >= 48 and c <= 57) or ch == "_" or ch == "."
 end function
 
-// Read word.
+/// Read word.
+/// @param text Text consumed by the operation.
+/// @param start start value consumed by this operation.
 function _take_word(text, start)
   if typeof(text) != "string" then return "" end if
   i = start
@@ -54,7 +66,9 @@ function _take_word(text, start)
   return s.substr(text, begin, i - begin)
 end function
 
-// Return true when symbol.
+/// Return true when symbol.
+/// @param symbols symbols value consumed by this operation.
+/// @param name Name of the affected item.
 function _has_symbol(symbols, name)
   // Walk collections defensively because project data can be partially populated.
   if typeof(symbols) != "array" then return false end if
@@ -65,14 +79,22 @@ function _has_symbol(symbols, name)
   return false
 end function
 
-// Add symbol.
+/// Add symbol.
+/// @param symbols symbols value consumed by this operation.
+/// @param name Name of the affected item.
+/// @param kind kind value consumed by this operation.
+/// @param file file value consumed by this operation.
+/// @param line line value consumed by this operation.
 function _add_symbol(symbols, name, kind, file, line)
   if typeof(name) != "string" or name == "" then return symbols end if
   if _has_symbol(symbols, name) then return symbols end if
   return symbols + [Symbol(name, kind, file, line)]
 end function
 
-// Scan source.
+/// Scan source.
+/// @param path Path of the file or directory used by the operation.
+/// @param text Text consumed by the operation.
+/// @param symbols symbols value consumed by this operation.
 function _scan_source(path, text, symbols)
   // Walk collections defensively because project data can be partially populated.
   if typeof(text) != "string" then return symbols end if
@@ -135,7 +157,8 @@ function _scan_source(path, text, symbols)
   return symbols
 end function
 
-// Build index.
+/// Build index.
+/// @param project project value consumed by this operation.
 function build_index(project)
   // Walk collections defensively because project data can be partially populated.
   symbols = []
@@ -156,7 +179,9 @@ function build_index(project)
   return SymbolIndex(symbols)
 end function
 
-// Return true when a completion item is already present.
+/// Return true when a completion item is already present.
+/// @param items Items consumed or updated by the operation.
+/// @param name Name of the affected item.
 function _completion_has(items, name)
   // Walk collections defensively because project data can be partially populated.
   if typeof(items) != "array" then return false end if
@@ -167,7 +192,11 @@ function _completion_has(items, name)
   return false
 end function
 
-// Add a completion item when it is not already present.
+/// Add a completion item when it is not already present.
+/// @param items Items consumed or updated by the operation.
+/// @param name Name of the affected item.
+/// @param prefix prefix value consumed by this operation.
+/// @param limit limit value consumed by this operation.
 function _completion_add(items, name, prefix, limit)
   if typeof(name) != "string" or name == "" then return items end if
   if prefix != "" and s.startsWith(s.toLowerAscii(name), s.toLowerAscii(prefix)) == false then return items end if
@@ -176,7 +205,9 @@ function _completion_add(items, name, prefix, limit)
   return items + [name]
 end function
 
-// Return completion items matching a word prefix.
+/// Return completion items matching a word prefix.
+/// @param index Zero-based index of the affected item.
+/// @param prefix prefix value consumed by this operation.
 function completions(index, prefix)
   // Walk collections defensively because project data can be partially populated.
   items = []

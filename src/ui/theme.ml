@@ -12,60 +12,72 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Provides ui theme facilities for this project.
+
 package ui.theme
 
 // Shared MiniIDE theme colors.
 
 import "platform/win32.ml" as win
 
-// Return true when the active theme is dark.
+/// Return true when the active theme is dark.
+/// @param st st value consumed by this operation.
 function is_dark(st)
   return typeof(st.theme_mode) == "string" and st.theme_mode == "dark"
 end function
 
-// Return the editor background color for the active theme.
+/// Return the editor background color for the active theme.
+/// @param st st value consumed by this operation.
 function editor_bg(st)
   if is_dark(st) then return win.rgb(30, 31, 34) end if
   return win.rgb(255, 255, 255)
 end function
 
-// Return the line-number gutter background color for the active theme.
+/// Return the line-number gutter background color for the active theme.
+/// @param st st value consumed by this operation.
 function gutter_bg(st)
   if is_dark(st) then return win.rgb(43, 45, 48) end if
   return win.rgb(246, 248, 250)
 end function
 
-// Return the side and result panel background color for the active theme.
+/// Return the side and result panel background color for the active theme.
+/// @param st st value consumed by this operation.
 function panel_bg(st)
   if is_dark(st) then return win.rgb(30, 31, 34) end if
   return win.rgb(248, 249, 251)
 end function
 
-// Return the toolbar and status chrome background color for the active theme.
+/// Return the toolbar and status chrome background color for the active theme.
+/// @param st st value consumed by this operation.
 function chrome_bg(st)
   if is_dark(st) then return win.rgb(43, 45, 48) end if
   return win.rgb(242, 244, 247)
 end function
 
-// Return the border color for the active theme.
+/// Return the border color for the active theme.
+/// @param st st value consumed by this operation.
 function border_color(st)
   if is_dark(st) then return win.rgb(60, 63, 65) end if
   return win.rgb(214, 219, 225)
 end function
 
-// Return the editor foreground color for the active theme.
+/// Return the editor foreground color for the active theme.
+/// @param st st value consumed by this operation.
 function editor_fg(st)
   if is_dark(st) then return win.rgb(188, 190, 196) end if
   return win.rgb(31, 35, 40)
 end function
 
-// Return the muted foreground color for secondary UI text.
+/// Return the muted foreground color for secondary UI text.
+/// @param st st value consumed by this operation.
 function muted_fg(st)
   if is_dark(st) then return win.rgb(122, 126, 133) end if
   return win.rgb(96, 103, 112)
 end function
 
-// Return the syntax-highlight color for a token kind.
+/// Return the syntax-highlight color for a token kind.
+/// @param st st value consumed by this operation.
+/// @param kind kind value consumed by this operation.
 function syntax_color(st, kind)
   if is_dark(st) then
     if kind == "keyword" then return win.rgb(207, 142, 109) end if

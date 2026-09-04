@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Provides lang index facilities for this project.
+
 package lang.index
 
 // Project-wide MiniLang index used by IDE features.
@@ -21,30 +23,48 @@ import std.string as s
 import "project/project.ml" as project_model
 import "lang/symbols.ml" as symbols
 
+/// Represents the source file info data used by the lang index module.
 struct SourceFileInfo
+  /// Stores the path value associated with source file info.
   path,
+  /// Stores the relative path value associated with source file info.
   relative_path,
+  /// Stores the line count value associated with source file info.
   line_count,
 end struct
 
+/// Represents the import ref data used by the lang index module.
 struct ImportRef
+  /// Stores the file value associated with import ref.
   file,
+  /// Stores the line value associated with import ref.
   line,
+  /// Stores the target value associated with import ref.
   target,
+  /// Stores the alias value associated with import ref.
   alias,
+  /// Stores the resolved path value associated with import ref.
   resolved_path,
+  /// Stores the resolved value associated with import ref.
   resolved,
 end struct
 
+/// Represents the project index data used by the lang index module.
 struct ProjectIndex
+  /// Stores the root value associated with project index.
   root,
+  /// Stores the files value associated with project index.
   files,
+  /// Stores the symbols value associated with project index.
   symbols,
+  /// Stores the imports value associated with project index.
   imports,
+  /// Stores the unresolved imports value associated with project index.
   unresolved_imports,
 end struct
 
-// Return true when the path is absolute on Windows.
+/// Return true when the path is absolute on Windows.
+/// @param path Path of the file or directory used by the operation.
 function _is_abs(path)
   if typeof(path) != "string" then return false end if
   if len(path) > 2 and path[1] == ":" then return true end if
@@ -52,7 +72,9 @@ function _is_abs(path)
   return false
 end function
 
-// Return path relative to the project root when possible.
+/// Return path relative to the project root when possible.
+/// @param root root value consumed by this operation.
+/// @param path Path of the file or directory used by the operation.
 function _relative(root, path)
   if typeof(root) != "string" or typeof(path) != "string" then return path end if
   prefix = root
@@ -63,19 +85,25 @@ function _relative(root, path)
   return path
 end function
 
-// Return the number of display lines in a source string.
+/// Return the number of display lines in a source string.
+/// @param text Text consumed by the operation.
 function _line_count(text)
   if typeof(text) != "string" or text == "" then return 0 end if
   lines = s.split(s.replaceAll(text, "\r\n", "\n"), "\n")
   return len(lines)
 end function
 
-// Add a source file entry.
+/// Add a source file entry.
+/// @param files files value consumed by this operation.
+/// @param root root value consumed by this operation.
+/// @param path Path of the file or directory used by the operation.
+/// @param text Text consumed by the operation.
 function _add_source_file(files, root, path, text)
   return files + [SourceFileInfo(path, _relative(root, path), _line_count(text))]
 end function
 
-// Return text before a line comment.
+/// Return text before a line comment.
+/// @param line line value consumed by this operation.
 function _strip_line_comment(line)
   if typeof(line) != "string" then return "" end if
   pos = s.indexOf(line, "//", 0)
@@ -83,7 +111,8 @@ function _strip_line_comment(line)
   return s.substr(line, 0, pos)
 end function
 
-// Return the quoted import path from an import line.
+/// Return the quoted import path from an import line.
+/// @param line line value consumed by this operation.
 function _quoted_target(line)
   if typeof(line) != "string" then return "" end if
   first = s.indexOf(line, "\"", 0)
@@ -93,7 +122,8 @@ function _quoted_target(line)
   return s.substr(line, first + 1, second - first - 1)
 end function
 
-// Return the unquoted import target from an import line.
+/// Return the unquoted import target from an import line.
+/// @param line line value consumed by this operation.
 function _bare_target(line)
   if typeof(line) != "string" then return "" end if
   prefix = "import "
@@ -105,7 +135,8 @@ function _bare_target(line)
   return rest
 end function
 
-// Return an import alias if present.
+/// Return an import alias if present.
+/// @param line line value consumed by this operation.
 function _import_alias(line)
   if typeof(line) != "string" then return "" end if
   as_pos = s.indexOf(line, " as ", 0)
@@ -113,14 +144,19 @@ function _import_alias(line)
   return s.trim(s.substr(line, as_pos + len(" as "), len(line) - as_pos - len(" as ")))
 end function
 
-// Return a module target converted to a likely source path.
+/// Return a module target converted to a likely source path.
+/// @param target target value consumed by this operation.
 function _module_to_path(target)
   if typeof(target) != "string" or target == "" then return "" end if
   if s.endsWith(s.toLowerAscii(target), ".ml") then return target end if
   return s.replaceAll(target, ".", "\\") + ".ml"
 end function
 
-// Try to resolve an import candidate against the current file, root, and import paths.
+/// Try to resolve an import candidate against the current file, root, and import paths.
+/// @param root root value consumed by this operation.
+/// @param current_file current_file value consumed by this operation.
+/// @param import_paths import_paths value consumed by this operation.
+/// @param candidate candidate value consumed by this operation.
 function _resolve_candidate(root, current_file, import_paths, candidate)
   if typeof(candidate) != "string" or candidate == "" then return "" end if
   if _is_abs(candidate) and fs.exists(candidate) then return project_model.abspath(candidate) end if
@@ -144,7 +180,11 @@ function _resolve_candidate(root, current_file, import_paths, candidate)
   return ""
 end function
 
-// Parse imports from a source file.
+/// Parse imports from a source file.
+/// @param root root value consumed by this operation.
+/// @param current_file current_file value consumed by this operation.
+/// @param import_paths import_paths value consumed by this operation.
+/// @param text Text consumed by the operation.
 function _scan_imports(root, current_file, import_paths, text)
   result = []
   if typeof(text) != "string" then return result end if
@@ -168,7 +208,8 @@ function _scan_imports(root, current_file, import_paths, text)
   return result
 end function
 
-// Build a project-wide index.
+/// Build a project-wide index.
+/// @param p p value consumed by this operation.
 function build_project_index(p)
   root = "."
   files = []
@@ -203,7 +244,8 @@ function build_project_index(p)
   return ProjectIndex(root, files, symbol_index.symbols, imports, unresolved)
 end function
 
-// Return a compact summary for logs and status panels.
+/// Return a compact summary for logs and status panels.
+/// @param idx idx value consumed by this operation.
 function summary(idx)
   if typeof(idx) != "struct" then return "Project index unavailable." end if
   file_count = 0

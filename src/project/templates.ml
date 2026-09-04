@@ -12,15 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Provides project templates facilities for this project.
+
 package project.templates
 
 import std.fs as fs
 import std.string as s
 
-// Bind the native CreateDirectoryW API used by MiniIDE.
+/// Creates the directory tree for a generated project template.
+/// @param path Path of the file or directory used by the operation.
+/// @param securityAttributes securityAttributes value consumed by this operation.
+/// @returns Native bool result produced by the call.
 extern function CreateDirectoryW(path as wstr, securityAttributes as ptr) from "kernel32.dll" symbol "CreateDirectoryW" returns bool
 
-// Join two path fragments using the project path separator.
+/// Joins path fragments used while materializing a project template.
+/// @param a a value consumed by this operation.
+/// @param b b value consumed by this operation.
 function path_join(a, b)
   if typeof(a) != "string" or a == "" then return b end if
   if typeof(b) != "string" or b == "" then return a end if
@@ -29,7 +36,8 @@ function path_join(a, b)
   return a + "\\" + b
 end function
 
-// Create a directory when it does not already exist.
+/// Create a directory when it does not already exist.
+/// @param path Path of the file or directory used by the operation.
 function _mkdir(path)
   if typeof(path) != "string" or path == "" then return false end if
   if fs.exists(path) then return true end if
@@ -37,7 +45,8 @@ function _mkdir(path)
   return fs.exists(path)
 end function
 
-// Convert a project name into a safe folder and module name.
+/// Convert a project name into a safe folder and module name.
+/// @param name Name of the affected item.
 function _safe_name(name)
   if typeof(name) != "string" or name == "" then return "MiniLangProject" end if
   result = s.replaceAll(name, " ", "")
@@ -48,7 +57,9 @@ function _safe_name(name)
   return result
 end function
 
-// Build the starter MiniLang source for a new project.
+/// Build the starter MiniLang source for a new project.
+/// @param name Name of the affected item.
+/// @param kind kind value consumed by this operation.
 function _main_source(name, kind)
   if kind == "library" then
     return "package " + name + "\n\nfunction hello()\n  return \"Hello from " + name + "\"\nend function\n"
@@ -56,12 +67,15 @@ function _main_source(name, kind)
   return "function main(args)\n  print \"Hello from " + name + "\"\n  return 0\nend function\n"
 end function
 
-// Build the starter MiniLang test source for a new project.
+/// Build the starter MiniLang test source for a new project.
+/// @param name Name of the affected item.
 function _test_source(name)
   return "import \"..\\src\\main.ml\" as app\n\nfunction main(args)\n  print \"Running tests for " + name + "\"\n  return 0\nend function\n"
 end function
 
-// Build the project metadata file for a new project.
+/// Build the project metadata file for a new project.
+/// @param name Name of the affected item.
+/// @param kind kind value consumed by this operation.
 function _project_file(name, kind)
   return "name=" + name + "\n" +
     "type=" + kind + "\n" +
@@ -75,17 +89,21 @@ function _project_file(name, kind)
     "importPath=..\\..\\MiniLangCompilerML\n"
 end function
 
-// Build the default MiniIDE configuration file for a new project.
+/// Build the default MiniIDE configuration file for a new project.
 function _config_file()
   return "compiler=\nkeepGoing=true\nmaxErrors=20\nsubsystem=console\nextraArgs=\n"
 end function
 
-// Build the starter README for a new project.
+/// Build the starter README for a new project.
+/// @param name Name of the affected item.
 function _readme(name)
   return "# " + name + "\n\nMiniLang project created by MiniIDE.\n\n## Build\nUse `File > Build`.\n\n## Run\nUse `File > Run`.\n\n## Tests\nUse `File > Run Tests`.\n"
 end function
 
-// Create standard project.
+/// Create standard project.
+/// @param parent parent value consumed by this operation.
+/// @param name Name of the affected item.
+/// @param kind kind value consumed by this operation.
 function create_standard_project(parent, name, kind)
   if typeof(parent) != "string" or parent == "" then parent = "." end if
   name = _safe_name(name)

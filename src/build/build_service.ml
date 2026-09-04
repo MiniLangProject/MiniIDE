@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Provides build build service facilities for this project.
+
 package build.build_service
 
 // Compiler adapter for MiniIDE.
@@ -19,69 +21,141 @@ package build.build_service
 import std.fs as fs
 import std.string as s
 
-// Bind the native CreateDirectoryW API used by MiniIDE.
+/// Creates output directories required by the build service.
+/// @param path Path of the file or directory used by the operation.
+/// @param securityAttributes securityAttributes value consumed by this operation.
+/// @returns Native bool result produced by the call.
 extern function CreateDirectoryW(path as wstr, securityAttributes as ptr) from "kernel32.dll" symbol "CreateDirectoryW" returns bool
-// Bind the native CreateFileW API used by MiniIDE.
+/// Bind the native CreateFileW API used by MiniIDE.
+/// @param path Path of the file or directory used by the operation.
+/// @param access access value consumed by this operation.
+/// @param share share value consumed by this operation.
+/// @param security security value consumed by this operation.
+/// @param creation creation value consumed by this operation.
+/// @param flags Bit flags controlling the operation.
+/// @param template template value consumed by this operation.
+/// @returns Native ptr result produced by the call.
 extern function CreateFileWInherit(path as wstr, access as int, share as int, security as bytes, creation as int, flags as int, template as ptr) from "kernel32.dll" symbol "CreateFileW" returns ptr
-// Bind the native CreateProcessW API used by MiniIDE.
+/// Bind the native CreateProcessW API used by MiniIDE.
+/// @param applicationName applicationName value consumed by this operation.
+/// @param commandLine commandLine value consumed by this operation.
+/// @param processAttributes processAttributes value consumed by this operation.
+/// @param threadAttributes threadAttributes value consumed by this operation.
+/// @param inheritHandles inheritHandles value consumed by this operation.
+/// @param creationFlags creationFlags value consumed by this operation.
+/// @param environment environment value consumed by this operation.
+/// @param currentDirectory currentDirectory value consumed by this operation.
+/// @param startupInfo startupInfo value consumed by this operation.
+/// @param processInformation processInformation value consumed by this operation.
+/// @returns Native bool result produced by the call.
 extern function CreateProcessW(applicationName as ptr, commandLine as wstr, processAttributes as ptr, threadAttributes as ptr, inheritHandles as bool, creationFlags as u32, environment as ptr, currentDirectory as wstr, startupInfo as bytes, processInformation as bytes) from "kernel32.dll" symbol "CreateProcessW" returns bool
-// Bind the native GetFileAttributesExW API used by MiniIDE.
+/// Bind the native GetFileAttributesExW API used by MiniIDE.
+/// @param path Path of the file or directory used by the operation.
+/// @param infoLevelId Identifier of info level.
+/// @param data Input data consumed by the operation.
+/// @returns Native bool result produced by the call.
 extern function GetFileAttributesExW(path as wstr, infoLevelId as int, data as bytes) from "kernel32.dll" symbol "GetFileAttributesExW" returns bool
-// Bind the native GetExitCodeProcess API used by MiniIDE.
+/// Bind the native GetExitCodeProcess API used by MiniIDE.
+/// @param process process value consumed by this operation.
+/// @param exitCode exitCode value consumed by this operation.
+/// @returns Native bool result produced by the call.
 extern function GetExitCodeProcess(process as ptr, exitCode as bytes) from "kernel32.dll" symbol "GetExitCodeProcess" returns bool
-// Bind the native TerminateProcess API used by MiniIDE.
+/// Bind the native TerminateProcess API used by MiniIDE.
+/// @param process process value consumed by this operation.
+/// @param exitCode exitCode value consumed by this operation.
+/// @returns Native bool result produced by the call.
 extern function TerminateProcess(process as ptr, exitCode as u32) from "kernel32.dll" symbol "TerminateProcess" returns bool
-// Bind the native CloseHandle API used by MiniIDE.
+/// Bind the native CloseHandle API used by MiniIDE.
+/// @param handle Native or runtime handle used by the operation.
+/// @returns Native bool result produced by the call.
 extern function CloseHandle(handle as ptr) from "kernel32.dll" symbol "CloseHandle" returns bool
-// Bind the native Sleep API used by MiniIDE.
+/// Bind the native Sleep API used by MiniIDE.
+/// @param ms ms value consumed by this operation.
 extern function Sleep(ms as int) from "kernel32.dll" symbol "Sleep" returns void
 
+/// Defines the invalid handle value constant used by the build build service module.
 const INVALID_HANDLE_VALUE = -1
+/// Defines the generic write constant used by the build build service module.
 const GENERIC_WRITE = 0x40000000
+/// Defines the file share read constant used by the build build service module.
 const FILE_SHARE_READ = 0x00000001
+/// Defines the file share write constant used by the build build service module.
 const FILE_SHARE_WRITE = 0x00000002
+/// Defines the create always constant used by the build build service module.
 const CREATE_ALWAYS = 2
+/// Defines the file attribute normal constant used by the build build service module.
 const FILE_ATTRIBUTE_NORMAL = 0x00000080
+/// Defines the create no window constant used by the build build service module.
 const CREATE_NO_WINDOW = 0x08000000
+/// Defines the startf useshowwindow constant used by the build build service module.
 const STARTF_USESHOWWINDOW = 0x00000001
+/// Defines the startf usestdhandles constant used by the build build service module.
 const STARTF_USESTDHANDLES = 0x00000100
+/// Defines the sw hide constant used by the build build service module.
 const SW_HIDE = 0
+/// Defines the still active constant used by the build build service module.
 const STILL_ACTIVE = 259
 
+/// Represents the build diagnostic data used by the build build service module.
 struct BuildDiagnostic
+  /// Stores the kind value associated with build diagnostic.
   kind,
+  /// Stores the message value associated with build diagnostic.
   message,
+  /// Stores the file value associated with build diagnostic.
   file,
+  /// Stores the line value associated with build diagnostic.
   line,
+  /// Stores the col value associated with build diagnostic.
   col,
 end struct
 
+/// Represents the build result data used by the build build service module.
 struct BuildResult
+  /// Stores the exit code value associated with build result.
   exit_code,
+  /// Stores the log path value associated with build result.
   log_path,
+  /// Stores the log text value associated with build result.
   log_text,
+  /// Stores the diagnostics value associated with build result.
   diagnostics,
 end struct
 
+/// Represents the build job data used by the build build service module.
 struct BuildJob
+  /// Stores the process value associated with build job.
   process,
+  /// Stores the thread value associated with build job.
   thread,
+  /// Stores the exit code value associated with build job.
   exit_code,
+  /// Stores the log path value associated with build job.
   log_path,
+  /// Stores the log text value associated with build job.
   log_text,
+  /// Stores the command line value associated with build job.
   command_line,
+  /// Stores the compiler value associated with build job.
   compiler,
+  /// Stores the started value associated with build job.
   started,
 end struct
 
-// Write an unsigned 16-bit value into a byte buffer at an offset.
+/// Write an unsigned 16-bit value into a byte buffer at an offset.
+/// @param buf buf value consumed by this operation.
+/// @param off off value consumed by this operation.
+/// @param value Value consumed or transformed by the operation.
 function _write_u16(buf, off, value)
   v = value & 0xFFFF
   buf[off] = v & 255
   buf[off + 1] = (v >> 8) & 255
 end function
 
-// Write an unsigned 32-bit value into a byte buffer at an offset.
+/// Writes an unsigned 32-bit value into a process-launch buffer.
+/// @param buf buf value consumed by this operation.
+/// @param off off value consumed by this operation.
+/// @param value Value consumed or transformed by the operation.
 function _write_u32(buf, off, value)
   v = value & 0xFFFFFFFF
   buf[off] = v & 255
@@ -90,7 +164,10 @@ function _write_u32(buf, off, value)
   buf[off + 3] = (v >> 24) & 255
 end function
 
-// Write a pointer-sized value into a byte buffer at an offset.
+/// Write a pointer-sized value into a byte buffer at an offset.
+/// @param buf buf value consumed by this operation.
+/// @param off off value consumed by this operation.
+/// @param value Value consumed or transformed by the operation.
 function _write_ptr(buf, off, value)
   low = value & 0xFFFFFFFF
   high = 0
@@ -103,25 +180,31 @@ function _write_ptr(buf, off, value)
   _write_u32(buf, off + 4, high)
 end function
 
-// Read an unsigned 32-bit value from a byte buffer at an offset.
+/// Read an unsigned 32-bit value from a byte buffer at an offset.
+/// @param buf buf value consumed by this operation.
+/// @param off off value consumed by this operation.
 function _read_u32(buf, off)
   return buf[off] | (buf[off + 1] << 8) | (buf[off + 2] << 16) | (buf[off + 3] << 24)
 end function
 
-// Read a pointer-sized value from a byte buffer at an offset.
+/// Read a pointer-sized value from a byte buffer at an offset.
+/// @param buf buf value consumed by this operation.
+/// @param off off value consumed by this operation.
 function _read_ptr(buf, off)
   low = _read_u32(buf, off)
   high = _read_u32(buf, off + 4)
   return low + high * 4294967296
 end function
 
-// Return a value clamped to the unsigned 32-bit range.
+/// Return a value clamped to the unsigned 32-bit range.
+/// @param value Value consumed or transformed by the operation.
 function _u32_value(value)
   if value < 0 then return value + 4294967296 end if
   return value
 end function
 
-// Return the last write timestamp stored in Win32 file attributes.
+/// Return the last write timestamp stored in Win32 file attributes.
+/// @param path Path of the file or directory used by the operation.
 function _file_write_time(path)
   if typeof(path) != "string" or path == "" then return -1 end if
   if fs.exists(path) == false then return -1 end if
@@ -133,7 +216,8 @@ function _file_write_time(path)
   return low + high * 4294967296
 end function
 
-// Return true when a path points at a MiniLang source file.
+/// Return true when a path points at a MiniLang source file.
+/// @param path Path of the file or directory used by the operation.
 function _is_source_file(path)
   if typeof(path) != "string" then return false end if
   lower = s.toLowerAscii(path)
@@ -142,13 +226,16 @@ function _is_source_file(path)
   return false
 end function
 
-// Quote a command-line argument for CreateProcess.
+/// Quote a command-line argument for CreateProcess.
+/// @param x Horizontal coordinate used by the operation.
 function _q(x)
   if typeof(x) != "string" then return "\"\"" end if
   return "\"" + x + "\""
 end function
 
-// Join two path fragments using the project path separator.
+/// Joins path fragments used by build and process operations.
+/// @param a a value consumed by this operation.
+/// @param b b value consumed by this operation.
 function _path_join(a, b)
   if typeof(a) != "string" or a == "" then return b end if
   if typeof(b) != "string" or b == "" then return a end if
@@ -157,7 +244,8 @@ function _path_join(a, b)
   return a + "\\" + b
 end function
 
-// Return the directory portion of a path.
+/// Return the directory portion of a path.
+/// @param path Path of the file or directory used by the operation.
 function _dirname(path)
   if typeof(path) != "string" then return "." end if
   i = len(path) - 1
@@ -172,7 +260,8 @@ function _dirname(path)
   return "."
 end function
 
-// Return true when a path is already absolute.
+/// Return true when a path is already absolute.
+/// @param path Path of the file or directory used by the operation.
 function _is_abs(path)
   if typeof(path) != "string" then return false end if
   if len(path) > 2 and path[1] == ":" then return true end if
@@ -180,13 +269,16 @@ function _is_abs(path)
   return false
 end function
 
-// Resolve a possibly relative path against the project root.
+/// Resolve a possibly relative path against the project root.
+/// @param root root value consumed by this operation.
+/// @param path Path of the file or directory used by the operation.
 function _resolve(root, path)
   if _is_abs(path) then return path end if
   return _path_join(root, path)
 end function
 
-// Ensure directory.
+/// Ensure directory.
+/// @param path Path of the file or directory used by the operation.
 function _ensure_dir(path)
   if typeof(path) != "string" or path == "" or path == "." then return true end if
   if fs.exists(path) then return true end if
@@ -194,14 +286,18 @@ function _ensure_dir(path)
   return fs.exists(path)
 end function
 
-// Read a build log file, returning an empty string on failure.
+/// Read a build log file, returning an empty string on failure.
+/// @param log_path Path associated with log.
 function _read_log(log_path)
   text = try(fs.readAllText(log_path))
   if typeof(text) == "string" then return text end if
   return ""
 end function
 
-// Return the last index of a character in a string.
+/// Return the last index of a character in a string.
+/// @param text Text consumed by the operation.
+/// @param ch ch value consumed by this operation.
+/// @param before before value consumed by this operation.
 function _last_index_of(text, ch, before)
   if typeof(text) != "string" then return -1 end if
   i = before
@@ -213,7 +309,8 @@ function _last_index_of(text, ch, before)
   return -1
 end function
 
-// Return true when digit char.
+/// Return true when digit char.
+/// @param ch ch value consumed by this operation.
 function _is_digit_char(ch)
   if typeof(ch) != "string" or ch == "" then return false end if
   b = bytes(ch)
@@ -222,7 +319,8 @@ function _is_digit_char(ch)
   return c >= 48 and c <= 57
 end function
 
-// Parse an integer prefix from a string.
+/// Parse an integer prefix from a string.
+/// @param text Text consumed by the operation.
 function _leading_int(text)
   if typeof(text) != "string" then return -1 end if
   digits = ""
@@ -237,7 +335,9 @@ function _leading_int(text)
   return n
 end function
 
-// Convert a character position into one-based line and column numbers.
+/// Convert a character position into one-based line and column numbers.
+/// @param file file value consumed by this operation.
+/// @param pos pos value consumed by this operation.
 function _line_col_from_pos(file, pos)
   if typeof(pos) != "int" or pos < 0 then return [1, 1] end if
   text = try(fs.readAllText(file))
@@ -258,7 +358,8 @@ function _line_col_from_pos(file, pos)
   return [line_no, col_no]
 end function
 
-// Classify a compiler output line as an error, warning, or note.
+/// Classify a compiler output line as an error, warning, or note.
+/// @param prev prev value consumed by this operation.
 function _diag_kind(prev)
   kind = "CompileError"
   if typeof(prev) != "string" then return kind end if
@@ -267,7 +368,8 @@ function _diag_kind(prev)
   return kind
 end function
 
-// Extract the human-readable diagnostic message from compiler output.
+/// Extract the human-readable diagnostic message from compiler output.
+/// @param prev prev value consumed by this operation.
 function _diag_message(prev)
   if typeof(prev) != "string" then return "" end if
   msg = prev
@@ -278,7 +380,9 @@ function _diag_message(prev)
   return msg
 end function
 
-// Parse a source location prefix from a compiler diagnostic line.
+/// Parse a source location prefix from a compiler diagnostic line.
+/// @param prev prev value consumed by this operation.
+/// @param loc loc value consumed by this operation.
 function _parse_diag_loc(prev, loc)
   loc = s.trim(loc)
   if loc == "" then return end if
@@ -304,7 +408,9 @@ function _parse_diag_loc(prev, loc)
   return BuildDiagnostic(_diag_kind(prev), _diag_message(prev), file, line_no, col_no)
 end function
 
-// Parse one compiler diagnostic at a specific output line.
+/// Parse one compiler diagnostic at a specific output line.
+/// @param prev prev value consumed by this operation.
+/// @param at_line at_line value consumed by this operation.
 function _parse_diag_at(prev, at_line)
   p = s.indexOf(at_line, " at ", 0)
   offset = 4
@@ -317,7 +423,8 @@ function _parse_diag_at(prev, at_line)
   return _parse_diag_loc(prev, loc)
 end function
 
-// Parse compiler output into structured diagnostics.
+/// Parse compiler output into structured diagnostics.
+/// @param log_text log_text value consumed by this operation.
 function parse_diagnostics(log_text)
   // Walk collections defensively because project data can be partially populated.
   items = []
@@ -342,7 +449,8 @@ function parse_diagnostics(log_text)
   return items
 end function
 
-// Return the default self-hosted compiler path for a project.
+/// Return the default self-hosted compiler path for a project.
+/// @param project project value consumed by this operation.
 function default_compiler(project)
   root = "."
   if typeof(project) == "struct" then root = project.root end if
@@ -356,25 +464,37 @@ function default_compiler(project)
   return direct
 end function
 
-// Read a boolean option with a default fallback.
+/// Read a boolean option with a default fallback.
+/// @param value Value consumed or transformed by the operation.
+/// @param default_value default_value value consumed by this operation.
 function _bool_value(value, default_value)
   if typeof(value) == "bool" then return value end if
   return default_value
 end function
 
-// Read an integer option with a default fallback.
+/// Read an integer option with a default fallback.
+/// @param value Value consumed or transformed by the operation.
+/// @param default_value default_value value consumed by this operation.
 function _int_value(value, default_value)
   if typeof(value) == "int" then return value end if
   return default_value
 end function
 
-// Read a string option with a default fallback.
+/// Read a string option with a default fallback.
+/// @param value Value consumed or transformed by the operation.
+/// @param default_value default_value value consumed by this operation.
 function _string_value(value, default_value)
   if typeof(value) == "string" and value != "" then return value end if
   return default_value
 end function
 
-// Build the compiler input, output, and log paths for a project.
+/// Build the compiler input, output, and log paths for a project.
+/// @param project project value consumed by this operation.
+/// @param compiler_override compiler_override value consumed by this operation.
+/// @param keep_going keep_going value consumed by this operation.
+/// @param max_errors max_errors value consumed by this operation.
+/// @param subsystem subsystem value consumed by this operation.
+/// @param extra_args extra_args value consumed by this operation.
 function _compile_paths(project, compiler_override, keep_going, max_errors, subsystem, extra_args)
   // Walk collections defensively because project data can be partially populated.
   root = "."
@@ -420,14 +540,24 @@ function _compile_paths(project, compiler_override, keep_going, max_errors, subs
   return [root, compiler, input_path, output_path, log_path, cmd]
 end function
 
-// Create a completed build result for a job that could not be started.
+/// Create a completed build result for a job that could not be started.
+/// @param log_path Path associated with log.
+/// @param command_line command_line value consumed by this operation.
+/// @param compiler compiler value consumed by this operation.
+/// @param message Human-readable message associated with the operation.
 function _failed_job(log_path, command_line, compiler, message)
   log_text = message
   fs.writeAllText(log_path, log_text)
   return BuildJob(void, void, -1, log_path, log_text, command_line, compiler, false)
 end function
 
-// Start compile with options.
+/// Start compile with options.
+/// @param project project value consumed by this operation.
+/// @param compiler_override compiler_override value consumed by this operation.
+/// @param keep_going keep_going value consumed by this operation.
+/// @param max_errors max_errors value consumed by this operation.
+/// @param subsystem subsystem value consumed by this operation.
+/// @param extra_args extra_args value consumed by this operation.
 function start_compile_with_options(project, compiler_override, keep_going, max_errors, subsystem, extra_args)
   // Keep process setup and state capture together for reliable polling.
   parts = _compile_paths(project, compiler_override, keep_going, max_errors, subsystem, extra_args)
@@ -470,12 +600,15 @@ function start_compile_with_options(project, compiler_override, keep_going, max_
   return BuildJob(process, thread, STILL_ACTIVE, log_path, "", cmd, compiler, true)
 end function
 
-// Start a compile job using an explicit compiler path.
+/// Start a compile job using an explicit compiler path.
+/// @param project project value consumed by this operation.
+/// @param compiler_override compiler_override value consumed by this operation.
 function start_compile_with_compiler(project, compiler_override)
   return start_compile_with_options(project, compiler_override, true, 20, "windows", "")
 end function
 
-// Build the executable and log paths used by a run job.
+/// Build the executable and log paths used by a run job.
+/// @param project project value consumed by this operation.
 function _run_paths(project)
   root = "."
   output = "build\\MiniIDE.exe"
@@ -498,7 +631,9 @@ function _run_paths(project)
   return [cwd, output_path, log_path, cmd]
 end function
 
-// Return the test output path.
+/// Return the test output path.
+/// @param root root value consumed by this operation.
+/// @param name Name of the affected item.
 function _test_output_path(root, name)
   safe = name
   if typeof(safe) != "string" or safe == "" then safe = "tests" end if
@@ -506,7 +641,14 @@ function _test_output_path(root, name)
   return _path_join(root, "build\\" + safe + "_tests.exe")
 end function
 
-// Build the input, output, and log paths for compiling tests.
+/// Build the input, output, and log paths for compiling tests.
+/// @param project project value consumed by this operation.
+/// @param test_entry_override test_entry_override value consumed by this operation.
+/// @param compiler_override compiler_override value consumed by this operation.
+/// @param keep_going keep_going value consumed by this operation.
+/// @param max_errors max_errors value consumed by this operation.
+/// @param subsystem subsystem value consumed by this operation.
+/// @param extra_args extra_args value consumed by this operation.
 function _test_compile_paths_for_entry(project, test_entry_override, compiler_override, keep_going, max_errors, subsystem, extra_args)
   // Walk collections defensively because project data can be partially populated.
   root = "."
@@ -553,12 +695,19 @@ function _test_compile_paths_for_entry(project, test_entry_override, compiler_ov
   return [root, compiler, input_path, output_path, log_path, cmd]
 end function
 
-// Build the input, output, and log paths for compiling the configured tests.
+/// Build the input, output, and log paths for compiling the configured tests.
+/// @param project project value consumed by this operation.
+/// @param compiler_override compiler_override value consumed by this operation.
+/// @param keep_going keep_going value consumed by this operation.
+/// @param max_errors max_errors value consumed by this operation.
+/// @param subsystem subsystem value consumed by this operation.
+/// @param extra_args extra_args value consumed by this operation.
 function _test_compile_paths(project, compiler_override, keep_going, max_errors, subsystem, extra_args)
   return _test_compile_paths_for_entry(project, "", compiler_override, keep_going, max_errors, subsystem, extra_args)
 end function
 
-// Clean file.
+/// Clean file.
+/// @param path Path of the file or directory used by the operation.
 function _clean_file(path)
   if typeof(path) != "string" or path == "" then return [0, ""] end if
   if fs.exists(path) == false then return [0, ""] end if
@@ -566,7 +715,8 @@ function _clean_file(path)
   return [0, "Could not delete: " + path + "\r\n"]
 end function
 
-// Clean project.
+/// Clean project.
+/// @param project project value consumed by this operation.
 function clean_project(project)
   // Walk collections defensively because project data can be partially populated.
   root = "."
@@ -604,7 +754,13 @@ function clean_project(project)
   return text
 end function
 
-// Start test compile with options.
+/// Start test compile with options.
+/// @param project project value consumed by this operation.
+/// @param compiler_override compiler_override value consumed by this operation.
+/// @param keep_going keep_going value consumed by this operation.
+/// @param max_errors max_errors value consumed by this operation.
+/// @param subsystem subsystem value consumed by this operation.
+/// @param extra_args extra_args value consumed by this operation.
 function start_test_compile_with_options(project, compiler_override, keep_going, max_errors, subsystem, extra_args)
   // Keep process setup and state capture together for reliable polling.
   parts = _test_compile_paths(project, compiler_override, keep_going, max_errors, subsystem, extra_args)
@@ -652,7 +808,14 @@ function start_test_compile_with_options(project, compiler_override, keep_going,
   return BuildJob(process, thread, STILL_ACTIVE, log_path, "", cmd, compiler, true)
 end function
 
-// Start compiling a specific test file as the test entry.
+/// Start compiling a specific test file as the test entry.
+/// @param project project value consumed by this operation.
+/// @param test_file test_file value consumed by this operation.
+/// @param compiler_override compiler_override value consumed by this operation.
+/// @param keep_going keep_going value consumed by this operation.
+/// @param max_errors max_errors value consumed by this operation.
+/// @param subsystem subsystem value consumed by this operation.
+/// @param extra_args extra_args value consumed by this operation.
 function start_test_file_compile_with_options(project, test_file, compiler_override, keep_going, max_errors, subsystem, extra_args)
   // Keep process setup and state capture together for reliable polling.
   parts = _test_compile_paths_for_entry(project, test_file, compiler_override, keep_going, max_errors, subsystem, extra_args)
@@ -700,7 +863,8 @@ function start_test_file_compile_with_options(project, test_file, compiler_overr
   return BuildJob(process, thread, STILL_ACTIVE, log_path, "", cmd, compiler, true)
 end function
 
-// Build the executable and log paths used by a test run job.
+/// Build the executable and log paths used by a test run job.
+/// @param project project value consumed by this operation.
 function _test_run_paths(project)
   root = "."
   name = "MiniIDE"
@@ -716,7 +880,8 @@ function _test_run_paths(project)
   return [root, output_path, log_path, cmd]
 end function
 
-// Start test output.
+/// Start test output.
+/// @param project project value consumed by this operation.
 function start_test_output(project)
   // Keep process setup and state capture together for reliable polling.
   parts = _test_run_paths(project)
@@ -763,7 +928,8 @@ function start_test_output(project)
   return BuildJob(process, thread, STILL_ACTIVE, log_path, "", cmd, output_path, true)
 end function
 
-// Return true when source files are newer than the built output.
+/// Return true when source files are newer than the built output.
+/// @param project project value consumed by this operation.
 function needs_recompile(project)
   // Walk collections defensively because project data can be partially populated.
   parts = _run_paths(project)
@@ -800,7 +966,8 @@ function needs_recompile(project)
   return false
 end function
 
-// Start run output.
+/// Start run output.
+/// @param project project value consumed by this operation.
 function start_run_output(project)
   // Keep process setup and state capture together for reliable polling.
   parts = _run_paths(project)
@@ -847,12 +1014,14 @@ function start_run_output(project)
   return BuildJob(process, thread, STILL_ACTIVE, log_path, "", cmd, output_path, true)
 end function
 
-// Return true when a build job was started successfully.
+/// Return true when a build job was started successfully.
+/// @param job job value consumed by this operation.
 function job_started(job)
   return typeof(job) == "struct" and job.started
 end function
 
-// Return the current or completed build log text.
+/// Return the current or completed build log text.
+/// @param job job value consumed by this operation.
 function job_log(job)
   if typeof(job) != "struct" then return "" end if
   text = _read_log(job.log_path)
@@ -861,7 +1030,8 @@ function job_log(job)
   return text
 end function
 
-// Return the known exit code for a build job.
+/// Return the known exit code for a build job.
+/// @param job job value consumed by this operation.
 function job_exit_code(job)
   if typeof(job) != "struct" then return -1 end if
   if job.started == false then return job.exit_code end if
@@ -871,12 +1041,14 @@ function job_exit_code(job)
   return _read_u32(code, 0)
 end function
 
-// Return true when a build job is still running.
+/// Return true when a build job is still running.
+/// @param job job value consumed by this operation.
 function job_is_running(job)
   return job_exit_code(job) == STILL_ACTIVE
 end function
 
-// Close native process handles held by a build job.
+/// Close native process handles held by a build job.
+/// @param job job value consumed by this operation.
 function close_job(job)
   if typeof(job) != "struct" then return job end if
   if job.thread is void then
@@ -892,7 +1064,8 @@ function close_job(job)
   return job
 end function
 
-// Terminate a running build job and preserve its latest log text.
+/// Terminate a running build job and preserve its latest log text.
+/// @param job job value consumed by this operation.
 function stop_job(job)
   if typeof(job) != "struct" then return job end if
   text = job_log(job)
@@ -916,7 +1089,13 @@ function stop_job(job)
   return job
 end function
 
-// Run a compile job synchronously with explicit build options.
+/// Run a compile job synchronously with explicit build options.
+/// @param project project value consumed by this operation.
+/// @param compiler_override compiler_override value consumed by this operation.
+/// @param keep_going keep_going value consumed by this operation.
+/// @param max_errors max_errors value consumed by this operation.
+/// @param subsystem subsystem value consumed by this operation.
+/// @param extra_args extra_args value consumed by this operation.
 function compile_with_options(project, compiler_override, keep_going, max_errors, subsystem, extra_args)
   job = start_compile_with_options(project, compiler_override, keep_going, max_errors, subsystem, extra_args)
   if job_started(job) == false then
@@ -931,12 +1110,15 @@ function compile_with_options(project, compiler_override, keep_going, max_errors
   return BuildResult(rc, job.log_path, log_text, parse_diagnostics(log_text))
 end function
 
-// Run a compile job synchronously with an explicit compiler path.
+/// Run a compile job synchronously with an explicit compiler path.
+/// @param project project value consumed by this operation.
+/// @param compiler_override compiler_override value consumed by this operation.
 function compile_with_compiler(project, compiler_override)
   return compile_with_options(project, compiler_override, true, 20, "windows", "")
 end function
 
-// Run a compile job synchronously using project defaults.
+/// Run a compile job synchronously using project defaults.
+/// @param project project value consumed by this operation.
 function compile(project)
   return compile_with_compiler(project, "")
 end function

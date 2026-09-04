@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Provides editor buffer facilities for this project.
+
 package editor.buffer
 
 // Text buffer for MiniIDE. This intentionally keeps editing mechanics small
@@ -20,24 +22,35 @@ package editor.buffer
 import std.fs as fs
 import std.string as s
 
+/// Represents the text buffer data used by the editor buffer module.
 struct TextBuffer
+  /// Stores the path value associated with text buffer.
   path,
+  /// Stores the text value associated with text buffer.
   text,
+  /// Stores the lines value associated with text buffer.
   lines,
+  /// Stores the cursor line value associated with text buffer.
   cursor_line,
+  /// Stores the cursor col value associated with text buffer.
   cursor_col,
+  /// Stores the scroll line value associated with text buffer.
   scroll_line,
+  /// Stores the scroll col value associated with text buffer.
   scroll_col,
+  /// Stores the dirty value associated with text buffer.
   dirty,
 end struct
 
-// Normalize line endings to MiniIDE internal newline format.
+/// Normalize line endings to MiniIDE internal newline format.
+/// @param text Text consumed by the operation.
 function _normalize_text(text)
   if typeof(text) != "string" then return "" end if
   return s.replaceAll(s.replaceAll(text, "\r\n", "\n"), "\r", "\n")
 end function
 
-// Split normalized text into editable buffer lines.
+/// Split normalized text into editable buffer lines.
+/// @param text Text consumed by the operation.
 function _lines_from_text(text)
   t = _normalize_text(text)
   if t == "" then return [""] end if
@@ -46,19 +59,23 @@ function _lines_from_text(text)
   return lines
 end function
 
-// Join buffer lines back into normalized text.
+/// Join buffer lines back into normalized text.
+/// @param lines lines value consumed by this operation.
 function _text_from_lines(lines)
   if typeof(lines) != "array" then return "" end if
   return s.join(lines, "\n")
 end function
 
-// Create a normalized text buffer for a path and initial contents.
+/// Create a normalized text buffer for a path and initial contents.
+/// @param path Path of the file or directory used by the operation.
+/// @param text Text consumed by the operation.
 function new_buffer(path, text)
   lines = _lines_from_text(text)
   return TextBuffer(path, _text_from_lines(lines), lines, 0, 0, 0, 0, false)
 end function
 
-// Load a file into a normalized text buffer.
+/// Load a file into a normalized text buffer.
+/// @param path Path of the file or directory used by the operation.
 function load_file(path)
   if typeof(path) != "string" or path == "" then
     return new_buffer("", "")
@@ -73,7 +90,8 @@ function load_file(path)
   return new_buffer(path, text)
 end function
 
-// Persist a text buffer to disk and clear its dirty flag on success.
+/// Persist a text buffer to disk and clear its dirty flag on success.
+/// @param buf buf value consumed by this operation.
 function save(buf)
   if typeof(buf) != "struct" then return buf end if
   buf.text = _text_from_lines(buf.lines)
@@ -84,13 +102,15 @@ function save(buf)
   return buf
 end function
 
-// Return the number of lines in a text buffer.
+/// Return the number of lines in a text buffer.
+/// @param buf buf value consumed by this operation.
 function line_count(buf)
   if typeof(buf) != "struct" or typeof(buf.lines) != "array" then return 0 end if
   return len(buf.lines)
 end function
 
-// Return the current cursor line from a text buffer.
+/// Return the current cursor line from a text buffer.
+/// @param buf buf value consumed by this operation.
 function current_line(buf)
   if line_count(buf) <= 0 then return "" end if
   idx = buf.cursor_line
@@ -99,7 +119,8 @@ function current_line(buf)
   return buf.lines[idx]
 end function
 
-// Clamp cursor and scroll fields so they stay within the buffer.
+/// Clamp cursor and scroll fields so they stay within the buffer.
+/// @param buf buf value consumed by this operation.
 function clamp_cursor(buf)
   if typeof(buf) != "struct" then return buf end if
   if typeof(buf.lines) != "array" or len(buf.lines) <= 0 then
@@ -120,7 +141,10 @@ function clamp_cursor(buf)
   return buf
 end function
 
-// Replace one buffer line and mark the buffer dirty.
+/// Replace one buffer line and mark the buffer dirty.
+/// @param buf buf value consumed by this operation.
+/// @param idx idx value consumed by this operation.
+/// @param text Text consumed by the operation.
 function _set_line(buf, idx, text)
   if typeof(buf) != "struct" or typeof(buf.lines) != "array" then return buf end if
   if idx < 0 or idx >= len(buf.lines) then return buf end if
@@ -129,7 +153,10 @@ function _set_line(buf, idx, text)
   return buf
 end function
 
-// Insert a line into the buffer at a clamped index.
+/// Insert a line into the buffer at a clamped index.
+/// @param buf buf value consumed by this operation.
+/// @param idx idx value consumed by this operation.
+/// @param text Text consumed by the operation.
 function _insert_line(buf, idx, text)
   if typeof(buf) != "struct" then return buf end if
   if typeof(buf.lines) != "array" then buf.lines = [""] end if
@@ -151,7 +178,9 @@ function _insert_line(buf, idx, text)
   return buf
 end function
 
-// Remove one line while keeping the buffer non-empty.
+/// Remove one line while keeping the buffer non-empty.
+/// @param buf buf value consumed by this operation.
+/// @param idx idx value consumed by this operation.
 function _remove_line(buf, idx)
   if typeof(buf) != "struct" or typeof(buf.lines) != "array" then return buf end if
   if len(buf.lines) <= 1 then
@@ -170,7 +199,9 @@ function _remove_line(buf, idx)
   return buf
 end function
 
-// Insert text at the current cursor position.
+/// Insert text at the current cursor position.
+/// @param buf buf value consumed by this operation.
+/// @param text Text consumed by the operation.
 function insert_text(buf, text)
   if typeof(buf) != "struct" or typeof(text) != "string" then return buf end if
   buf = clamp_cursor(buf)
@@ -183,7 +214,8 @@ function insert_text(buf, text)
   return buf
 end function
 
-// Split the current line at the cursor and move to the new line.
+/// Split the current line at the cursor and move to the new line.
+/// @param buf buf value consumed by this operation.
 function newline(buf)
   if typeof(buf) != "struct" then return buf end if
   buf = clamp_cursor(buf)
@@ -197,7 +229,8 @@ function newline(buf)
   return buf
 end function
 
-// Delete the character before the cursor or merge with the previous line.
+/// Delete the character before the cursor or merge with the previous line.
+/// @param buf buf value consumed by this operation.
 function backspace(buf)
   if typeof(buf) != "struct" then return buf end if
   buf = clamp_cursor(buf)
@@ -223,7 +256,8 @@ function backspace(buf)
   return buf
 end function
 
-// Delete forward.
+/// Delete forward.
+/// @param buf buf value consumed by this operation.
 function delete_forward(buf)
   if typeof(buf) != "struct" then return buf end if
   buf = clamp_cursor(buf)
@@ -242,7 +276,8 @@ function delete_forward(buf)
   return buf
 end function
 
-// Move left.
+/// Move left.
+/// @param buf buf value consumed by this operation.
 function move_left(buf)
   buf = clamp_cursor(buf)
   if buf.cursor_col > 0 then
@@ -256,7 +291,8 @@ function move_left(buf)
   return clamp_cursor(buf)
 end function
 
-// Move right.
+/// Move right.
+/// @param buf buf value consumed by this operation.
 function move_right(buf)
   buf = clamp_cursor(buf)
   line = buf.lines[buf.cursor_line]
@@ -271,34 +307,40 @@ function move_right(buf)
   return clamp_cursor(buf)
 end function
 
-// Move up.
+/// Move up.
+/// @param buf buf value consumed by this operation.
 function move_up(buf)
   buf = clamp_cursor(buf)
   if buf.cursor_line > 0 then buf.cursor_line = buf.cursor_line - 1 end if
   return clamp_cursor(buf)
 end function
 
-// Move down.
+/// Move down.
+/// @param buf buf value consumed by this operation.
 function move_down(buf)
   buf = clamp_cursor(buf)
   if buf.cursor_line + 1 < len(buf.lines) then buf.cursor_line = buf.cursor_line + 1 end if
   return clamp_cursor(buf)
 end function
 
-// Move home.
+/// Move home.
+/// @param buf buf value consumed by this operation.
 function move_home(buf)
   buf.cursor_col = 0
   return clamp_cursor(buf)
 end function
 
-// Move end.
+/// Move end.
+/// @param buf buf value consumed by this operation.
 function move_end(buf)
   buf = clamp_cursor(buf)
   buf.cursor_col = len(buf.lines[buf.cursor_line])
   return buf
 end function
 
-// Return the scroll.
+/// Return the scroll.
+/// @param buf buf value consumed by this operation.
+/// @param delta delta value consumed by this operation.
 function scroll(buf, delta)
   if typeof(buf) != "struct" then return buf end if
   buf.scroll_line = buf.scroll_line + delta
@@ -309,7 +351,9 @@ function scroll(buf, delta)
   return buf
 end function
 
-// Ensure cursor visible.
+/// Ensure cursor visible.
+/// @param buf buf value consumed by this operation.
+/// @param visible_lines visible_lines value consumed by this operation.
 function ensure_cursor_visible(buf, visible_lines)
   if typeof(buf) != "struct" then return buf end if
   if typeof(visible_lines) != "int" or visible_lines <= 0 then visible_lines = 1 end if
@@ -323,7 +367,10 @@ function ensure_cursor_visible(buf, visible_lines)
   return buf
 end function
 
-// Set cursor.
+/// Set cursor.
+/// @param buf buf value consumed by this operation.
+/// @param line line value consumed by this operation.
+/// @param col col value consumed by this operation.
 function set_cursor(buf, line, col)
   if typeof(buf) != "struct" then return buf end if
   buf.cursor_line = line
@@ -331,7 +378,8 @@ function set_cursor(buf, line, col)
   return clamp_cursor(buf)
 end function
 
-// Return the word prefix.
+/// Return the word prefix.
+/// @param buf buf value consumed by this operation.
 function word_prefix(buf)
   buf = clamp_cursor(buf)
   line = current_line(buf)

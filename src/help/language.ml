@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Provides help language facilities for this project.
+
 package help.language
 
 // MiniLang language-reference loading and search document generation.
@@ -20,7 +22,9 @@ import std.fs as fs
 import std.string as s
 import "project/project.ml" as project_model
 
-// Return the reference path.
+/// Return the reference path.
+/// @param root root value consumed by this operation.
+/// @param compiler_path Path associated with compiler.
 function reference_path(root, compiler_path)
   if typeof(root) != "string" or root == "" then root = "." end if
   p = project_model.path_join(root, "MiniLangCompilerML\\README.md")
@@ -35,7 +39,9 @@ function reference_path(root, compiler_path)
   return ""
 end function
 
-// Read reference.
+/// Read reference.
+/// @param root root value consumed by this operation.
+/// @param compiler_path Path associated with compiler.
 function read_reference(root, compiler_path)
   p = reference_path(root, compiler_path)
   if p == "" then return ["", "", "MiniLang language reference was not found."] end if
@@ -44,7 +50,8 @@ function read_reference(root, compiler_path)
   return [p, content, ""]
 end function
 
-// Extract the visible title from a Markdown heading line.
+/// Extract the visible title from a Markdown heading line.
+/// @param line line value consumed by this operation.
 function _markdown_heading_title(line)
   if typeof(line) != "string" then return "" end if
   t = s.trim(line)
@@ -57,14 +64,17 @@ function _markdown_heading_title(line)
   return s.trim(s.substr(t, i, len(t) - i))
 end function
 
-// Build a compact search-result snippet from one matched line.
+/// Build a compact search-result snippet from one matched line.
+/// @param line line value consumed by this operation.
 function _snippet(line)
   text = s.trim(line)
   if len(text) > 140 then text = s.substr(text, 0, 140) + "..." end if
   return text
 end function
 
-// Search a Markdown document and return matching snippets.
+/// Search a Markdown document and return matching snippets.
+/// @param content content value consumed by this operation.
+/// @param query query value consumed by this operation.
 function search_document(content, query)
   // Walk collections defensively because project data can be partially populated.
   if typeof(content) != "string" then content = "" end if

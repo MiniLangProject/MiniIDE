@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Provides project project facilities for this project.
+
 package project.project
 
 // Project model and .mlproj handling for MiniIDE.
@@ -19,30 +21,53 @@ package project.project
 import std.fs as fs
 import std.string as s
 
-// Bind the native GetFullPathNameW API used by MiniIDE.
+/// Bind the native GetFullPathNameW API used by MiniIDE.
+/// @param path Path of the file or directory used by the operation.
+/// @param bufferLen bufferLen value consumed by this operation.
+/// @param buffer Buffer that receives or supplies the operation data.
+/// @param filePart filePart value consumed by this operation.
+/// @returns Native u32 result produced by the call.
 extern function GetFullPathNameW(path as wstr, bufferLen as u32, buffer as buffer, filePart as ptr) from "kernel32.dll" symbol "GetFullPathNameW" returns u32
 
+/// Represents the project file data used by the project project module.
 struct ProjectFile
+  /// Stores the path value associated with project file.
   path,
+  /// Stores the name value associated with project file.
   name,
+  /// Indicates whether is dir is active for the project file value.
   is_dir,
+  /// Stores the depth value associated with project file.
   depth,
 end struct
 
+/// Represents the mini project data used by the project project module.
 struct MiniProject
+  /// Stores the root value associated with mini project.
   root,
+  /// Stores the name value associated with mini project.
   name,
+  /// Stores the kind value associated with mini project.
   kind,
+  /// Stores the entry value associated with mini project.
   entry,
+  /// Stores the output value associated with mini project.
   output,
+  /// Stores the test entry value associated with mini project.
   test_entry,
+  /// Stores the run args value associated with mini project.
   run_args,
+  /// Stores the working dir value associated with mini project.
   working_dir,
+  /// Stores the import paths value associated with mini project.
   import_paths,
+  /// Stores the files value associated with mini project.
   files,
 end struct
 
-// Join two path fragments using the project path separator.
+/// Joins path fragments used by the project model.
+/// @param a a value consumed by this operation.
+/// @param b b value consumed by this operation.
 function path_join(a, b)
   if typeof(a) != "string" or a == "" then return b end if
   if typeof(b) != "string" or b == "" then return a end if
@@ -51,7 +76,8 @@ function path_join(a, b)
   return a + "\\" + b
 end function
 
-// Return the directory portion of a path.
+/// Return the directory portion of a path.
+/// @param path Path of the file or directory used by the operation.
 function dirname(path)
   if typeof(path) != "string" then return "." end if
   i = len(path) - 1
@@ -66,7 +92,8 @@ function dirname(path)
   return "."
 end function
 
-// Return the file name portion of a path.
+/// Return the file name portion of a path.
+/// @param path Path of the file or directory used by the operation.
 function basename(path)
   if typeof(path) != "string" then return "" end if
   i = len(path) - 1
@@ -81,7 +108,8 @@ function basename(path)
   return path
 end function
 
-// Return the normalized absolute form of a path.
+/// Return the normalized absolute form of a path.
+/// @param path Path of the file or directory used by the operation.
 function abspath(path)
   if typeof(path) != "string" or path == "" then return "." end if
   buf = bytes(8192, 0)
@@ -92,18 +120,23 @@ function abspath(path)
   return result
 end function
 
-// Return true when a path has the requested file extension.
+/// Return true when a path has the requested file extension.
+/// @param path Path of the file or directory used by the operation.
+/// @param ext ext value consumed by this operation.
 function has_ext(path, ext)
   return s.endsWith(s.toLowerAscii(path), s.toLowerAscii(ext))
 end function
 
-// Sort strings.
+/// Sort strings.
+/// @param items Items consumed or updated by the operation.
 function _sort_strings(items)
   if typeof(items) != "array" then return [] end if
   return items
 end function
 
-// Return the contains string.
+/// Return the contains string.
+/// @param items Items consumed or updated by the operation.
+/// @param value Value consumed or transformed by the operation.
 function _contains_string(items, value)
   // Walk collections defensively because project data can be partially populated.
   if typeof(items) != "array" then return false end if
@@ -114,7 +147,8 @@ function _contains_string(items, value)
   return false
 end function
 
-// Remove duplicate entries from strings.
+/// Remove duplicate entries from strings.
+/// @param items Items consumed or updated by the operation.
 function _dedupe_strings(items)
   // Walk collections defensively because project data can be partially populated.
   if typeof(items) != "array" then return [] end if
@@ -129,13 +163,21 @@ function _dedupe_strings(items)
   return result
 end function
 
-// Append file.
+/// Append file.
+/// @param files files value consumed by this operation.
+/// @param path Path of the file or directory used by the operation.
+/// @param name Name of the affected item.
+/// @param is_dir is_dir value consumed by this operation.
+/// @param depth depth value consumed by this operation.
 function _append_file(files, path, name, is_dir, depth)
   if typeof(files) != "array" then files = [] end if
   return files + [ProjectFile(path, name, is_dir, depth)]
 end function
 
-// Scan directory.
+/// Scan directory.
+/// @param path Path of the file or directory used by the operation.
+/// @param depth depth value consumed by this operation.
+/// @param out_files out_files value consumed by this operation.
 function _scan_dir(path, depth, out_files)
   // Walk collections defensively because project data can be partially populated.
   entries = fs.listDir(path)
@@ -182,12 +224,15 @@ function _scan_dir(path, depth, out_files)
   return out_files
 end function
 
-// Scan files.
+/// Scan files.
+/// @param root root value consumed by this operation.
 function scan_files(root)
   return _scan_dir(root, 0, [])
 end function
 
-// Parse project file.
+/// Parse project file.
+/// @param path Path of the file or directory used by the operation.
+/// @param root root value consumed by this operation.
 function _parse_project_file(path, root)
   // Walk collections defensively because project data can be partially populated.
   name = basename(root)
@@ -236,7 +281,8 @@ function _parse_project_file(path, root)
   return MiniProject(root, name, kind, entry, output, test_entry, run_args, working_dir, import_paths, scan_files(root))
 end function
 
-// Return the project file path.
+/// Return the project file path.
+/// @param project project value consumed by this operation.
 function project_file_path(project)
   // Walk collections defensively because project data can be partially populated.
   if typeof(project) != "struct" then return "" end if
@@ -254,7 +300,8 @@ function project_file_path(project)
   return path_join(root, name + ".mlproj")
 end function
 
-// Save project.
+/// Save project.
+/// @param project project value consumed by this operation.
 function save_project(project)
   // Walk collections defensively because project data can be partially populated.
   if typeof(project) != "struct" then return "invalid project" end if
@@ -278,19 +325,27 @@ function save_project(project)
   return path
 end function
 
-// Return a copy with updated compile settings.
+/// Return a copy with updated compile settings.
+/// @param project project value consumed by this operation.
+/// @param entry entry value consumed by this operation.
+/// @param output Output collection or buffer populated by the operation.
 function with_compile_settings(project, entry, output)
   if typeof(project) != "struct" then return project end if
   return MiniProject(project.root, project.name, project.kind, entry, output, project.test_entry, project.run_args, project.working_dir, project.import_paths, project.files)
 end function
 
-// Return a copy with updated run settings.
+/// Return a copy with updated run settings.
+/// @param project project value consumed by this operation.
+/// @param test_entry test_entry value consumed by this operation.
+/// @param run_args run_args value consumed by this operation.
+/// @param working_dir working_dir value consumed by this operation.
 function with_run_settings(project, test_entry, run_args, working_dir)
   if typeof(project) != "struct" then return project end if
   return MiniProject(project.root, project.name, project.kind, project.entry, project.output, test_entry, run_args, working_dir, project.import_paths, project.files)
 end function
 
-// Load project.
+/// Load project.
+/// @param root root value consumed by this operation.
 function load_project(root)
   // Walk collections defensively because project data can be partially populated.
   if typeof(root) != "string" or root == "" then root = "." end if
@@ -315,7 +370,8 @@ function load_project(root)
   return _parse_project_file(proj_file, root)
 end function
 
-// Load project file.
+/// Load project file.
+/// @param path Path of the file or directory used by the operation.
 function load_project_file(path)
   if typeof(path) != "string" or path == "" then return load_project(".") end if
   path = abspath(path)
@@ -324,31 +380,37 @@ function load_project_file(path)
   return _parse_project_file(path, root)
 end function
 
-// Return the project entry path.
+/// Return the project entry path.
+/// @param project project value consumed by this operation.
 function project_entry_path(project)
   if typeof(project) != "struct" then return "" end if
   return path_join(project.root, project.entry)
 end function
 
-// Return the project output path.
+/// Return the project output path.
+/// @param project project value consumed by this operation.
 function project_output_path(project)
   if typeof(project) != "struct" then return "" end if
   return path_join(project.root, project.output)
 end function
 
-// Return the project test entry path.
+/// Return the project test entry path.
+/// @param project project value consumed by this operation.
 function project_test_entry_path(project)
   if typeof(project) != "struct" then return "" end if
   return path_join(project.root, project.test_entry)
 end function
 
-// Return the project working directory path.
+/// Return the project working directory path.
+/// @param project project value consumed by this operation.
 function project_working_dir_path(project)
   if typeof(project) != "struct" then return "." end if
   return resolve_project_path(project, project.working_dir)
 end function
 
-// Resolve project path.
+/// Resolve project path.
+/// @param project project value consumed by this operation.
+/// @param path Path of the file or directory used by the operation.
 function resolve_project_path(project, path)
   if typeof(path) != "string" then return "" end if
   if len(path) > 2 and path[1] == ":" then return path end if

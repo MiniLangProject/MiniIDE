@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Provides ai assistant facilities for this project.
+
 package ai.assistant
 
 // Assistant configuration and IDE context assembly for MiniIDE.
@@ -20,43 +22,61 @@ import std.string as s
 import "project/project.ml" as project_model
 import "help/language.ml" as help_lang
 
+/// Represents the assistant config data used by the ai assistant module.
 struct AssistantConfig
+  /// Stores the enabled value associated with assistant config.
   enabled,
+  /// Stores the provider value associated with assistant config.
   provider,
+  /// Stores the base url value associated with assistant config.
   base_url,
+  /// Stores the api key mode value associated with assistant config.
   api_key_mode,
+  /// Stores the api key env value associated with assistant config.
   api_key_env,
+  /// Stores the api key value associated with assistant config.
   api_key,
+  /// Stores the model value associated with assistant config.
   model,
+  /// Stores the tool mode value associated with assistant config.
   tool_mode,
+  /// Stores the allow insecure tls value associated with assistant config.
   allow_insecure_tls,
+  /// Stores the include tabs value associated with assistant config.
   include_tabs,
+  /// Stores the include project value associated with assistant config.
   include_project,
+  /// Stores the include help value associated with assistant config.
   include_help,
 end struct
 
-// Normalize provider names accepted by the settings dialog and config file.
+/// Normalize provider names accepted by the settings dialog and config file.
+/// @param value Value consumed or transformed by the operation.
 function normalize_provider(value)
   value = s.toLowerAscii(s.trim(value))
   if value == "openai-compatible" or value == "compatible" then return "openai-compatible" end if
   return "openai"
 end function
 
-// Normalize API-key source names accepted by the settings dialog and config file.
+/// Normalize API-key source names accepted by the settings dialog and config file.
+/// @param value Value consumed or transformed by the operation.
 function normalize_api_key_mode(value)
   value = s.toLowerAscii(s.trim(value))
   if value == "direct" or value == "key" or value == "api-key" or value == "static" then return "direct" end if
   return "env"
 end function
 
-// Normalize tool modes accepted by config and the settings dialog.
+/// Normalize tool modes accepted by config and the settings dialog.
+/// @param value Value consumed or transformed by the operation.
 function normalize_tool_mode(value)
   value = s.toLowerAscii(s.trim(value))
   if value == "write" or value == "writes" or value == "edit" or value == "agent" or value == "confirm-writes" or value == "confirm" then return "write" end if
   return "read-only"
 end function
 
-// Return text capped to a prompt-safe excerpt.
+/// Return text capped to a prompt-safe excerpt.
+/// @param text Text consumed by the operation.
+/// @param limit limit value consumed by this operation.
 function excerpt(text, limit)
   if typeof(text) != "string" then return "" end if
   if typeof(limit) != "int" or limit <= 0 then limit = 2000 end if
@@ -64,7 +84,9 @@ function excerpt(text, limit)
   return s.substr(text, 0, limit) + "\n... [truncated, " + len(text) + " chars total]"
 end function
 
-// Return a path relative to the project root when possible.
+/// Return a path relative to the project root when possible.
+/// @param root root value consumed by this operation.
+/// @param path Path of the file or directory used by the operation.
 function relative_path(root, path)
   if typeof(path) != "string" then return "" end if
   if typeof(root) != "string" or root == "" then return path end if
@@ -77,7 +99,11 @@ function relative_path(root, path)
   return path
 end function
 
-// Return open tabs in the compact form sent to assistant tooling.
+/// Return open tabs in the compact form sent to assistant tooling.
+/// @param root root value consumed by this operation.
+/// @param open_files open_files value consumed by this operation.
+/// @param open_dirty open_dirty value consumed by this operation.
+/// @param active_tab active_tab value consumed by this operation.
 function open_tabs_text(root, open_files, open_dirty, active_tab)
   text = "open_tabs:\n"
   if typeof(open_files) != "array" or len(open_files) <= 0 then return text + "- none\n" end if
@@ -91,7 +117,11 @@ function open_tabs_text(root, open_files, open_dirty, active_tab)
   return text
 end function
 
-// Return active file metadata plus a bounded source excerpt.
+/// Return active file metadata plus a bounded source excerpt.
+/// @param root root value consumed by this operation.
+/// @param current_file current_file value consumed by this operation.
+/// @param active_tab active_tab value consumed by this operation.
+/// @param open_texts open_texts value consumed by this operation.
 function active_file_text(root, current_file, active_tab, open_texts)
   if typeof(current_file) != "string" or current_file == "" then return "active_file: none\n" end if
   text_len = 0
@@ -105,7 +135,11 @@ function active_file_text(root, current_file, active_tab, open_texts)
   return text
 end function
 
-// Return bounded source excerpts for all open editor tabs.
+/// Return bounded source excerpts for all open editor tabs.
+/// @param root root value consumed by this operation.
+/// @param open_files open_files value consumed by this operation.
+/// @param open_texts open_texts value consumed by this operation.
+/// @param limit_each limit_each value consumed by this operation.
 function open_tab_contents_text(root, open_files, open_texts, limit_each)
   text = "open_tab_contents:\n"
   if typeof(open_files) != "array" or typeof(open_texts) != "array" or len(open_files) <= 0 then return text + "- none\n" end if
@@ -117,7 +151,10 @@ function open_tab_contents_text(root, open_files, open_texts, limit_each)
   return text
 end function
 
-// Return a bounded project-file index for assistant tooling.
+/// Return a bounded project-file index for assistant tooling.
+/// @param root root value consumed by this operation.
+/// @param project_files project_files value consumed by this operation.
+/// @param limit limit value consumed by this operation.
 function project_files_text(root, project_files, limit)
   if typeof(limit) != "int" or limit <= 0 then limit = 80 end if
   text = "project_files:\n"
@@ -134,21 +171,33 @@ function project_files_text(root, project_files, limit)
   return text
 end function
 
-// Return MiniLang reference availability for assistant tooling.
+/// Return MiniLang reference availability for assistant tooling.
+/// @param project_root project_root value consumed by this operation.
+/// @param compiler_path Path associated with compiler.
 function help_text(project_root, compiler_path)
   loaded = help_lang.read_reference(project_root, compiler_path)
   if loaded[2] != "" then return "minilang_help: unavailable (" + loaded[2] + ")\n" end if
   return "minilang_help: " + loaded[0] + " (" + len(loaded[1]) + " chars)\nminilang_help_excerpt:\n" + excerpt(loaded[1], 6000) + "\n"
 end function
 
-// Return the latest build/run log for assistant diagnostics.
+/// Return the latest build/run log for assistant diagnostics.
+/// @param log_text log_text value consumed by this operation.
 function build_log_text(log_text)
   text = "latest_build_log:\n"
   if typeof(log_text) != "string" or log_text == "" then return text + "- none\n" end if
   return text + excerpt(log_text, 5000) + "\n"
 end function
 
-// Assemble the local assistant context from IDE state snapshots.
+/// Assemble the local assistant context from IDE state snapshots.
+/// @param project_value project_value value consumed by this operation.
+/// @param compiler_path Path associated with compiler.
+/// @param config Configuration used by the operation.
+/// @param current_file current_file value consumed by this operation.
+/// @param open_files open_files value consumed by this operation.
+/// @param open_dirty open_dirty value consumed by this operation.
+/// @param active_tab active_tab value consumed by this operation.
+/// @param open_texts open_texts value consumed by this operation.
+/// @param latest_build_log latest_build_log value consumed by this operation.
 function tool_context(project_value, compiler_path, config, current_file, open_files, open_dirty, active_tab, open_texts, latest_build_log)
   project_name = "MiniIDE"
   project_root = "."

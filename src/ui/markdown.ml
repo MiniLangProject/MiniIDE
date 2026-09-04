@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Provides ui markdown facilities for this project.
+
 package ui.markdown
 
 // Rendered Markdown tabs: parser, cache, styles, links, and anchor navigation.
@@ -21,43 +23,65 @@ import "platform/win32.ml" as win
 import "lang/syntax.ml" as syntax
 import "ui/theme.ml" as theme
 
+/// Represents the markdown span data used by the ui markdown module.
 struct MarkdownSpan
+  /// Stores the start pos value associated with markdown span.
   start_pos,
+  /// Stores the end pos value associated with markdown span.
   end_pos,
+  /// Stores the kind value associated with markdown span.
   kind,
 end struct
 
+/// Represents the markdown line style data used by the ui markdown module.
 struct MarkdownLineStyle
+  /// Stores the start pos value associated with markdown line style.
   start_pos,
+  /// Stores the end pos value associated with markdown line style.
   end_pos,
+  /// Stores the kind value associated with markdown line style.
   kind,
 end struct
 
+/// Represents the markdown link data used by the ui markdown module.
 struct MarkdownLink
+  /// Stores the start pos value associated with markdown link.
   start_pos,
+  /// Stores the end pos value associated with markdown link.
   end_pos,
+  /// Stores the link target value associated with markdown link.
   link_target,
 end struct
 
+/// Represents the markdown anchor data used by the ui markdown module.
 struct MarkdownAnchor
+  /// Stores the name value associated with markdown anchor.
   name,
+  /// Stores the start pos value associated with markdown anchor.
   start_pos,
 end struct
 
+/// Represents the markdown document data used by the ui markdown module.
 struct MarkdownDocument
+  /// Stores the text value associated with markdown document.
   text,
+  /// Stores the spans value associated with markdown document.
   spans,
+  /// Stores the line styles value associated with markdown document.
   line_styles,
+  /// Stores the links value associated with markdown document.
   links,
+  /// Stores the anchors value associated with markdown document.
   anchors,
 end struct
 
-// Return an empty Markdown document used as a non-void cache sentinel.
+/// Return an empty Markdown document used as a non-void cache sentinel.
 function _empty_markdown_doc()
   return MarkdownDocument("", [], [], [], [])
 end function
 
-// Normalize editor text so RichEdit and MiniLang use the same line endings.
+/// Normalize editor text so RichEdit and MiniLang use the same line endings.
+/// @param text Text consumed by the operation.
 function _normalize_editor_text(text)
   if typeof(text) != "string" then return "" end if
   text = s.replaceAll(text, "\r\n", "\n")
@@ -65,26 +89,31 @@ function _normalize_editor_text(text)
   return text
 end function
 
-// Convert internal editor text to the display form expected by RichEdit.
+/// Convert internal editor text to the display form expected by RichEdit.
+/// @param text Text consumed by the operation.
 function _editor_display_text(text)
   text = _normalize_editor_text(text)
   return s.replaceAll(text, "\n", "\r\n")
 end function
 
-// Return true when a path names a Markdown document.
+/// Return true when a path names a Markdown document.
+/// @param path Path of the file or directory used by the operation.
 function _is_markdown_path(path)
   if typeof(path) != "string" then return false end if
   lower = s.toLowerAscii(path)
   return s.endsWith(lower, ".md") or s.endsWith(lower, ".markdown")
 end function
 
-// Return true when the active tab displays Markdown content.
+/// Return true when the active tab displays Markdown content.
+/// @param st st value consumed by this operation.
 function _active_is_markdown(st)
   if st.active_tab < 0 or st.active_tab >= len(st.open_files) then return false end if
   return _is_markdown_path(st.open_files[st.active_tab])
 end function
 
-// Replace the result log text and refresh the log control.
+/// Replace the result log text and refresh the log control.
+/// @param st st value consumed by this operation.
+/// @param text Text consumed by the operation.
 function _set_log(st, text)
   if typeof(text) != "string" then text = "" end if
   win.set_window_text(st.log, _editor_display_text(text))
@@ -92,7 +121,8 @@ function _set_log(st, text)
   return st
 end function
 
-// Remove carriage returns from editor or log text.
+/// Remove carriage returns from editor or log text.
+/// @param line line value consumed by this operation.
 function _strip_cr(line)
   if typeof(line) != "string" then return "" end if
   if len(line) > 0 and line[len(line) - 1] == "\r" then
@@ -101,13 +131,15 @@ function _strip_cr(line)
   return line
 end function
 
-// Return true when a Markdown line starts or ends a fenced code block.
+/// Return true when a Markdown line starts or ends a fenced code block.
+/// @param line line value consumed by this operation.
 function _markdown_fence_line(line)
   t = s.trim(line)
   return s.startsWith(t, "```") or s.startsWith(t, "~~~")
 end function
 
-// Extract the language name from a Markdown fenced code block.
+/// Extract the language name from a Markdown fenced code block.
+/// @param line line value consumed by this operation.
 function _markdown_fence_language(line)
   t = s.trim(line)
   if len(t) <= 3 then return "" end if
@@ -117,21 +149,33 @@ function _markdown_fence_language(line)
   return ""
 end function
 
-// Add a styled character span to a rendered Markdown document.
+/// Add a styled character span to a rendered Markdown document.
+/// @param spans spans value consumed by this operation.
+/// @param start_pos start_pos value consumed by this operation.
+/// @param end_pos end_pos value consumed by this operation.
+/// @param kind kind value consumed by this operation.
 function _md_add_span(spans, start_pos, end_pos, kind)
   if typeof(spans) != "array" then spans = [] end if
   if end_pos <= start_pos then return spans end if
   return spans + [MarkdownSpan(start_pos, end_pos, kind)]
 end function
 
-// Add a style override for a rendered Markdown line.
+/// Add a style override for a rendered Markdown line.
+/// @param styles styles value consumed by this operation.
+/// @param start_pos start_pos value consumed by this operation.
+/// @param end_pos end_pos value consumed by this operation.
+/// @param kind kind value consumed by this operation.
 function _md_add_line_style(styles, start_pos, end_pos, kind)
   if typeof(styles) != "array" then styles = [] end if
   if start_pos < 0 or end_pos <= start_pos then return styles end if
   return styles + [MarkdownLineStyle(start_pos, end_pos, kind)]
 end function
 
-// Record a clickable link range in rendered Markdown output.
+/// Record a clickable link range in rendered Markdown output.
+/// @param links links value consumed by this operation.
+/// @param start_pos start_pos value consumed by this operation.
+/// @param end_pos end_pos value consumed by this operation.
+/// @param link_target link_target value consumed by this operation.
 function _md_add_link(links, start_pos, end_pos, link_target)
   if typeof(links) != "array" then links = [] end if
   if end_pos <= start_pos then return links end if
@@ -139,7 +183,10 @@ function _md_add_link(links, start_pos, end_pos, link_target)
   return links + [MarkdownLink(start_pos, end_pos, link_target)]
 end function
 
-// Record a heading anchor and its rendered line location.
+/// Record a heading anchor and its rendered line location.
+/// @param anchors anchors value consumed by this operation.
+/// @param name Name of the affected item.
+/// @param start_pos start_pos value consumed by this operation.
 function _md_add_anchor(anchors, name, start_pos)
   if typeof(anchors) != "array" then anchors = [] end if
   if typeof(name) != "string" or name == "" then return anchors end if
@@ -147,7 +194,8 @@ function _md_add_anchor(anchors, name, start_pos)
   return anchors + [MarkdownAnchor(name, start_pos)]
 end function
 
-// Convert heading text into a GitHub-style Markdown anchor slug.
+/// Convert heading text into a GitHub-style Markdown anchor slug.
+/// @param text Text consumed by the operation.
 function _md_anchor_slug(text)
   // Walk collections defensively because project data can be partially populated.
   if typeof(text) != "string" then return "" end if
@@ -175,7 +223,8 @@ function _md_anchor_slug(text)
   return slug
 end function
 
-// Return the next rendered line number for Markdown output.
+/// Return the next rendered line number for Markdown output.
+/// @param text Text consumed by the operation.
 function _md_next_line_no(text)
   // Walk collections defensively because project data can be partially populated.
   if typeof(text) != "string" or text == "" then return 0 end if
@@ -187,7 +236,8 @@ function _md_next_line_no(text)
   return line_no
 end function
 
-// Remove a UTF-8 byte order mark from the start of text.
+/// Remove a UTF-8 byte order mark from the start of text.
+/// @param text Text consumed by the operation.
 function _strip_utf8_bom(text)
   if typeof(text) != "string" then return "" end if
   b = bytes(text)
@@ -197,7 +247,8 @@ function _strip_utf8_bom(text)
   return text
 end function
 
-// Build a UTF-8 string from hex bytes while keeping this source file ASCII.
+/// Build a UTF-8 string from hex bytes while keeping this source file ASCII.
+/// @param hex_text hex_text value consumed by this operation.
 function _md_hex_string(hex_text)
   raw = fromHex(hex_text)
   if typeof(raw) != "bytes" then return "" end if
@@ -206,7 +257,8 @@ function _md_hex_string(hex_text)
   return text
 end function
 
-// Replace mojibake and typographic Unicode with ASCII-safe text.
+/// Replace mojibake and typographic Unicode with ASCII-safe text.
+/// @param text Text consumed by the operation.
 function _md_normalize_display_chars(text)
   if typeof(text) != "string" then return "" end if
 
@@ -242,7 +294,8 @@ function _md_normalize_display_chars(text)
   return result
 end function
 
-// Append a blank rendered line to a Markdown document.
+/// Append a blank rendered line to a Markdown document.
+/// @param text Text consumed by the operation.
 function _md_blank(text)
   if text == "" then return text end if
   if s.endsWith(text, "\n\n") then return text end if
@@ -250,13 +303,16 @@ function _md_blank(text)
   return text + "\n\n"
 end function
 
-// Return the current output offset at the start of a rendered line.
+/// Return the current output offset at the start of a rendered line.
+/// @param text Text consumed by the operation.
 function _md_line_start(text)
   if text != "" and s.endsWith(text, "\n") == false then text = text + "\n" end if
   return [text, len(text)]
 end function
 
-// Append plain text to the rendered Markdown output.
+/// Append plain text to the rendered Markdown output.
+/// @param text Text consumed by the operation.
+/// @param line line value consumed by this operation.
 function _md_append_plain(text, line)
   start_info = _md_line_start(text)
   text = start_info[0]
@@ -265,7 +321,8 @@ function _md_append_plain(text, line)
   return [text, start_pos]
 end function
 
-// Return true when a Markdown parser character is an ASCII digit.
+/// Return true when a Markdown parser character is an ASCII digit.
+/// @param ch ch value consumed by this operation.
 function _md_is_digit(ch)
   if typeof(ch) != "string" or ch == "" then return false end if
   b = bytes(ch)
@@ -274,7 +331,8 @@ function _md_is_digit(ch)
   return c >= 48 and c <= 57
 end function
 
-// Return the ATX heading level for a Markdown line.
+/// Return the ATX heading level for a Markdown line.
+/// @param line line value consumed by this operation.
 function _md_heading_level(line)
   t = s.trim(line)
   if s.startsWith(t, "#") == false then return 0 end if
@@ -288,7 +346,8 @@ function _md_heading_level(line)
   return level
 end function
 
-// Extract the visible text from a Markdown heading line.
+/// Extract the visible text from a Markdown heading line.
+/// @param line line value consumed by this operation.
 function _md_heading_text(line)
   level = _md_heading_level(line)
   if level <= 0 then return "" end if
@@ -296,7 +355,8 @@ function _md_heading_text(line)
   return s.trim(s.substr(t, level, len(t) - level))
 end function
 
-// Return the length of a Markdown ordered-list prefix.
+/// Return the length of a Markdown ordered-list prefix.
+/// @param line line value consumed by this operation.
 function _md_ordered_prefix(line)
   t = s.trim(line)
   i = 0
@@ -308,7 +368,8 @@ function _md_ordered_prefix(line)
   return ""
 end function
 
-// Return true when a Markdown line is a table separator row.
+/// Return true when a Markdown line is a table separator row.
+/// @param line line value consumed by this operation.
 function _md_table_separator(line)
   // Walk collections defensively because project data can be partially populated.
   t = s.trim(line)
@@ -322,7 +383,8 @@ function _md_table_separator(line)
   return has_dash
 end function
 
-// Return true when a Markdown line looks like a table row.
+/// Return true when a Markdown line looks like a table row.
+/// @param line line value consumed by this operation.
 function _md_table_row(line)
   // Walk collections defensively because project data can be partially populated.
   parts = s.split(line, "|")
@@ -336,7 +398,9 @@ function _md_table_row(line)
   return row_text
 end function
 
-// Find the closing delimiter for a strong emphasis span.
+/// Find the closing delimiter for a strong emphasis span.
+/// @param src src value consumed by this operation.
+/// @param open_pos open_pos value consumed by this operation.
 function _md_find_strong_close(src, open_pos)
   close = s.indexOf(src, "**", open_pos + 2)
   if close < 0 then return -1 end if
@@ -351,7 +415,11 @@ function _md_find_strong_close(src, open_pos)
   return close
 end function
 
-// Parse inline Markdown formatting into styled output spans.
+/// Parse inline Markdown formatting into styled output spans.
+/// @param src src value consumed by this operation.
+/// @param base_pos base_pos value consumed by this operation.
+/// @param spans spans value consumed by this operation.
+/// @param links links value consumed by this operation.
 function _md_inline(src, base_pos, spans, links)
   // Keep validation near the top so callers can treat invalid input as a no-op.
   if typeof(src) != "string" then src = "" end if
@@ -460,7 +528,13 @@ function _md_inline(src, base_pos, spans, links)
   return [inline_text, spans, links]
 end function
 
-// Append text after applying inline Markdown formatting.
+/// Append text after applying inline Markdown formatting.
+/// @param text Text consumed by the operation.
+/// @param spans spans value consumed by this operation.
+/// @param links links value consumed by this operation.
+/// @param prefix prefix value consumed by this operation.
+/// @param src src value consumed by this operation.
+/// @param kind kind value consumed by this operation.
 function _md_append_inline(text, spans, links, prefix, src, kind)
   start_info = _md_line_start(text)
   text = start_info[0]
@@ -477,12 +551,22 @@ function _md_append_inline(text, spans, links, prefix, src, kind)
   return [text, spans, links, line_start, len(text)]
 end function
 
-// Append a full logical Markdown line after parsing all inline markup.
+/// Append a full logical Markdown line after parsing all inline markup.
+/// @param text Text consumed by the operation.
+/// @param spans spans value consumed by this operation.
+/// @param links links value consumed by this operation.
+/// @param prefix prefix value consumed by this operation.
+/// @param src src value consumed by this operation.
+/// @param kind kind value consumed by this operation.
 function _md_append_block_inline(text, spans, links, prefix, src, kind)
   return _md_append_inline(text, spans, links, prefix, s.trim(src), kind)
 end function
 
-// Style code block lines in rendered Markdown output.
+/// Style code block lines in rendered Markdown output.
+/// @param spans spans value consumed by this operation.
+/// @param base_pos base_pos value consumed by this operation.
+/// @param raw raw value consumed by this operation.
+/// @param lang lang value consumed by this operation.
 function _md_add_code_spans(spans, base_pos, raw, lang)
   // Walk collections defensively because project data can be partially populated.
   if typeof(spans) != "array" then spans = [] end if
@@ -504,7 +588,8 @@ function _md_add_code_spans(spans, base_pos, raw, lang)
   return spans
 end function
 
-// Render a Markdown document into text, styles, links, and anchors.
+/// Render a Markdown document into text, styles, links, and anchors.
+/// @param markdown markdown value consumed by this operation.
 function _render_markdown_document(markdown)
   // Walk collections defensively because project data can be partially populated.
   markdown = _md_normalize_display_chars(_strip_utf8_bom(_normalize_editor_text(markdown)))
@@ -620,7 +705,8 @@ function _render_markdown_document(markdown)
   return MarkdownDocument(text, spans, line_styles, links, anchors)
 end function
 
-// Ensure the Markdown render cache matches the open tab list.
+/// Ensure the Markdown render cache matches the open tab list.
+/// @param st st value consumed by this operation.
 function _ensure_markdown_cache_slots(st)
   if typeof(st.open_markdown_sources) != "array" then st.open_markdown_sources = [] end if
   if typeof(st.open_markdown_docs) != "array" then st.open_markdown_docs = [] end if
@@ -635,7 +721,9 @@ function _ensure_markdown_cache_slots(st)
   return st
 end function
 
-// Clear the cached Markdown render for a tab.
+/// Clear the cached Markdown render for a tab.
+/// @param st st value consumed by this operation.
+/// @param idx idx value consumed by this operation.
 function _clear_markdown_cache(st, idx)
   if idx < 0 then return st end if
   st = _ensure_markdown_cache_slots(st)
@@ -644,7 +732,9 @@ function _clear_markdown_cache(st, idx)
   return st
 end function
 
-// Return the rendered Markdown document for the active tab.
+/// Return the rendered Markdown document for the active tab.
+/// @param st st value consumed by this operation.
+/// @param markdown markdown value consumed by this operation.
 function _markdown_doc_for_active_tab(st, markdown)
   source = _normalize_editor_text(markdown)
   idx = st.active_tab
@@ -662,7 +752,8 @@ function _markdown_doc_for_active_tab(st, markdown)
   return [st, doc]
 end function
 
-// Return the cached Markdown document for the active tab when valid.
+/// Return the cached Markdown document for the active tab when valid.
+/// @param st st value consumed by this operation.
 function _active_cached_markdown_doc(st)
   idx = st.active_tab
   if idx < 0 then return void end if
@@ -672,7 +763,9 @@ function _active_cached_markdown_doc(st)
   return doc
 end function
 
-// Convert a document offset to a RichEdit display offset.
+/// Convert a document offset to a RichEdit display offset.
+/// @param doc_text doc_text value consumed by this operation.
+/// @param doc_pos doc_pos value consumed by this operation.
 function _md_display_pos(doc_text, doc_pos)
   if typeof(doc_text) != "string" then return doc_pos end if
   if doc_pos <= 0 then return 0 end if
@@ -690,7 +783,9 @@ function _md_display_pos(doc_text, doc_pos)
   return display_pos
 end function
 
-// Convert a RichEdit display offset back to a document offset.
+/// Convert a RichEdit display offset back to a document offset.
+/// @param doc_text doc_text value consumed by this operation.
+/// @param display_pos display_pos value consumed by this operation.
 function _md_doc_pos_from_display(doc_text, display_pos)
   if typeof(doc_text) != "string" then return display_pos end if
   if display_pos <= 0 then return 0 end if
@@ -718,7 +813,9 @@ function _md_doc_pos_from_display(doc_text, display_pos)
   return result
 end function
 
-// Return the RichEdit color for a rendered Markdown span kind.
+/// Return the RichEdit color for a rendered Markdown span kind.
+/// @param st st value consumed by this operation.
+/// @param kind kind value consumed by this operation.
 function _markdown_span_color(st, kind)
   if kind == "link" then return win.rgb(79, 156, 245) end if
   if kind == "inline_code" or kind == "code_label" then return theme.syntax_color(st, "string") end if
@@ -737,7 +834,8 @@ function _markdown_span_color(st, kind)
   return theme.editor_fg(st)
 end function
 
-// Return the font size for a rendered Markdown span kind.
+/// Return the font size for a rendered Markdown span kind.
+/// @param kind kind value consumed by this operation.
 function _markdown_span_size(kind)
   if kind == "h1" then return 440 end if
   if kind == "h2" then return 360 end if
@@ -748,7 +846,9 @@ function _markdown_span_size(kind)
   return 0
 end function
 
-// Apply paragraph-level styles to rendered Markdown lines.
+/// Apply paragraph-level styles to rendered Markdown lines.
+/// @param st st value consumed by this operation.
+/// @param doc doc value consumed by this operation.
 function _apply_rendered_markdown_line_styles(st, doc)
   // Walk collections defensively because project data can be partially populated.
   if typeof(doc.line_styles) != "array" then return st end if
@@ -767,7 +867,9 @@ function _apply_rendered_markdown_line_styles(st, doc)
   return st
 end function
 
-// Apply all rendered Markdown styles to the RichEdit control.
+/// Apply all rendered Markdown styles to the RichEdit control.
+/// @param st st value consumed by this operation.
+/// @param doc doc value consumed by this operation.
 function _apply_rendered_markdown_styles(st, doc)
   // Walk collections defensively because project data can be partially populated.
   if typeof(doc.spans) != "array" then return st end if
@@ -789,7 +891,10 @@ function _apply_rendered_markdown_styles(st, doc)
   return st
 end function
 
-// Render and write Markdown content into the active editor control.
+/// Render and write Markdown content into the active editor control.
+/// @param st st value consumed by this operation.
+/// @param markdown markdown value consumed by this operation.
+/// @param preserve_view preserve_view value consumed by this operation.
 function _write_markdown_editor(st, markdown, preserve_view)
   // Keep validation near the top so callers can treat invalid input as a no-op.
   sel = [0, 0]
@@ -830,7 +935,9 @@ function _write_markdown_editor(st, markdown, preserve_view)
   return st
 end function
 
-// Return the Markdown link covering a document offset.
+/// Return the Markdown link covering a document offset.
+/// @param doc doc value consumed by this operation.
+/// @param char_pos char_pos value consumed by this operation.
 function _markdown_link_at_doc(doc, char_pos)
   // Walk collections defensively because project data can be partially populated.
   if typeof(doc) != "struct" or typeof(doc.links) != "array" then return void end if
@@ -844,7 +951,10 @@ function _markdown_link_at_doc(doc, char_pos)
   return void
 end function
 
-// Return the Markdown link under an editor mouse position.
+/// Return the Markdown link under an editor mouse position.
+/// @param st st value consumed by this operation.
+/// @param x Horizontal coordinate used by the operation.
+/// @param y Vertical coordinate used by the operation.
 function _markdown_link_at_editor(st, x, y)
   if _active_is_markdown(st) == false then return void end if
   doc = _active_cached_markdown_doc(st)
@@ -853,7 +963,8 @@ function _markdown_link_at_editor(st, x, y)
   return _markdown_link_at_doc(doc, char_pos)
 end function
 
-// Extract an anchor name from a Markdown link target.
+/// Extract an anchor name from a Markdown link target.
+/// @param link_target link_target value consumed by this operation.
 function _markdown_anchor_from_target(link_target)
   if typeof(link_target) != "string" then return "" end if
   link_target = s.trim(link_target)
@@ -864,7 +975,9 @@ function _markdown_anchor_from_target(link_target)
   return _md_anchor_slug(raw_anchor)
 end function
 
-// Scroll the editor so a Markdown anchor is aligned near the top.
+/// Scroll the editor so a Markdown anchor is aligned near the top.
+/// @param st st value consumed by this operation.
+/// @param link_target link_target value consumed by this operation.
 function _jump_to_markdown_anchor(st, link_target)
   // Walk collections defensively because project data can be partially populated.
   anchor_name = _markdown_anchor_from_target(link_target)
@@ -900,7 +1013,10 @@ function _jump_to_markdown_anchor(st, link_target)
   return _set_log(st, "Anchor not found: #" + anchor_name)
 end function
 
-// Open an external Markdown link or jump to an in-document anchor.
+/// Open an external Markdown link or jump to an in-document anchor.
+/// @param st st value consumed by this operation.
+/// @param x Horizontal coordinate used by the operation.
+/// @param y Vertical coordinate used by the operation.
 function _open_markdown_link_at(st, x, y)
   if _active_is_markdown(st) == false then return st end if
   idx = st.active_tab
@@ -915,32 +1031,44 @@ function _open_markdown_link_at(st, x, y)
   return _jump_to_markdown_anchor(st, link.link_target)
 end function
 
-// Render Markdown source into a styled document model.
+/// Render Markdown source into a styled document model.
+/// @param markdown markdown value consumed by this operation.
 function render(markdown)
   return _render_markdown_document(markdown)
 end function
 
-// Return an empty rendered Markdown document for cache initialization.
+/// Return an empty rendered Markdown document for cache initialization.
 function empty_doc()
   return _empty_markdown_doc()
 end function
 
-// Clear the cached rendered Markdown document for a tab.
+/// Clear the cached rendered Markdown document for a tab.
+/// @param st st value consumed by this operation.
+/// @param idx idx value consumed by this operation.
 function clear_cache(st, idx)
   return _clear_markdown_cache(st, idx)
 end function
 
-// Write rendered Markdown into the RichEdit control.
+/// Write rendered Markdown into the RichEdit control.
+/// @param st st value consumed by this operation.
+/// @param markdown markdown value consumed by this operation.
+/// @param preserve_view preserve_view value consumed by this operation.
 function write_editor(st, markdown, preserve_view)
   return _write_markdown_editor(st, markdown, preserve_view)
 end function
 
-// Return the rendered Markdown link under an editor coordinate.
+/// Return the rendered Markdown link under an editor coordinate.
+/// @param st st value consumed by this operation.
+/// @param x Horizontal coordinate used by the operation.
+/// @param y Vertical coordinate used by the operation.
 function link_at_editor(st, x, y)
   return _markdown_link_at_editor(st, x, y)
 end function
 
-// Open or jump to the rendered Markdown link under an editor coordinate.
+/// Open or jump to the rendered Markdown link under an editor coordinate.
+/// @param st st value consumed by this operation.
+/// @param x Horizontal coordinate used by the operation.
+/// @param y Vertical coordinate used by the operation.
 function open_link_at(st, x, y)
   return _open_markdown_link_at(st, x, y)
 end function

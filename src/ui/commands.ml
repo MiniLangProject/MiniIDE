@@ -12,13 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Provides ui commands facilities for this project.
+
 package ui.commands
 
 // Command palette display metadata and search helpers.
 
 import std.string as s
 
-// Return true when a character belongs to an ASCII command word.
+/// Return true when a character belongs to an ASCII command word.
+/// @param ch ch value consumed by this operation.
 function _is_word_char(ch)
   if typeof(ch) != "string" or ch == "" then return false end if
   b = bytes(ch)
@@ -27,7 +30,8 @@ function _is_word_char(ch)
   return (c >= 65 and c <= 90) or (c >= 97 and c <= 122) or (c >= 48 and c <= 57)
 end function
 
-// Return a lower-case acronym built from command label word starts.
+/// Return a lower-case acronym built from command label word starts.
+/// @param text Text consumed by the operation.
 function _acronym(text)
   if typeof(text) != "string" then return "" end if
   result = ""
@@ -44,7 +48,8 @@ function _acronym(text)
   return result
 end function
 
-// Return text without spaces and punctuation, lower-cased for fuzzy matching.
+/// Return text without spaces and punctuation, lower-cased for fuzzy matching.
+/// @param text Text consumed by the operation.
 function _compact(text)
   if typeof(text) != "string" then return "" end if
   result = ""
@@ -55,7 +60,9 @@ function _compact(text)
   return result
 end function
 
-// Return true when needle characters appear in order inside haystack.
+/// Return true when needle characters appear in order inside haystack.
+/// @param haystack haystack value consumed by this operation.
+/// @param needle needle value consumed by this operation.
 function _is_subsequence(haystack, needle)
   if typeof(haystack) != "string" or typeof(needle) != "string" then return false end if
   if needle == "" then return true end if
@@ -69,7 +76,7 @@ function _is_subsequence(haystack, needle)
   return false
 end function
 
-// Return the display labels exposed by the command palette.
+/// Return the display labels exposed by the command palette.
 function labels()
   return [
     "File: Open Project", "File: Quick Open File", "File: Recent Files", "File: New Project", "File: Reload Project", "File: Close Tab", "File: Save", "File: Save All", "Window: Close Other Tabs", "Window: Close All Tabs", "Output: Copy", "Output: Select All", "Output: Clear",
@@ -84,7 +91,7 @@ function labels()
   ]
 end function
 
-// Return additional search aliases for command palette labels.
+/// Return additional search aliases for command palette labels.
 function search_texts()
   return [
     "file open project workspace ctrl o", "file quick open find file ctrl p", "file recent files switch ctrl e", "file new project create", "file reload project refresh", "file close tab ctrl w editor", "file save ctrl s", "file save all ctrl shift s", "window close other tabs editor", "window close all tabs editor", "output log copy results", "output log select all results", "output log clear results",
@@ -99,7 +106,11 @@ function search_texts()
   ]
 end function
 
-// Return the match score for a command palette entry.
+/// Return the match score for a command palette entry.
+/// @param labels labels value consumed by this operation.
+/// @param search_texts search_texts value consumed by this operation.
+/// @param idx idx value consumed by this operation.
+/// @param query query value consumed by this operation.
 function match_score(labels, search_texts, idx, query)
   if typeof(labels) != "array" or idx < 0 or idx >= len(labels) then return 0 end if
   if typeof(query) != "string" or query == "" then return 3 end if
@@ -115,12 +126,19 @@ function match_score(labels, search_texts, idx, query)
   return 0
 end function
 
-// Return true when a command palette entry matches the query.
+/// Return true when a command palette entry matches the query.
+/// @param labels labels value consumed by this operation.
+/// @param search_texts search_texts value consumed by this operation.
+/// @param idx idx value consumed by this operation.
+/// @param query query value consumed by this operation.
 function matches(labels, search_texts, idx, query)
   return match_score(labels, search_texts, idx, query) > 0
 end function
 
-// Return matching command indices ordered by match strength.
+/// Return matching command indices ordered by match strength.
+/// @param labels labels value consumed by this operation.
+/// @param search_texts search_texts value consumed by this operation.
+/// @param query query value consumed by this operation.
 function ranked_indices(labels, search_texts, query)
   result = []
   if typeof(labels) != "array" then return result end if
@@ -137,7 +155,12 @@ function ranked_indices(labels, search_texts, query)
   return result
 end function
 
-// Return the command selected by query or list selection.
+/// Return the command selected by query or list selection.
+/// @param ids ids value consumed by this operation.
+/// @param labels labels value consumed by this operation.
+/// @param search_texts search_texts value consumed by this operation.
+/// @param query query value consumed by this operation.
+/// @param selected selected value consumed by this operation.
 function pick(ids, labels, search_texts, query, selected)
   if typeof(ids) != "array" or typeof(labels) != "array" or len(ids) <= 0 then return 0 end if
   if typeof(query) != "string" then query = "" end if

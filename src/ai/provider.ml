@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Provides ai provider facilities for this project.
+
 package ai.provider
 
 // OpenAI-compatible provider calls for MiniIDE's assistant.
@@ -19,61 +21,165 @@ package ai.provider
 import std.string as s
 import std.string_builder as sb
 
+/// Invokes the native WinHttpOpen entry point used by the ai provider module.
+/// @param agent agent value consumed by this operation.
+/// @param accessType accessType value consumed by this operation.
+/// @param proxyName proxyName value consumed by this operation.
+/// @param proxyBypass proxyBypass value consumed by this operation.
+/// @param flags Bit flags controlling the operation.
+/// @returns Native ptr result produced by the call.
 extern function WinHttpOpen(agent as wstr, accessType as int, proxyName as ptr, proxyBypass as ptr, flags as u32) from "winhttp.dll" returns ptr
+/// Invokes the native WinHttpConnect entry point used by the ai provider module.
+/// @param session session value consumed by this operation.
+/// @param serverName serverName value consumed by this operation.
+/// @param serverPort serverPort value consumed by this operation.
+/// @param reserved reserved value consumed by this operation.
+/// @returns Native ptr result produced by the call.
 extern function WinHttpConnect(session as ptr, serverName as wstr, serverPort as int, reserved as u32) from "winhttp.dll" returns ptr
+/// Invokes the native WinHttpOpenRequest entry point used by the ai provider module.
+/// @param connect connect value consumed by this operation.
+/// @param verb verb value consumed by this operation.
+/// @param objectName objectName value consumed by this operation.
+/// @param version version value consumed by this operation.
+/// @param referrer referrer value consumed by this operation.
+/// @param acceptTypes acceptTypes value consumed by this operation.
+/// @param flags Bit flags controlling the operation.
+/// @returns Native ptr result produced by the call.
 extern function WinHttpOpenRequest(connect as ptr, verb as wstr, objectName as wstr, version as ptr, referrer as ptr, acceptTypes as ptr, flags as u32) from "winhttp.dll" returns ptr
+/// Invokes the native WinHttpSendRequest entry point used by the ai provider module.
+/// @param request request value consumed by this operation.
+/// @param headers headers value consumed by this operation.
+/// @param headersLength headersLength value consumed by this operation.
+/// @param optional optional value consumed by this operation.
+/// @param optionalLength optionalLength value consumed by this operation.
+/// @param totalLength totalLength value consumed by this operation.
+/// @param context Context that carries state for the operation.
+/// @returns Native bool result produced by the call.
 extern function WinHttpSendRequest(request as ptr, headers as wstr, headersLength as u32, optional as bytes, optionalLength as u32, totalLength as u32, context as ptr) from "winhttp.dll" returns bool
+/// Invokes the native WinHttpReceiveResponse entry point used by the ai provider module.
+/// @param request request value consumed by this operation.
+/// @param reserved reserved value consumed by this operation.
+/// @returns Native bool result produced by the call.
 extern function WinHttpReceiveResponse(request as ptr, reserved as ptr) from "winhttp.dll" returns bool
+/// Invokes the native WinHttpSetOption entry point used by the ai provider module.
+/// @param handle Native or runtime handle used by the operation.
+/// @param option option value consumed by this operation.
+/// @param buffer Buffer that receives or supplies the operation data.
+/// @param bufferLength bufferLength value consumed by this operation.
+/// @returns Native bool result produced by the call.
 extern function WinHttpSetOption(handle as ptr, option as u32, buffer as bytes, bufferLength as u32) from "winhttp.dll" returns bool
+/// Invokes the native WinHttpQueryHeaders entry point used by the ai provider module.
+/// @param request request value consumed by this operation.
+/// @param infoLevel infoLevel value consumed by this operation.
+/// @param name Name of the affected item.
+/// @param buffer Buffer that receives or supplies the operation data.
+/// @param bufferLength bufferLength value consumed by this operation.
+/// @param index Zero-based index of the affected item.
+/// @returns Native bool result produced by the call.
 extern function WinHttpQueryHeaders(request as ptr, infoLevel as u32, name as ptr, buffer as bytes, bufferLength as bytes, index as ptr) from "winhttp.dll" returns bool
+/// Invokes the native WinHttpQueryDataAvailable entry point used by the ai provider module.
+/// @param request request value consumed by this operation.
+/// @param bytesAvailable bytesAvailable value consumed by this operation.
+/// @returns Native bool result produced by the call.
 extern function WinHttpQueryDataAvailable(request as ptr, bytesAvailable as bytes) from "winhttp.dll" returns bool
+/// Invokes the native WinHttpReadData entry point used by the ai provider module.
+/// @param request request value consumed by this operation.
+/// @param buffer Buffer that receives or supplies the operation data.
+/// @param bytesToRead bytesToRead value consumed by this operation.
+/// @param bytesRead bytesRead value consumed by this operation.
+/// @returns Native bool result produced by the call.
 extern function WinHttpReadData(request as ptr, buffer as bytes, bytesToRead as u32, bytesRead as bytes) from "winhttp.dll" returns bool
+/// Invokes the native WinHttpCloseHandle entry point used by the ai provider module.
+/// @param handle Native or runtime handle used by the operation.
+/// @returns Native bool result produced by the call.
 extern function WinHttpCloseHandle(handle as ptr) from "winhttp.dll" returns bool
+/// Invokes the native GetEnvironmentVariableW entry point used by the ai provider module.
+/// @param name Name of the affected item.
+/// @param buffer Buffer that receives or supplies the operation data.
+/// @param size Size in the units required by the operation.
+/// @returns Native u32 result produced by the call.
 extern function GetEnvironmentVariableW(name as wstr, buffer as buffer, size as u32) from "kernel32.dll" symbol "GetEnvironmentVariableW" returns u32
+/// Invokes the native GetLastError entry point used by the ai provider module.
+/// @returns Native u32 result produced by the call.
 extern function GetLastError() from "kernel32.dll" returns u32
 
+/// Defines the winhttp access type default proxy constant used by the ai provider module.
 const WINHTTP_ACCESS_TYPE_DEFAULT_PROXY = 0
+/// Defines the winhttp flag secure constant used by the ai provider module.
 const WINHTTP_FLAG_SECURE = 0x00800000
+/// Defines the winhttp option security flags constant used by the ai provider module.
 const WINHTTP_OPTION_SECURITY_FLAGS = 31
+/// Defines the winhttp query status code constant used by the ai provider module.
 const WINHTTP_QUERY_STATUS_CODE = 19
+/// Defines the winhttp query flag number constant used by the ai provider module.
 const WINHTTP_QUERY_FLAG_NUMBER = 0x20000000
+/// Defines the security flag ignore unknown ca constant used by the ai provider module.
 const SECURITY_FLAG_IGNORE_UNKNOWN_CA = 0x00000100
+/// Defines the security flag ignore cert wrong usage constant used by the ai provider module.
 const SECURITY_FLAG_IGNORE_CERT_WRONG_USAGE = 0x00000200
+/// Defines the security flag ignore cert cn invalid constant used by the ai provider module.
 const SECURITY_FLAG_IGNORE_CERT_CN_INVALID = 0x00001000
+/// Defines the security flag ignore cert date invalid constant used by the ai provider module.
 const SECURITY_FLAG_IGNORE_CERT_DATE_INVALID = 0x00002000
 
+/// Represents the provider result data used by the ai provider module.
 struct ProviderResult
+  /// Stores the ok value associated with provider result.
   ok,
+  /// Stores the text value associated with provider result.
   text,
+  /// Stores the log value associated with provider result.
   log,
+  /// Stores the tool calls value associated with provider result.
   tool_calls,
 end struct
 
+/// Represents the tool call data used by the ai provider module.
 struct ToolCall
+  /// Stores the id value associated with tool call.
   id,
+  /// Stores the name value associated with tool call.
   name,
+  /// Stores the arguments value associated with tool call.
   arguments,
 end struct
 
+/// Represents the http url data used by the ai provider module.
 struct HttpUrl
+  /// Stores the ok value associated with http url.
   ok,
+  /// Stores the error value associated with http url.
   error,
+  /// Stores the scheme value associated with http url.
   scheme,
+  /// Stores the host value associated with http url.
   host,
+  /// Stores the port value associated with http url.
   port,
+  /// Stores the path value associated with http url.
   path,
+  /// Stores the secure value associated with http url.
   secure,
 end struct
 
+/// Represents the http result data used by the ai provider module.
 struct HttpResult
+  /// Stores the ok value associated with http result.
   ok,
+  /// Stores the status value associated with http result.
   status,
+  /// Stores the body value associated with http result.
   body,
+  /// Stores the error value associated with http result.
   error,
+  /// Stores the log value associated with http result.
   log,
 end struct
 
-// Write an unsigned 32-bit value into a byte buffer at an offset.
+/// Writes an unsigned 32-bit value into an HTTP provider buffer.
+/// @param buf buf value consumed by this operation.
+/// @param off off value consumed by this operation.
+/// @param value Value consumed or transformed by the operation.
 function _write_u32(buf, off, value)
   v = value & 0xFFFFFFFF
   buf[off] = v & 255
@@ -82,13 +188,17 @@ function _write_u32(buf, off, value)
   buf[off + 3] = (v >> 24) & 255
 end function
 
-// Read an unsigned 32-bit value from a little-endian byte buffer.
+/// Read an unsigned 32-bit value from a little-endian byte buffer.
+/// @param buf buf value consumed by this operation.
 function _u32le4(buf)
   if typeof(buf) != "bytes" or len(buf) < 4 then return 0 end if
   return buf[0] + buf[1] * 256 + buf[2] * 65536 + buf[3] * 16777216
 end function
 
-// Return the last index of a character in a string.
+/// Return the last index of a character in a string.
+/// @param text Text consumed by the operation.
+/// @param ch ch value consumed by this operation.
+/// @param before before value consumed by this operation.
 function _last_index_of(text, ch, before)
   if typeof(text) != "string" then return -1 end if
   i = before
@@ -100,7 +210,8 @@ function _last_index_of(text, ch, before)
   return -1
 end function
 
-// Escape text for a JSON string literal.
+/// Escape text for a JSON string literal.
+/// @param text Text consumed by the operation.
 function json_escape(text)
   if typeof(text) != "string" then return "" end if
   text = s.replaceAll(text, "\\", "\\\\")
@@ -111,6 +222,8 @@ function json_escape(text)
   return text
 end function
 
+/// Writes tools enabled for the ai provider workflow.
+/// @param config Configuration used by the operation.
 function _write_tools_enabled(config)
   if typeof(config) != "struct" then return false end if
   mode = ""
@@ -118,6 +231,8 @@ function _write_tools_enabled(config)
   return mode == "write" or mode == "confirm-writes"
 end function
 
+/// Performs the _system_prompt operation for the ai provider module.
+/// @param config Configuration used by the operation.
 function _system_prompt(config)
   text = "You are MiniIDE's programming assistant for MiniLang projects. "
   text = text + "Use the provided MiniIDE tool context and available tools as your source of truth. "
@@ -132,6 +247,8 @@ function _system_prompt(config)
   return text
 end function
 
+/// Performs the _tool_schema_json operation for the ai provider module.
+/// @param config Configuration used by the operation.
 function _tool_schema_json(config)
   tools = "["
   tools = tools + "{\"type\":\"function\",\"function\":{\"name\":\"miniide_get_active_file\",\"description\":\"Return the active editor file path and a bounded text excerpt.\",\"parameters\":{\"type\":\"object\",\"properties\":{},\"additionalProperties\":false}}},"
@@ -152,6 +269,14 @@ function _tool_schema_json(config)
   return tools
 end function
 
+/// Performs the _request_body operation for the ai provider module.
+/// @param model model value consumed by this operation.
+/// @param config Configuration used by the operation.
+/// @param prompt prompt value consumed by this operation.
+/// @param context Context that carries state for the operation.
+/// @param transcript transcript value consumed by this operation.
+/// @param tool_results tool_results value consumed by this operation.
+/// @param include_tools include_tools value consumed by this operation.
 function _request_body(model, config, prompt, context, transcript, tool_results, include_tools)
   if typeof(model) != "string" or model == "" then model = "gpt-5.1" end if
   if typeof(prompt) != "string" then prompt = "" end if
@@ -173,6 +298,10 @@ function _request_body(model, config, prompt, context, transcript, tool_results,
   return body
 end function
 
+/// Performs the _config_value operation for the ai provider module.
+/// @param config Configuration used by the operation.
+/// @param field field value consumed by this operation.
+/// @param fallback Value returned when no explicit result is available.
 function _config_value(config, field, fallback)
   if typeof(config) == "struct" then
     if field == "base_url" and typeof(config.base_url) == "string" and config.base_url != "" then return config.base_url end if
@@ -184,6 +313,10 @@ function _config_value(config, field, fallback)
   return fallback
 end function
 
+/// Performs the _config_bool operation for the ai provider module.
+/// @param config Configuration used by the operation.
+/// @param field field value consumed by this operation.
+/// @param fallback Value returned when no explicit result is available.
 function _config_bool(config, field, fallback)
   if typeof(config) == "struct" then
     if field == "allow_insecure_tls" and typeof(config.allow_insecure_tls) == "bool" then return config.allow_insecure_tls end if
@@ -191,6 +324,8 @@ function _config_bool(config, field, fallback)
   return fallback
 end function
 
+/// Performs the _rstrip_slashes operation for the ai provider module.
+/// @param text Text consumed by the operation.
 function _rstrip_slashes(text)
   if typeof(text) != "string" then return "" end if
   while len(text) > 0 and (text[len(text) - 1] == "/" or text[len(text) - 1] == "\\")
@@ -199,6 +334,8 @@ function _rstrip_slashes(text)
   return text
 end function
 
+/// Performs the _chat_url operation for the ai provider module.
+/// @param config Configuration used by the operation.
 function _chat_url(config)
   base_url = s.trim(_config_value(config, "base_url", "https://api.openai.com/v1"))
   if base_url == "" then base_url = "https://api.openai.com/v1" end if
@@ -207,6 +344,8 @@ function _chat_url(config)
   return _rstrip_slashes(base_url) + "/chat/completions"
 end function
 
+/// Parses url for the ai provider workflow.
+/// @param url url value consumed by this operation.
 function _parse_url(url)
   if typeof(url) != "string" or s.trim(url) == "" then return HttpUrl(false, "Provider URL is empty.", "", "", 0, "", false) end if
   url = s.trim(url)
@@ -252,6 +391,8 @@ function _parse_url(url)
   return HttpUrl(true, "", scheme, host, port, path, secure)
 end function
 
+/// Performs the _env_value operation for the ai provider module.
+/// @param name Name of the affected item.
 function _env_value(name)
   if typeof(name) != "string" or name == "" then return "" end if
   // 32768 UTF-16 bytes leaves room for the maximum Windows environment variable value.
@@ -264,7 +405,8 @@ function _env_value(name)
   return value
 end function
 
-// Resolve the configured API key without exposing it in logs.
+/// Resolve the configured API key without exposing it in logs.
+/// @param config Configuration used by the operation.
 function _api_key_result(config)
   key_mode = s.toLowerAscii(s.trim(_config_value(config, "api_key_mode", "env")))
   if key_mode == "direct" then
@@ -279,11 +421,15 @@ function _api_key_result(config)
   return [true, api_key, ""]
 end function
 
+/// Closes http owned by the ai provider module.
+/// @param handle Native or runtime handle used by the operation.
 function _close_http(handle)
   if handle is void then return end if
   if typeof(handle) == "int" and handle != 0 then WinHttpCloseHandle(handle) end if
 end function
 
+/// Performs the _http_status operation for the ai provider module.
+/// @param request request value consumed by this operation.
 function _http_status(request)
   status = bytes(4, 0)
   size = bytes(4, 0)
@@ -293,6 +439,8 @@ function _http_status(request)
   return _u32le4(status)
 end function
 
+/// Reads response body for the ai provider workflow.
+/// @param request request value consumed by this operation.
 function _read_response_body(request)
   response_builder = sb.StringBuilder.withCapacity(4096)
   while true
@@ -320,6 +468,11 @@ function _read_response_body(request)
   return [true, response_builder.toString(), ""]
 end function
 
+/// Performs the _http_post_json operation for the ai provider module.
+/// @param url url value consumed by this operation.
+/// @param api_key api_key value consumed by this operation.
+/// @param body body value consumed by this operation.
+/// @param allow_insecure_tls allow_insecure_tls value consumed by this operation.
 function _http_post_json(url, api_key, body, allow_insecure_tls)
   parsed = _parse_url(url)
   if parsed.ok == false then return HttpResult(false, 0, "", parsed.error, parsed.error) end if
@@ -394,6 +547,8 @@ function _http_post_json(url, api_key, body, allow_insecure_tls)
   return HttpResult(true, status, body_text, "", log + "\r\nHTTP " + status)
 end function
 
+/// Performs the _json_unescape_char operation for the ai provider module.
+/// @param escaped escaped value consumed by this operation.
 function _json_unescape_char(escaped)
   if escaped == "\"" then return "\"" end if
   if escaped == "\\" then return "\\" end if
@@ -406,6 +561,9 @@ function _json_unescape_char(escaped)
   return escaped
 end function
 
+/// Parses json string at for the ai provider workflow.
+/// @param text Text consumed by the operation.
+/// @param quote_pos quote_pos value consumed by this operation.
 function _parse_json_string_at(text, quote_pos)
   if typeof(text) != "string" or quote_pos < 0 or quote_pos >= len(text) then return "" end if
   if text[quote_pos] != "\"" then return "" end if
@@ -439,6 +597,9 @@ function _parse_json_string_at(text, quote_pos)
   return value_builder.toString()
 end function
 
+/// Performs the _skip_json_ws operation for the ai provider module.
+/// @param text Text consumed by the operation.
+/// @param pos pos value consumed by this operation.
 function _skip_json_ws(text, pos)
   i = pos
   while i < len(text) and (text[i] == " " or text[i] == "\t" or text[i] == "\r" or text[i] == "\n")
@@ -447,6 +608,11 @@ function _skip_json_ws(text, pos)
   return i
 end function
 
+/// Finds json close used by the ai provider module.
+/// @param text Text consumed by the operation.
+/// @param open_pos open_pos value consumed by this operation.
+/// @param open_ch open_ch value consumed by this operation.
+/// @param close_ch close_ch value consumed by this operation.
 function _find_json_close(text, open_pos, open_ch, close_ch)
   if typeof(text) != "string" or open_pos < 0 or open_pos >= len(text) then return -1 end if
   depth = 0
@@ -478,6 +644,9 @@ function _find_json_close(text, open_pos, open_ch, close_ch)
   return -1
 end function
 
+/// Performs the json_field_string operation for the ai provider module.
+/// @param text Text consumed by the operation.
+/// @param field field value consumed by this operation.
 function json_field_string(text, field)
   if typeof(text) != "string" or typeof(field) != "string" or field == "" then return "" end if
   marker = "\"" + field + "\""
@@ -492,6 +661,9 @@ function json_field_string(text, field)
   return ""
 end function
 
+/// Performs the _json_field_object operation for the ai provider module.
+/// @param text Text consumed by the operation.
+/// @param field field value consumed by this operation.
 function _json_field_object(text, field)
   if typeof(text) != "string" or typeof(field) != "string" or field == "" then return "" end if
   marker = "\"" + field + "\""
@@ -510,6 +682,9 @@ function _json_field_object(text, field)
   return ""
 end function
 
+/// Performs the _json_field_array operation for the ai provider module.
+/// @param text Text consumed by the operation.
+/// @param field field value consumed by this operation.
 function _json_field_array(text, field)
   if typeof(text) != "string" or typeof(field) != "string" or field == "" then return "" end if
   marker = "\"" + field + "\""
@@ -528,6 +703,8 @@ function _json_field_array(text, field)
   return ""
 end function
 
+/// Parses tool calls for the ai provider workflow.
+/// @param response response value consumed by this operation.
 function parse_tool_calls(response)
   calls = []
   arr = _json_field_array(response, "tool_calls")
@@ -550,6 +727,8 @@ function parse_tool_calls(response)
   return calls
 end function
 
+/// Parses chat content for the ai provider workflow.
+/// @param response response value consumed by this operation.
 function parse_chat_content(response)
   if typeof(response) != "string" or response == "" then return "" end if
   marker = "\"content\""
@@ -567,6 +746,9 @@ function parse_chat_content(response)
   return ""
 end function
 
+/// Performs the _short_text operation for the ai provider module.
+/// @param text Text consumed by the operation.
+/// @param limit limit value consumed by this operation.
 function _short_text(text, limit)
   if typeof(text) != "string" then return "" end if
   if typeof(limit) != "int" or limit <= 0 then limit = 2000 end if
@@ -574,7 +756,14 @@ function _short_text(text, limit)
   return s.substr(text, 0, limit) + "\r\n... [truncated, " + len(text) + " chars total]"
 end function
 
-// Send one OpenAI-compatible chat-completions request through native WinHTTP.
+/// Send one OpenAI-compatible chat-completions request through native WinHTTP.
+/// @param project_root project_root value consumed by this operation.
+/// @param config Configuration used by the operation.
+/// @param prompt prompt value consumed by this operation.
+/// @param context Context that carries state for the operation.
+/// @param transcript transcript value consumed by this operation.
+/// @param tool_results tool_results value consumed by this operation.
+/// @param include_tools include_tools value consumed by this operation.
 function chat_completion(project_root, config, prompt, context, transcript, tool_results, include_tools)
   model = _config_value(config, "model", "gpt-5.1")
   key_result = _api_key_result(config)

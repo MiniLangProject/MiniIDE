@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Provides lang service facilities for this project.
+
 package lang.service
 
 // Thin language-service facade for editor features.
@@ -21,121 +23,206 @@ import std.fs as fs
 import "lang/index.ml" as lang_index
 import "lang/syntax.ml" as syntax
 
+/// Represents the reference item data used by the lang service module.
 struct ReferenceItem
+  /// Stores the file value associated with reference item.
   file,
+  /// Stores the line value associated with reference item.
   line,
+  /// Stores the col value associated with reference item.
   col,
+  /// Stores the text value associated with reference item.
   text,
 end struct
 
+/// Represents the rename preview item data used by the lang service module.
 struct RenamePreviewItem
+  /// Stores the old name value associated with rename preview item.
   old_name,
+  /// Stores the new name value associated with rename preview item.
   new_name,
+  /// Stores the file value associated with rename preview item.
   file,
+  /// Stores the line value associated with rename preview item.
   line,
+  /// Stores the col value associated with rename preview item.
   col,
+  /// Stores the text value associated with rename preview item.
   text,
 end struct
 
+/// Represents the rename apply result data used by the lang service module.
 struct RenameApplyResult
+  /// Stores the ok value associated with rename apply result.
   ok,
+  /// Stores the replacements value associated with rename apply result.
   replacements,
+  /// Stores the files value associated with rename apply result.
   files,
+  /// Stores the errors value associated with rename apply result.
   errors,
 end struct
 
+/// Represents the call hierarchy item data used by the lang service module.
 struct CallHierarchyItem
+  /// Stores the name value associated with call hierarchy item.
   name,
+  /// Stores the kind value associated with call hierarchy item.
   kind,
+  /// Stores the file value associated with call hierarchy item.
   file,
+  /// Stores the line value associated with call hierarchy item.
   line,
+  /// Stores the col value associated with call hierarchy item.
   col,
+  /// Stores the text value associated with call hierarchy item.
   text,
 end struct
 
+/// Represents the diagnostic item data used by the lang service module.
 struct DiagnosticItem
+  /// Stores the kind value associated with diagnostic item.
   kind,
+  /// Stores the message value associated with diagnostic item.
   message,
+  /// Stores the file value associated with diagnostic item.
   file,
+  /// Stores the line value associated with diagnostic item.
   line,
+  /// Stores the col value associated with diagnostic item.
   col,
 end struct
 
+/// Represents the inspection item data used by the lang service module.
 struct InspectionItem
+  /// Stores the severity value associated with inspection item.
   severity,
+  /// Stores the message value associated with inspection item.
   message,
+  /// Stores the file value associated with inspection item.
   file,
+  /// Stores the line value associated with inspection item.
   line,
+  /// Stores the col value associated with inspection item.
   col,
 end struct
 
+/// Represents the declaration item data used by the lang service module.
 struct DeclarationItem
+  /// Stores the name value associated with declaration item.
   name,
+  /// Stores the kind value associated with declaration item.
   kind,
+  /// Stores the file value associated with declaration item.
   file,
+  /// Stores the line value associated with declaration item.
   line,
+  /// Stores the col value associated with declaration item.
   col,
 end struct
 
+/// Represents the completion item data used by the lang service module.
 struct CompletionItem
+  /// Stores the label value associated with completion item.
   label,
+  /// Stores the insert text value associated with completion item.
   insert_text,
+  /// Stores the kind value associated with completion item.
   kind,
+  /// Stores the file value associated with completion item.
   file,
+  /// Stores the line value associated with completion item.
   line,
 end struct
 
+/// Represents the symbol item data used by the lang service module.
 struct SymbolItem
+  /// Stores the name value associated with symbol item.
   name,
+  /// Stores the kind value associated with symbol item.
   kind,
+  /// Stores the file value associated with symbol item.
   file,
+  /// Stores the line value associated with symbol item.
   line,
 end struct
 
+/// Represents the symbol info item data used by the lang service module.
 struct SymbolInfoItem
+  /// Stores the name value associated with symbol info item.
   name,
+  /// Stores the kind value associated with symbol info item.
   kind,
+  /// Stores the file value associated with symbol info item.
   file,
+  /// Stores the line value associated with symbol info item.
   line,
+  /// Stores the reference count value associated with symbol info item.
   reference_count,
 end struct
 
+/// Represents the file item data used by the lang service module.
 struct FileItem
+  /// Stores the path value associated with file item.
   path,
+  /// Stores the relative path value associated with file item.
   relative_path,
+  /// Stores the line count value associated with file item.
   line_count,
 end struct
 
+/// Represents the import item data used by the lang service module.
 struct ImportItem
+  /// Stores the source file value associated with import item.
   source_file,
+  /// Stores the line value associated with import item.
   line,
+  /// Stores the target value associated with import item.
   target,
+  /// Stores the alias value associated with import item.
   alias,
+  /// Stores the resolved path value associated with import item.
   resolved_path,
+  /// Stores the resolved value associated with import item.
   resolved,
 end struct
 
+/// Represents the todo item data used by the lang service module.
 struct TodoItem
+  /// Stores the kind value associated with todo item.
   kind,
+  /// Stores the file value associated with todo item.
   file,
+  /// Stores the line value associated with todo item.
   line,
+  /// Stores the text value associated with todo item.
   text,
 end struct
 
+/// Represents the test item data used by the lang service module.
 struct TestItem
+  /// Stores the name value associated with test item.
   name,
+  /// Stores the kind value associated with test item.
   kind,
+  /// Stores the file value associated with test item.
   file,
+  /// Stores the line value associated with test item.
   line,
+  /// Stores the status value associated with test item.
   status,
 end struct
 
+/// Represents the language snapshot data used by the lang service module.
 struct LanguageSnapshot
+  /// Stores the project value associated with language snapshot.
   project,
+  /// Stores the project index value associated with language snapshot.
   project_index,
 end struct
 
-// Return true when a character belongs to an identifier-like word.
+/// Return true when a character belongs to an identifier-like word.
+/// @param ch ch value consumed by this operation.
 function _is_word_char(ch)
   if typeof(ch) != "string" or ch == "" then return false end if
   if ch == "_" or ch == "." then return true end if
@@ -145,7 +232,8 @@ function _is_word_char(ch)
   return (c >= 65 and c <= 90) or (c >= 97 and c <= 122) or (c >= 48 and c <= 57)
 end function
 
-// Return true when a character can start a simple identifier.
+/// Return true when a character can start a simple identifier.
+/// @param ch ch value consumed by this operation.
 function _is_identifier_start(ch)
   if typeof(ch) != "string" or ch == "" then return false end if
   if ch == "_" then return true end if
@@ -155,7 +243,8 @@ function _is_identifier_start(ch)
   return (c >= 65 and c <= 90) or (c >= 97 and c <= 122)
 end function
 
-// Return true when a character can continue a simple identifier.
+/// Return true when a character can continue a simple identifier.
+/// @param ch ch value consumed by this operation.
 function _is_identifier_char(ch)
   if _is_identifier_start(ch) then return true end if
   b = bytes(ch)
@@ -164,7 +253,8 @@ function _is_identifier_char(ch)
   return c >= 48 and c <= 57
 end function
 
-// Return true when the requested rename target is a simple MiniLang identifier.
+/// Return true when the requested rename target is a simple MiniLang identifier.
+/// @param name Name of the affected item.
 function _is_simple_identifier(name)
   if typeof(name) != "string" or name == "" then return false end if
   if _is_identifier_start(name[0]) == false then return false end if
@@ -174,7 +264,8 @@ function _is_simple_identifier(name)
   return true
 end function
 
-// Strip a simple line comment before lexical searches.
+/// Strip a simple line comment before lexical searches.
+/// @param line line value consumed by this operation.
 function _strip_line_comment(line)
   if typeof(line) != "string" then return "" end if
   pos = s.indexOf(line, "//", 0)
@@ -182,7 +273,9 @@ function _strip_line_comment(line)
   return s.substr(line, 0, pos)
 end function
 
-// Read an identifier-like word at the requested position.
+/// Read an identifier-like word at the requested position.
+/// @param text Text consumed by the operation.
+/// @param start start value consumed by this operation.
 function _take_word(text, start)
   if typeof(text) != "string" then return "" end if
   if typeof(start) != "int" or start < 0 then start = 0 end if
@@ -198,7 +291,9 @@ function _take_word(text, start)
   return s.substr(text, begin, i - begin)
 end function
 
-// Return a 1-based column for a declaration name.
+/// Return a 1-based column for a declaration name.
+/// @param raw raw value consumed by this operation.
+/// @param name Name of the affected item.
 function _declaration_col(raw, name)
   if typeof(raw) != "string" or typeof(name) != "string" or name == "" then return 1 end if
   pos = s.indexOf(raw, name, 0)
@@ -206,7 +301,10 @@ function _declaration_col(raw, name)
   return pos + 1
 end function
 
-// Find the next whole-word occurrence in a line.
+/// Find the next whole-word occurrence in a line.
+/// @param line line value consumed by this operation.
+/// @param word word value consumed by this operation.
+/// @param start start value consumed by this operation.
 function _find_word(line, word, start)
   if typeof(line) != "string" or typeof(word) != "string" or word == "" then return -1 end if
   if typeof(start) != "int" or start < 0 then start = 0 end if
@@ -223,12 +321,15 @@ function _find_word(line, word, start)
   return -1
 end function
 
-// Analyze a project and return the reusable language snapshot.
+/// Analyze a project and return the reusable language snapshot.
+/// @param project project value consumed by this operation.
 function analyze_project(project)
   return LanguageSnapshot(project, lang_index.build_project_index(project))
 end function
 
-// Return true when the completion item already exists.
+/// Return true when the completion item already exists.
+/// @param items Items consumed or updated by the operation.
+/// @param label label value consumed by this operation.
 function _has_completion(items, label)
   if typeof(items) != "array" then return false end if
   if len(items) <= 0 then return false end if
@@ -239,14 +340,17 @@ function _has_completion(items, label)
   return false
 end function
 
-// Return true when a label matches the requested prefix.
+/// Return true when a label matches the requested prefix.
+/// @param label label value consumed by this operation.
+/// @param prefix prefix value consumed by this operation.
 function _matches_prefix(label, prefix)
   if typeof(label) != "string" or label == "" then return false end if
   if typeof(prefix) != "string" or prefix == "" then return true end if
   return s.startsWith(s.toLowerAscii(label), s.toLowerAscii(prefix))
 end function
 
-// Return compact lower-case text for fuzzy matching.
+/// Return compact lower-case text for fuzzy matching.
+/// @param value Value consumed or transformed by the operation.
 function _compact_query_text(value)
   if typeof(value) != "string" then return "" end if
   value = s.toLowerAscii(value)
@@ -257,7 +361,9 @@ function _compact_query_text(value)
   return compacted
 end function
 
-// Return true when needle appears as an ordered compact subsequence.
+/// Return true when needle appears as an ordered compact subsequence.
+/// @param haystack haystack value consumed by this operation.
+/// @param needle needle value consumed by this operation.
 function _is_query_subsequence(haystack, needle)
   if typeof(haystack) != "string" or typeof(needle) != "string" then return false end if
   if needle == "" then return true end if
@@ -271,7 +377,9 @@ function _is_query_subsequence(haystack, needle)
   return false
 end function
 
-// Return a match score for ranked project navigation.
+/// Return a match score for ranked project navigation.
+/// @param label label value consumed by this operation.
+/// @param query query value consumed by this operation.
 function _query_score(label, query)
   if typeof(label) != "string" or label == "" then return 0 end if
   if typeof(query) != "string" then query = "" end if
@@ -284,7 +392,15 @@ function _query_score(label, query)
   return 0
 end function
 
-// Add a completion item.
+/// Add a completion item.
+/// @param items Items consumed or updated by the operation.
+/// @param label label value consumed by this operation.
+/// @param insert_text insert_text value consumed by this operation.
+/// @param kind kind value consumed by this operation.
+/// @param file file value consumed by this operation.
+/// @param line line value consumed by this operation.
+/// @param prefix prefix value consumed by this operation.
+/// @param limit limit value consumed by this operation.
 function _add_completion(items, label, insert_text, kind, file, line, prefix, limit)
   if len(items) >= limit then return items end if
   if _query_score(label, prefix) <= 0 then return items end if
@@ -292,7 +408,10 @@ function _add_completion(items, label, insert_text, kind, file, line, prefix, li
   return items + [CompletionItem(label, insert_text, kind, file, line)]
 end function
 
-// Return rich completion items from a snapshot.
+/// Return rich completion items from a snapshot.
+/// @param snapshot snapshot value consumed by this operation.
+/// @param prefix prefix value consumed by this operation.
+/// @param limit limit value consumed by this operation.
 function completion_items(snapshot, prefix, limit)
   if typeof(limit) != "int" or limit <= 0 then limit = 24 end if
   if typeof(prefix) != "string" then prefix = "" end if
@@ -319,7 +438,10 @@ function completion_items(snapshot, prefix, limit)
   return items
 end function
 
-// Return labels for the existing MiniIDE completion popup.
+/// Return labels for the existing MiniIDE completion popup.
+/// @param snapshot snapshot value consumed by this operation.
+/// @param prefix prefix value consumed by this operation.
+/// @param limit limit value consumed by this operation.
 function completion_labels(snapshot, prefix, limit)
   labels = []
   items = completion_items(snapshot, prefix, limit)
@@ -331,7 +453,10 @@ function completion_labels(snapshot, prefix, limit)
   return labels
 end function
 
-// Return project symbols from a snapshot.
+/// Return project symbols from a snapshot.
+/// @param snapshot snapshot value consumed by this operation.
+/// @param prefix prefix value consumed by this operation.
+/// @param limit limit value consumed by this operation.
 function symbol_items(snapshot, prefix, limit)
   if typeof(limit) != "int" or limit <= 0 then limit = 200 end if
   if typeof(prefix) != "string" then prefix = "" end if
@@ -367,7 +492,9 @@ function symbol_items(snapshot, prefix, limit)
   return items
 end function
 
-// Return symbol details for an exact symbol name.
+/// Return symbol details for an exact symbol name.
+/// @param snapshot snapshot value consumed by this operation.
+/// @param name Name of the affected item.
 function symbol_info(snapshot, name)
   if typeof(name) != "string" or name == "" then return [] end if
   idx = void
@@ -388,7 +515,10 @@ function symbol_info(snapshot, name)
   return result
 end function
 
-// Return project files from a snapshot.
+/// Return project files from a snapshot.
+/// @param snapshot snapshot value consumed by this operation.
+/// @param query query value consumed by this operation.
+/// @param limit limit value consumed by this operation.
 function file_items(snapshot, query, limit)
   if typeof(limit) != "int" or limit <= 0 then limit = 200 end if
   if typeof(query) != "string" then query = "" end if
@@ -427,7 +557,10 @@ function file_items(snapshot, query, limit)
   return items
 end function
 
-// Return project import edges from a snapshot.
+/// Return project import edges from a snapshot.
+/// @param snapshot snapshot value consumed by this operation.
+/// @param query query value consumed by this operation.
+/// @param limit limit value consumed by this operation.
 function import_items(snapshot, query, limit)
   if typeof(limit) != "int" or limit <= 0 then limit = 300 end if
   if typeof(query) != "string" then query = "" end if
@@ -450,7 +583,9 @@ function import_items(snapshot, query, limit)
   return items
 end function
 
-// Return true when a string array contains a value.
+/// Return true when a string array contains a value.
+/// @param items Items consumed or updated by the operation.
+/// @param value Value consumed or transformed by the operation.
 function _has_text(items, value)
   if typeof(items) != "array" then return false end if
   if typeof(value) != "string" or value == "" then return false end if
@@ -461,7 +596,8 @@ function _has_text(items, value)
   return false
 end function
 
-// Return project-analysis diagnostics.
+/// Return project-analysis diagnostics.
+/// @param snapshot snapshot value consumed by this operation.
 function diagnostics(snapshot)
   items = []
   project = void
@@ -523,7 +659,8 @@ function diagnostics(snapshot)
   return items
 end function
 
-// Return compact workspace-health lines for dashboards and status panels.
+/// Return compact workspace-health lines for dashboards and status panels.
+/// @param snapshot snapshot value consumed by this operation.
 function workspace_health_lines(snapshot)
   if typeof(snapshot) != "struct" or typeof(snapshot.project_index) != "struct" then return ["Project index unavailable."] end if
   idx = snapshot.project_index
@@ -580,7 +717,9 @@ function workspace_health_lines(snapshot)
   ]
 end function
 
-// Return TODO and FIXME comments across indexed source files.
+/// Return TODO and FIXME comments across indexed source files.
+/// @param snapshot snapshot value consumed by this operation.
+/// @param limit limit value consumed by this operation.
 function todo_items(snapshot, limit)
   items = []
   if typeof(limit) != "int" or limit <= 0 then limit = 200 end if
@@ -611,7 +750,8 @@ function todo_items(snapshot, limit)
   return items
 end function
 
-// Return true when the path is absolute on Windows.
+/// Return true when the path is absolute on Windows.
+/// @param path Path of the file or directory used by the operation.
 function _is_abs_path(path)
   if typeof(path) != "string" then return false end if
   if len(path) > 2 and path[1] == ":" then return true end if
@@ -619,7 +759,9 @@ function _is_abs_path(path)
   return false
 end function
 
-// Join a project root and relative path.
+/// Join a project root and relative path.
+/// @param root root value consumed by this operation.
+/// @param path Path of the file or directory used by the operation.
 function _join_path(root, path)
   if typeof(root) != "string" or root == "" then return path end if
   if typeof(path) != "string" or path == "" then return root end if
@@ -629,7 +771,8 @@ function _join_path(root, path)
   return root + "\\" + path
 end function
 
-// Return a lower-case file stem without extension.
+/// Return a lower-case file stem without extension.
+/// @param path Path of the file or directory used by the operation.
 function _file_stem(path)
   if typeof(path) != "string" or path == "" then return "" end if
   start = 0
@@ -651,7 +794,11 @@ function _file_stem(path)
   return s.toLowerAscii(name)
 end function
 
-// Return true when a test item is already present.
+/// Return true when a test item is already present.
+/// @param items Items consumed or updated by the operation.
+/// @param name Name of the affected item.
+/// @param file file value consumed by this operation.
+/// @param line line value consumed by this operation.
 function _has_test_item(items, name, file, line)
   if typeof(items) != "array" then return false end if
   if len(items) <= 0 then return false end if
@@ -662,7 +809,13 @@ function _has_test_item(items, name, file, line)
   return false
 end function
 
-// Add a test item once.
+/// Add a test item once.
+/// @param items Items consumed or updated by the operation.
+/// @param name Name of the affected item.
+/// @param kind kind value consumed by this operation.
+/// @param file file value consumed by this operation.
+/// @param line line value consumed by this operation.
+/// @param status status value consumed by this operation.
 function _add_test_item(items, name, kind, file, line, status)
   if typeof(name) != "string" or name == "" then return items end if
   if typeof(file) != "string" then file = "" end if
@@ -671,21 +824,25 @@ function _add_test_item(items, name, kind, file, line, status)
   return items + [TestItem(name, kind, file, line, status)]
 end function
 
-// Return true when a file path should be treated as test-related.
+/// Return true when a file path should be treated as test-related.
+/// @param path Path of the file or directory used by the operation.
 function _is_test_path(path)
   if typeof(path) != "string" then return false end if
   lower = s.toLowerAscii(path)
   return s.indexOf(lower, "\\tests\\", 0) >= 0 or s.indexOf(lower, "/tests/", 0) >= 0 or s.endsWith(lower, "_test.ml") or s.endsWith(lower, "\\test.ml")
 end function
 
-// Return true when a symbol name looks like a test.
+/// Return true when a symbol name looks like a test.
+/// @param name Name of the affected item.
 function _is_test_symbol(name)
   if typeof(name) != "string" then return false end if
   lower = s.toLowerAscii(name)
   return s.startsWith(lower, "test") or s.indexOf(lower, "_test", 0) >= 0
 end function
 
-// Return test entry and test-like functions for a project snapshot.
+/// Return test entry and test-like functions for a project snapshot.
+/// @param snapshot snapshot value consumed by this operation.
+/// @param limit limit value consumed by this operation.
 function test_items(snapshot, limit)
   items = []
   if typeof(limit) != "int" or limit <= 0 then limit = 200 end if
@@ -717,7 +874,10 @@ function test_items(snapshot, limit)
   return items
 end function
 
-// Return tests related to the requested source file through imports.
+/// Return tests related to the requested source file through imports.
+/// @param snapshot snapshot value consumed by this operation.
+/// @param current_file current_file value consumed by this operation.
+/// @param limit limit value consumed by this operation.
 function related_test_items(snapshot, current_file, limit)
   items = []
   if typeof(limit) != "int" or limit <= 0 then limit = 200 end if
@@ -771,7 +931,9 @@ function related_test_items(snapshot, current_file, limit)
   return items
 end function
 
-// Return the first related test file for the requested source file.
+/// Return the first related test file for the requested source file.
+/// @param snapshot snapshot value consumed by this operation.
+/// @param current_file current_file value consumed by this operation.
 function related_test_file(snapshot, current_file)
   items = related_test_items(snapshot, current_file, 50)
   if typeof(items) != "array" or len(items) <= 0 then return "" end if
@@ -788,7 +950,10 @@ function related_test_file(snapshot, current_file)
   return ""
 end function
 
-// Return lexical references for a symbol-like word.
+/// Return lexical references for a symbol-like word.
+/// @param snapshot snapshot value consumed by this operation.
+/// @param word word value consumed by this operation.
+/// @param limit limit value consumed by this operation.
 function references(snapshot, word, limit)
   refs = []
   if typeof(word) != "string" or word == "" then return refs end if
@@ -820,7 +985,11 @@ function references(snapshot, word, limit)
   return refs
 end function
 
-// Return the references that would be affected by a symbol rename.
+/// Return the references that would be affected by a symbol rename.
+/// @param snapshot snapshot value consumed by this operation.
+/// @param word word value consumed by this operation.
+/// @param new_name new_name value consumed by this operation.
+/// @param limit limit value consumed by this operation.
 function rename_preview_items(snapshot, word, new_name, limit)
   items = []
   if typeof(word) != "string" or word == "" then return items end if
@@ -839,7 +1008,10 @@ function rename_preview_items(snapshot, word, new_name, limit)
   return items
 end function
 
-// Return a line with whole-word replacements outside line comments.
+/// Return a line with whole-word replacements outside line comments.
+/// @param line line value consumed by this operation.
+/// @param word word value consumed by this operation.
+/// @param new_name new_name value consumed by this operation.
 function _replace_word_in_line(line, word, new_name)
   if typeof(line) != "string" then return ["", 0] end if
   if typeof(word) != "string" or word == "" then return [line, 0] end if
@@ -861,7 +1033,10 @@ function _replace_word_in_line(line, word, new_name)
   return [result, count]
 end function
 
-// Return a source text with whole-word replacements outside line comments.
+/// Return a source text with whole-word replacements outside line comments.
+/// @param text Text consumed by the operation.
+/// @param word word value consumed by this operation.
+/// @param new_name new_name value consumed by this operation.
 function _replace_word_in_text(text, word, new_name)
   if typeof(text) != "string" then return ["", 0] end if
   lines = s.split(s.replaceAll(text, "\r\n", "\n"), "\n")
@@ -878,7 +1053,11 @@ function _replace_word_in_text(text, word, new_name)
   return [output, count]
 end function
 
-// Apply a project-wide symbol rename to source files.
+/// Apply a project-wide symbol rename to source files.
+/// @param snapshot snapshot value consumed by this operation.
+/// @param word word value consumed by this operation.
+/// @param new_name new_name value consumed by this operation.
+/// @param limit limit value consumed by this operation.
 function apply_rename(snapshot, word, new_name, limit)
   if typeof(limit) != "int" or limit <= 0 then limit = 1000 end if
   if typeof(word) != "string" or word == "" then return RenameApplyResult(false, 0, [], ["Missing symbol name"]) end if
@@ -920,7 +1099,10 @@ function apply_rename(snapshot, word, new_name, limit)
   return RenameApplyResult(true, replacements, files, [])
 end function
 
-// Return a simple call hierarchy for a symbol-like word.
+/// Return a simple call hierarchy for a symbol-like word.
+/// @param snapshot snapshot value consumed by this operation.
+/// @param word word value consumed by this operation.
+/// @param limit limit value consumed by this operation.
 function call_hierarchy_items(snapshot, word, limit)
   items = []
   if typeof(word) != "string" or word == "" then return items end if
@@ -938,7 +1120,9 @@ function call_hierarchy_items(snapshot, word, limit)
   return items
 end function
 
-// Return true when an import alias is used in a source line.
+/// Return true when an import alias is used in a source line.
+/// @param line line value consumed by this operation.
+/// @param alias alias value consumed by this operation.
 function _line_uses_import_alias(line, alias)
   if typeof(line) != "string" or typeof(alias) != "string" or alias == "" then return false end if
   pos = s.indexOf(line, alias, 0)
@@ -957,7 +1141,10 @@ function _line_uses_import_alias(line, alias)
   return false
 end function
 
-// Return true when an import alias is used outside import declarations.
+/// Return true when an import alias is used outside import declarations.
+/// @param file file value consumed by this operation.
+/// @param alias alias value consumed by this operation.
+/// @param import_line import_line value consumed by this operation.
 function _import_alias_used(file, alias, import_line)
   if typeof(file) != "string" or typeof(alias) != "string" or alias == "" then return false end if
   text = fs.readAllText(file)
@@ -975,7 +1162,8 @@ function _import_alias_used(file, alias, import_line)
   return false
 end function
 
-// Return declaration-like symbols from a source file for inspections.
+/// Return declaration-like symbols from a source file for inspections.
+/// @param file file value consumed by this operation.
 function _declarations_for_file(file)
   items = []
   if typeof(file) != "string" or file == "" then return items end if
@@ -1036,7 +1224,9 @@ function _declarations_for_file(file)
   return items
 end function
 
-// Return true when a declaration name has already been seen.
+/// Return true when a declaration name has already been seen.
+/// @param items Items consumed or updated by the operation.
+/// @param name Name of the affected item.
 function _has_declaration_name(items, name)
   if typeof(items) != "array" or typeof(name) != "string" or name == "" then return false end if
   if len(items) <= 0 then return false end if
@@ -1047,7 +1237,10 @@ function _has_declaration_name(items, name)
   return false
 end function
 
-// Add duplicate-declaration inspection findings.
+/// Add duplicate-declaration inspection findings.
+/// @param items Items consumed or updated by the operation.
+/// @param idx idx value consumed by this operation.
+/// @param limit limit value consumed by this operation.
 function _add_duplicate_declaration_inspections(items, idx, limit)
   seen = []
   if typeof(idx) != "struct" or typeof(idx.files) != "array" then return items end if
@@ -1075,7 +1268,9 @@ function _add_duplicate_declaration_inspections(items, idx, limit)
   return items
 end function
 
-// Return lightweight code-inspection findings.
+/// Return lightweight code-inspection findings.
+/// @param snapshot snapshot value consumed by this operation.
+/// @param limit limit value consumed by this operation.
 function code_inspection_items(snapshot, limit)
   items = []
   if typeof(limit) != "int" or limit <= 0 then limit = 200 end if

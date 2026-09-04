@@ -12,416 +12,935 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Provides platform win32 facilities for this project.
+
 package platform.win32
 
 // Win32/GDI bindings and tiny helpers used by MiniIDE.
 
 import std.string as s
 
+/// Defines the ws overlappedwindow constant used by the platform win32 module.
 const WS_OVERLAPPEDWINDOW = 0x00CF0000
+/// Defines the ws child constant used by the platform win32 module.
 const WS_CHILD = 0x40000000
+/// Defines the ws visible constant used by the platform win32 module.
 const WS_VISIBLE = 0x10000000
+/// Defines the ws clipchildren constant used by the platform win32 module.
 const WS_CLIPCHILDREN = 0x02000000
+/// Defines the ws clipsiblings constant used by the platform win32 module.
 const WS_CLIPSIBLINGS = 0x04000000
+/// Defines the ws border constant used by the platform win32 module.
 const WS_BORDER = 0x00800000
+/// Defines the ws tabstop constant used by the platform win32 module.
 const WS_TABSTOP = 0x00010000
+/// Defines the ws vscroll constant used by the platform win32 module.
 const WS_VSCROLL = 0x00200000
+/// Defines the ws hscroll constant used by the platform win32 module.
 const WS_HSCROLL = 0x00100000
+/// Defines the ws ex clientedge constant used by the platform win32 module.
 const WS_EX_CLIENTEDGE = 0x00000200
+/// Defines the sw show constant used by the platform win32 module.
 const SW_SHOW = 5
+/// Defines the sw hide constant used by the platform win32 module.
 const SW_HIDE = 0
+/// Defines the sw maximize constant used by the platform win32 module.
 const SW_MAXIMIZE = 3
+/// Defines the sw minimize constant used by the platform win32 module.
 const SW_MINIMIZE = 6
+/// Defines the sw restore constant used by the platform win32 module.
 const SW_RESTORE = 9
+/// Defines the hwnd bottom constant used by the platform win32 module.
 const HWND_BOTTOM = 1
+/// Defines the swp nosize constant used by the platform win32 module.
 const SWP_NOSIZE = 0x0001
+/// Defines the swp nomove constant used by the platform win32 module.
 const SWP_NOMOVE = 0x0002
+/// Defines the swp noactivate constant used by the platform win32 module.
 const SWP_NOACTIVATE = 0x0010
+/// Defines the pm remove constant used by the platform win32 module.
 const PM_REMOVE = 1
+/// Defines the transparent constant used by the platform win32 module.
 const TRANSPARENT = 1
+/// Defines the ps solid constant used by the platform win32 module.
 const PS_SOLID = 0
+/// Defines the fw normal constant used by the platform win32 module.
 const FW_NORMAL = 400
+/// Defines the fw bold constant used by the platform win32 module.
 const FW_BOLD = 700
+/// Defines the mb yesno constant used by the platform win32 module.
 const MB_YESNO = 0x00000004
+/// Defines the mb iconwarning constant used by the platform win32 module.
 const MB_ICONWARNING = 0x00000030
+/// Defines the mb defbutton2 constant used by the platform win32 module.
 const MB_DEFBUTTON2 = 0x00000100
+/// Defines the idyes constant used by the platform win32 module.
 const IDYES = 6
 
+/// Defines the wm quit constant used by the platform win32 module.
 const WM_QUIT = 0x0012
+/// Defines the wm close constant used by the platform win32 module.
 const WM_CLOSE = 0x0010
+/// Defines the wm destroy constant used by the platform win32 module.
 const WM_DESTROY = 0x0002
+/// Defines the wm settext constant used by the platform win32 module.
 const WM_SETTEXT = 0x000C
+/// Defines the wm gettext constant used by the platform win32 module.
 const WM_GETTEXT = 0x000D
+/// Defines the wm gettextlength constant used by the platform win32 module.
 const WM_GETTEXTLENGTH = 0x000E
+/// Defines the wm setcursor constant used by the platform win32 module.
 const WM_SETCURSOR = 0x0020
+/// Defines the wm ncdestroy constant used by the platform win32 module.
 const WM_NCDESTROY = 0x0082
+/// Defines the wm nclbuttondown constant used by the platform win32 module.
 const WM_NCLBUTTONDOWN = 0x00A1
+/// Defines the wm nclbuttonup constant used by the platform win32 module.
 const WM_NCLBUTTONUP = 0x00A2
+/// Defines the wm contextmenu constant used by the platform win32 module.
 const WM_CONTEXTMENU = 0x007B
+/// Defines the wm syscommand constant used by the platform win32 module.
 const WM_SYSCOMMAND = 0x0112
+/// Defines the wm char constant used by the platform win32 module.
 const WM_CHAR = 0x0102
+/// Defines the wm keydown constant used by the platform win32 module.
 const WM_KEYDOWN = 0x0100
+/// Defines the wm lbuttondown constant used by the platform win32 module.
 const WM_LBUTTONDOWN = 0x0201
+/// Defines the wm lbuttonup constant used by the platform win32 module.
 const WM_LBUTTONUP = 0x0202
+/// Defines the wm lbuttondblclk constant used by the platform win32 module.
 const WM_LBUTTONDBLCLK = 0x0203
+/// Defines the wm rbuttondown constant used by the platform win32 module.
 const WM_RBUTTONDOWN = 0x0204
+/// Defines the wm rbuttonup constant used by the platform win32 module.
 const WM_RBUTTONUP = 0x0205
+/// Defines the wm mbuttonup constant used by the platform win32 module.
 const WM_MBUTTONUP = 0x0208
+/// Defines the wm mousemove constant used by the platform win32 module.
 const WM_MOUSEMOVE = 0x0200
+/// Defines the wm mousewheel constant used by the platform win32 module.
 const WM_MOUSEWHEEL = 0x020A
+/// Defines the wm command constant used by the platform win32 module.
 const WM_COMMAND = 0x0111
+/// Defines the wm notify constant used by the platform win32 module.
 const WM_NOTIFY = 0x004E
 
+/// Defines the idc arrow constant used by the platform win32 module.
 const IDC_ARROW = 32512
+/// Defines the idc ibeam constant used by the platform win32 module.
 const IDC_IBEAM = 32513
+/// Defines the idc hand constant used by the platform win32 module.
 const IDC_HAND = 32649
 
+/// Defines the vk back constant used by the platform win32 module.
 const VK_BACK = 0x08
+/// Defines the vk lbutton constant used by the platform win32 module.
 const VK_LBUTTON = 0x01
+/// Defines the vk rbutton constant used by the platform win32 module.
 const VK_RBUTTON = 0x02
+/// Defines the vk tab constant used by the platform win32 module.
 const VK_TAB = 0x09
+/// Defines the vk return constant used by the platform win32 module.
 const VK_RETURN = 0x0D
+/// Defines the vk shift constant used by the platform win32 module.
 const VK_SHIFT = 0x10
+/// Defines the vk control constant used by the platform win32 module.
 const VK_CONTROL = 0x11
+/// Defines the vk menu constant used by the platform win32 module.
 const VK_MENU = 0x12
+/// Defines the vk escape constant used by the platform win32 module.
 const VK_ESCAPE = 0x1B
+/// Defines the vk space constant used by the platform win32 module.
 const VK_SPACE = 0x20
+/// Defines the vk prior constant used by the platform win32 module.
 const VK_PRIOR = 0x21
+/// Defines the vk next constant used by the platform win32 module.
 const VK_NEXT = 0x22
+/// Defines the vk end constant used by the platform win32 module.
 const VK_END = 0x23
+/// Defines the vk home constant used by the platform win32 module.
 const VK_HOME = 0x24
+/// Defines the vk left constant used by the platform win32 module.
 const VK_LEFT = 0x25
+/// Defines the vk up constant used by the platform win32 module.
 const VK_UP = 0x26
+/// Defines the vk right constant used by the platform win32 module.
 const VK_RIGHT = 0x27
+/// Defines the vk down constant used by the platform win32 module.
 const VK_DOWN = 0x28
+/// Defines the vk delete constant used by the platform win32 module.
 const VK_DELETE = 0x2E
+/// Defines the vk a constant used by the platform win32 module.
 const VK_A = 0x41
+/// Defines the vk c constant used by the platform win32 module.
 const VK_C = 0x43
+/// Defines the vk e constant used by the platform win32 module.
 const VK_E = 0x45
+/// Defines the vk f constant used by the platform win32 module.
 const VK_F = 0x46
+/// Defines the vk g constant used by the platform win32 module.
 const VK_G = 0x47
+/// Defines the vk o constant used by the platform win32 module.
 const VK_O = 0x4F
+/// Defines the vk p constant used by the platform win32 module.
 const VK_P = 0x50
+/// Defines the vk s constant used by the platform win32 module.
 const VK_S = 0x53
+/// Defines the vk t constant used by the platform win32 module.
 const VK_T = 0x54
+/// Defines the vk v constant used by the platform win32 module.
 const VK_V = 0x56
+/// Defines the vk x constant used by the platform win32 module.
 const VK_X = 0x58
+/// Defines the vk y constant used by the platform win32 module.
 const VK_Y = 0x59
+/// Defines the vk z constant used by the platform win32 module.
 const VK_Z = 0x5A
+/// Defines the vk f1 constant used by the platform win32 module.
 const VK_F1 = 0x70
+/// Defines the vk f2 constant used by the platform win32 module.
 const VK_F2 = 0x71
+/// Defines the vk f3 constant used by the platform win32 module.
 const VK_F3 = 0x72
+/// Defines the vk f5 constant used by the platform win32 module.
 const VK_F5 = 0x74
+/// Defines the vk f6 constant used by the platform win32 module.
 const VK_F6 = 0x75
+/// Defines the vk f7 constant used by the platform win32 module.
 const VK_F7 = 0x76
+/// Defines the vk f12 constant used by the platform win32 module.
 const VK_F12 = 0x7B
 
+/// Defines the es multiline constant used by the platform win32 module.
 const ES_MULTILINE = 0x0004
+/// Defines the es right constant used by the platform win32 module.
 const ES_RIGHT = 0x0002
+/// Defines the es password constant used by the platform win32 module.
 const ES_PASSWORD = 0x0020
+/// Defines the es autovscroll constant used by the platform win32 module.
 const ES_AUTOVSCROLL = 0x0040
+/// Defines the es autohscroll constant used by the platform win32 module.
 const ES_AUTOHSCROLL = 0x0080
+/// Defines the es nohidesel constant used by the platform win32 module.
 const ES_NOHIDESEL = 0x0100
+/// Defines the es readonly constant used by the platform win32 module.
 const ES_READONLY = 0x0800
+/// Defines the es wantreturn constant used by the platform win32 module.
 const ES_WANTRETURN = 0x1000
 
+/// Defines the lbs notify constant used by the platform win32 module.
 const LBS_NOTIFY = 0x0001
+/// Defines the lbs hasstrings constant used by the platform win32 module.
 const LBS_HASSTRINGS = 0x0040
+/// Defines the lbs nointegralheight constant used by the platform win32 module.
 const LBS_NOINTEGRALHEIGHT = 0x0100
 
+/// Defines the cbs dropdownlist constant used by the platform win32 module.
 const CBS_DROPDOWNLIST = 0x0003
+/// Defines the cbs hasstrings constant used by the platform win32 module.
 const CBS_HASSTRINGS = 0x0200
 
+/// Defines the bs pushbutton constant used by the platform win32 module.
 const BS_PUSHBUTTON = 0x0000
+/// Defines the bs left constant used by the platform win32 module.
 const BS_LEFT = 0x0100
+/// Defines the bs vcenter constant used by the platform win32 module.
 const BS_VCENTER = 0x0C00
+/// Defines the bs multiline constant used by the platform win32 module.
 const BS_MULTILINE = 0x2000
+/// Defines the ss right constant used by the platform win32 module.
 const SS_RIGHT = 0x00000002
+/// Defines the ss icon constant used by the platform win32 module.
 const SS_ICON = 0x00000003
+/// Defines the ss noprefix constant used by the platform win32 module.
 const SS_NOPREFIX = 0x00000080
+/// Defines the ss notify constant used by the platform win32 module.
 const SS_NOTIFY = 0x00000100
 
+/// Defines the icc treeview classes constant used by the platform win32 module.
 const ICC_TREEVIEW_CLASSES = 0x00000002
+/// Defines the icc tab classes constant used by the platform win32 module.
 const ICC_TAB_CLASSES = 0x00000008
 
+/// Defines the tvs hasbuttons constant used by the platform win32 module.
 const TVS_HASBUTTONS = 0x0001
+/// Defines the tvs haslines constant used by the platform win32 module.
 const TVS_HASLINES = 0x0002
+/// Defines the tvs linesatroot constant used by the platform win32 module.
 const TVS_LINESATROOT = 0x0004
+/// Defines the tvs showselalways constant used by the platform win32 module.
 const TVS_SHOWSELALWAYS = 0x0020
+/// Defines the tvs fullrowselect constant used by the platform win32 module.
 const TVS_FULLROWSELECT = 0x1000
 
+/// Defines the tv first constant used by the platform win32 module.
 const TV_FIRST = 0x1100
+/// Defines the tvm insertitemw constant used by the platform win32 module.
 const TVM_INSERTITEMW = 0x1132
+/// Defines the tvm deleteitem constant used by the platform win32 module.
 const TVM_DELETEITEM = 0x1101
+/// Defines the tvm expand constant used by the platform win32 module.
 const TVM_EXPAND = 0x1102
+/// Defines the tvm setimagelist constant used by the platform win32 module.
 const TVM_SETIMAGELIST = 0x1109
+/// Defines the tvm getnextitem constant used by the platform win32 module.
 const TVM_GETNEXTITEM = 0x110A
+/// Defines the tvm selectitem constant used by the platform win32 module.
 const TVM_SELECTITEM = 0x110B
+/// Defines the tvm hittest constant used by the platform win32 module.
 const TVM_HITTEST = 0x1111
+/// Defines the tvm setbkcolor constant used by the platform win32 module.
 const TVM_SETBKCOLOR = 0x111D
+/// Defines the tvm settextcolor constant used by the platform win32 module.
 const TVM_SETTEXTCOLOR = 0x111E
+/// Defines the tvm setlinecolor constant used by the platform win32 module.
 const TVM_SETLINECOLOR = 0x1128
+/// Defines the tvgn caret constant used by the platform win32 module.
 const TVGN_CARET = 0x0009
+/// Defines the tve expand constant used by the platform win32 module.
 const TVE_EXPAND = 0x0002
+/// Defines the tvsil normal constant used by the platform win32 module.
 const TVSIL_NORMAL = 0
+/// Defines the tvi root constant used by the platform win32 module.
 const TVI_ROOT = -65536
+/// Defines the tvi last constant used by the platform win32 module.
 const TVI_LAST = -65534
+/// Defines the tvif text constant used by the platform win32 module.
 const TVIF_TEXT = 0x0001
+/// Defines the tvif image constant used by the platform win32 module.
 const TVIF_IMAGE = 0x0002
+/// Defines the tvif param constant used by the platform win32 module.
 const TVIF_PARAM = 0x0004
+/// Defines the tvif selectedimage constant used by the platform win32 module.
 const TVIF_SELECTEDIMAGE = 0x0020
+/// Defines the tvif children constant used by the platform win32 module.
 const TVIF_CHILDREN = 0x0040
 
+/// Defines the tcs focusnever constant used by the platform win32 module.
 const TCS_FOCUSNEVER = 0x8000
+/// Defines the tcs fixedwidth constant used by the platform win32 module.
 const TCS_FIXEDWIDTH = 0x0400
+/// Defines the tcm first constant used by the platform win32 module.
 const TCM_FIRST = 0x1300
+/// Defines the tcm getcursel constant used by the platform win32 module.
 const TCM_GETCURSEL = 0x130B
+/// Defines the tcm setcursel constant used by the platform win32 module.
 const TCM_SETCURSEL = 0x130C
+/// Defines the tcm hittest constant used by the platform win32 module.
 const TCM_HITTEST = 0x130D
+/// Defines the tcm deleteallitems constant used by the platform win32 module.
 const TCM_DELETEALLITEMS = 0x1309
+/// Defines the tcm setitemsize constant used by the platform win32 module.
 const TCM_SETITEMSIZE = 0x1329
+/// Defines the tcm insertitemw constant used by the platform win32 module.
 const TCM_INSERTITEMW = 0x133E
+/// Defines the tcif text constant used by the platform win32 module.
 const TCIF_TEXT = 0x0001
+/// Defines the tcif param constant used by the platform win32 module.
 const TCIF_PARAM = 0x0008
+/// Defines the nm dblclk constant used by the platform win32 module.
 const NM_DBLCLK = -3
+/// Defines the nm rclick constant used by the platform win32 module.
 const NM_RCLICK = -5
+/// Defines the tcn selchange constant used by the platform win32 module.
 const TCN_SELCHANGE = -551
 
+/// Defines the wm setfont constant used by the platform win32 module.
 const WM_SETFONT = 0x0030
+/// Defines the wm setredraw constant used by the platform win32 module.
 const WM_SETREDRAW = 0x000B
+/// Defines the stm setimage constant used by the platform win32 module.
 const STM_SETIMAGE = 0x0172
+/// Defines the image icon constant used by the platform win32 module.
 const IMAGE_ICON = 1
+/// Defines the em setlimittext constant used by the platform win32 module.
 const EM_SETLIMITTEXT = 0x00C5
+/// Defines the em getsel constant used by the platform win32 module.
 const EM_GETSEL = 0x00B0
+/// Defines the em setsel constant used by the platform win32 module.
 const EM_SETSEL = 0x00B1
+/// Defines the em linescroll constant used by the platform win32 module.
 const EM_LINESCROLL = 0x00B6
+/// Defines the em scrollcaret constant used by the platform win32 module.
 const EM_SCROLLCARET = 0x00B7
+/// Defines the em getmodify constant used by the platform win32 module.
 const EM_GETMODIFY = 0x00B8
+/// Defines the em setmodify constant used by the platform win32 module.
 const EM_SETMODIFY = 0x00B9
+/// Defines the em getlinecount constant used by the platform win32 module.
 const EM_GETLINECOUNT = 0x00BA
+/// Defines the em lineindex constant used by the platform win32 module.
 const EM_LINEINDEX = 0x00BB
+/// Defines the em linelength constant used by the platform win32 module.
 const EM_LINELENGTH = 0x00C1
+/// Defines the em getline constant used by the platform win32 module.
 const EM_GETLINE = 0x00C4
+/// Defines the em linefromchar constant used by the platform win32 module.
 const EM_LINEFROMCHAR = 0x00C9
+/// Defines the em getfirstvisibleline constant used by the platform win32 module.
 const EM_GETFIRSTVISIBLELINE = 0x00CE
+/// Defines the em charfrompos constant used by the platform win32 module.
 const EM_CHARFROMPOS = 0x00D7
+/// Defines the em gettextex constant used by the platform win32 module.
 const EM_GETTEXTEX = 0x045E
+/// Defines the em setcharformat constant used by the platform win32 module.
 const EM_SETCHARFORMAT = 0x0444
+/// Defines the em setbkgndcolor constant used by the platform win32 module.
 const EM_SETBKGNDCOLOR = 0x0443
+/// Defines the em setreadonly constant used by the platform win32 module.
 const EM_SETREADONLY = 0x00CF
+/// Defines the em getscrollpos constant used by the platform win32 module.
 const EM_GETSCROLLPOS = 0x04DD
+/// Defines the em setscrollpos constant used by the platform win32 module.
 const EM_SETSCROLLPOS = 0x04DE
+/// Defines the em replacesel constant used by the platform win32 module.
 const EM_REPLACESEL = 0x00C2
+/// Defines the wm cut constant used by the platform win32 module.
 const WM_CUT = 0x0300
+/// Defines the wm copy constant used by the platform win32 module.
 const WM_COPY = 0x0301
+/// Defines the wm paste constant used by the platform win32 module.
 const WM_PASTE = 0x0302
+/// Defines the scf selection constant used by the platform win32 module.
 const SCF_SELECTION = 0x0001
+/// Defines the scf all constant used by the platform win32 module.
 const SCF_ALL = 0x0004
+/// Defines the cfm bold constant used by the platform win32 module.
 const CFM_BOLD = 0x00000001
+/// Defines the cfm italic constant used by the platform win32 module.
 const CFM_ITALIC = 0x00000002
+/// Defines the cfm underline constant used by the platform win32 module.
 const CFM_UNDERLINE = 0x00000004
+/// Defines the cfm color constant used by the platform win32 module.
 const CFM_COLOR = 0x40000000
+/// Defines the cfm size constant used by the platform win32 module.
 const CFM_SIZE = 0x80000000
+/// Defines the cfe bold constant used by the platform win32 module.
 const CFE_BOLD = 0x00000001
+/// Defines the cfe italic constant used by the platform win32 module.
 const CFE_ITALIC = 0x00000002
+/// Defines the cfe underline constant used by the platform win32 module.
 const CFE_UNDERLINE = 0x00000004
+/// Defines the lb addstring constant used by the platform win32 module.
 const LB_ADDSTRING = 0x0180
+/// Defines the lb resetcontent constant used by the platform win32 module.
 const LB_RESETCONTENT = 0x0184
+/// Defines the lb setcursel constant used by the platform win32 module.
 const LB_SETCURSEL = 0x0186
+/// Defines the lb getcursel constant used by the platform win32 module.
 const LB_GETCURSEL = 0x0188
+/// Defines the lbn selchange constant used by the platform win32 module.
 const LBN_SELCHANGE = 1
+/// Defines the lbn dblclk constant used by the platform win32 module.
 const LBN_DBLCLK = 2
+/// Defines the en change constant used by the platform win32 module.
 const EN_CHANGE = 0x0300
+/// Defines the cb getcursel constant used by the platform win32 module.
 const CB_GETCURSEL = 0x0147
+/// Defines the cb addstring constant used by the platform win32 module.
 const CB_ADDSTRING = 0x0143
+/// Defines the cb setcursel constant used by the platform win32 module.
 const CB_SETCURSEL = 0x014E
 
+/// Defines the mf string constant used by the platform win32 module.
 const MF_STRING = 0x00000000
+/// Defines the mf separator constant used by the platform win32 module.
 const MF_SEPARATOR = 0x00000800
+/// Defines the mf popup constant used by the platform win32 module.
 const MF_POPUP = 0x00000010
+/// Defines the tpm leftalign constant used by the platform win32 module.
 const TPM_LEFTALIGN = 0x0000
+/// Defines the tpm topalign constant used by the platform win32 module.
 const TPM_TOPALIGN = 0x0000
+/// Defines the tpm returncmd constant used by the platform win32 module.
 const TPM_RETURNCMD = 0x0100
+/// Defines the tpm nonotify constant used by the platform win32 module.
 const TPM_NONOTIFY = 0x0080
 
+/// Defines the ilc mask constant used by the platform win32 module.
 const ILC_MASK = 0x00000001
+/// Defines the ilc color32 constant used by the platform win32 module.
 const ILC_COLOR32 = 0x00000020
+/// Defines the shgfi icon constant used by the platform win32 module.
 const SHGFI_ICON = 0x00000100
+/// Defines the shgfi smallicon constant used by the platform win32 module.
 const SHGFI_SMALLICON = 0x00000001
+/// Defines the shgfi usefileattributes constant used by the platform win32 module.
 const SHGFI_USEFILEATTRIBUTES = 0x00000010
+/// Defines the file attribute readonly constant used by the platform win32 module.
 const FILE_ATTRIBUTE_READONLY = 0x00000001
+/// Defines the file attribute directory constant used by the platform win32 module.
 const FILE_ATTRIBUTE_DIRECTORY = 0x00000010
+/// Defines the file attribute normal constant used by the platform win32 module.
 const FILE_ATTRIBUTE_NORMAL = 0x00000080
 
+/// Defines the htcaption constant used by the platform win32 module.
 const HTCAPTION = 2
+/// Defines the htminbutton constant used by the platform win32 module.
 const HTMINBUTTON = 8
+/// Defines the htmaxbutton constant used by the platform win32 module.
 const HTMAXBUTTON = 9
+/// Defines the htclose constant used by the platform win32 module.
 const HTCLOSE = 20
 
+/// Defines the sc size constant used by the platform win32 module.
 const SC_SIZE = 0xF000
+/// Defines the sc move constant used by the platform win32 module.
 const SC_MOVE = 0xF010
+/// Defines the sc minimize constant used by the platform win32 module.
 const SC_MINIMIZE = 0xF020
+/// Defines the sc maximize constant used by the platform win32 module.
 const SC_MAXIMIZE = 0xF030
+/// Defines the sc close constant used by the platform win32 module.
 const SC_CLOSE = 0xF060
+/// Defines the sc restore constant used by the platform win32 module.
 const SC_RESTORE = 0xF120
 
-// Bind the native CreateWindowExW API used by MiniIDE.
+/// Bind the native CreateWindowExW API used by MiniIDE.
+/// @param exStyle exStyle value consumed by this operation.
+/// @param className className value consumed by this operation.
+/// @param windowName windowName value consumed by this operation.
+/// @param style style value consumed by this operation.
+/// @param x Horizontal coordinate used by the operation.
+/// @param y Vertical coordinate used by the operation.
+/// @param width Width in the coordinate or storage units used by the caller.
+/// @param height Height in the coordinate or storage units used by the caller.
+/// @param parent parent value consumed by this operation.
+/// @param menu menu value consumed by this operation.
+/// @param instance instance value consumed by this operation.
+/// @param param param value consumed by this operation.
+/// @returns Native ptr result produced by the call.
 extern function CreateWindowExW(exStyle as u32, className as wstr, windowName as wstr, style as u32, x as int, y as int, width as int, height as int, parent as ptr, menu as ptr, instance as ptr, param as ptr) from "user32.dll" symbol "CreateWindowExW" returns ptr
-// Bind the native CreateWindowExW API used by MiniIDE.
+/// Bind the native CreateWindowExW API used by MiniIDE.
+/// @param exStyle exStyle value consumed by this operation.
+/// @param className className value consumed by this operation.
+/// @param windowName windowName value consumed by this operation.
+/// @param style style value consumed by this operation.
+/// @param x Horizontal coordinate used by the operation.
+/// @param y Vertical coordinate used by the operation.
+/// @param width Width in the coordinate or storage units used by the caller.
+/// @param height Height in the coordinate or storage units used by the caller.
+/// @param parent parent value consumed by this operation.
+/// @param menuId Identifier of menu.
+/// @param instance instance value consumed by this operation.
+/// @param param param value consumed by this operation.
+/// @returns Native ptr result produced by the call.
 extern function CreateWindowExWId(exStyle as u32, className as wstr, windowName as wstr, style as u32, x as int, y as int, width as int, height as int, parent as ptr, menuId as int, instance as ptr, param as ptr) from "user32.dll" symbol "CreateWindowExW" returns ptr
-// Bind the native AdjustWindowRect API used by MiniIDE.
+/// Bind the native AdjustWindowRect API used by MiniIDE.
+/// @param rect rect value consumed by this operation.
+/// @param style style value consumed by this operation.
+/// @param hasMenu hasMenu value consumed by this operation.
+/// @returns Native bool result produced by the call.
 extern function AdjustWindowRect(rect as bytes, style as u32, hasMenu as bool) from "user32.dll" symbol "AdjustWindowRect" returns bool
-// Bind the native ShowWindow API used by MiniIDE.
+/// Bind the native ShowWindow API used by MiniIDE.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param cmdShow cmdShow value consumed by this operation.
+/// @returns Native bool result produced by the call.
 extern function ShowWindow(hwnd as ptr, cmdShow as int) from "user32.dll" symbol "ShowWindow" returns bool
-// Bind the native UpdateWindow API used by MiniIDE.
+/// Bind the native UpdateWindow API used by MiniIDE.
+/// @param hwnd hwnd value consumed by this operation.
+/// @returns Native bool result produced by the call.
 extern function UpdateWindow(hwnd as ptr) from "user32.dll" symbol "UpdateWindow" returns bool
-// Bind the native DestroyWindow API used by MiniIDE.
+/// Bind the native DestroyWindow API used by MiniIDE.
+/// @param hwnd hwnd value consumed by this operation.
+/// @returns Native bool result produced by the call.
 extern function DestroyWindow(hwnd as ptr) from "user32.dll" symbol "DestroyWindow" returns bool
-// Bind the native GetDC API used by MiniIDE.
+/// Bind the native GetDC API used by MiniIDE.
+/// @param hwnd hwnd value consumed by this operation.
+/// @returns Native ptr result produced by the call.
 extern function GetDC(hwnd as ptr) from "user32.dll" symbol "GetDC" returns ptr
-// Bind the native ReleaseDC API used by MiniIDE.
+/// Bind the native ReleaseDC API used by MiniIDE.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param hdc hdc value consumed by this operation.
+/// @returns Native int result produced by the call.
 extern function ReleaseDC(hwnd as ptr, hdc as ptr) from "user32.dll" symbol "ReleaseDC" returns int
-// Bind the native GetClientRect API used by MiniIDE.
+/// Bind the native GetClientRect API used by MiniIDE.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param rect rect value consumed by this operation.
+/// @returns Native bool result produced by the call.
 extern function GetClientRect(hwnd as ptr, rect as bytes) from "user32.dll" symbol "GetClientRect" returns bool
-// Bind the native PeekMessageW API used by MiniIDE.
+/// Bind the native PeekMessageW API used by MiniIDE.
+/// @param msg msg value consumed by this operation.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param minMsg minMsg value consumed by this operation.
+/// @param maxMsg maxMsg value consumed by this operation.
+/// @param removeMsg removeMsg value consumed by this operation.
+/// @returns Native bool result produced by the call.
 extern function PeekMessageW(msg as bytes, hwnd as ptr, minMsg as u32, maxMsg as u32, removeMsg as u32) from "user32.dll" symbol "PeekMessageW" returns bool
-// Bind the native TranslateMessage API used by MiniIDE.
+/// Bind the native TranslateMessage API used by MiniIDE.
+/// @param msg msg value consumed by this operation.
+/// @returns Native bool result produced by the call.
 extern function TranslateMessage(msg as bytes) from "user32.dll" symbol "TranslateMessage" returns bool
-// Bind the native DispatchMessageW API used by MiniIDE.
+/// Bind the native DispatchMessageW API used by MiniIDE.
+/// @param msg msg value consumed by this operation.
+/// @returns Native ptr result produced by the call.
 extern function DispatchMessageW(msg as bytes) from "user32.dll" symbol "DispatchMessageW" returns ptr
-// Bind the native GetAsyncKeyState API used by MiniIDE.
+/// Bind the native GetAsyncKeyState API used by MiniIDE.
+/// @param vkey vkey value consumed by this operation.
+/// @returns Native int result produced by the call.
 extern function GetAsyncKeyState(vkey as int) from "user32.dll" symbol "GetAsyncKeyState" returns int
-// Bind the native SetWindowTextW API used by MiniIDE.
+/// Bind the native SetWindowTextW API used by MiniIDE.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param text Text consumed by the operation.
+/// @returns Native bool result produced by the call.
 extern function SetWindowTextW(hwnd as ptr, text as wstr) from "user32.dll" symbol "SetWindowTextW" returns bool
-// Bind the native GetWindowTextLengthW API used by MiniIDE.
+/// Bind the native GetWindowTextLengthW API used by MiniIDE.
+/// @param hwnd hwnd value consumed by this operation.
+/// @returns Native int result produced by the call.
 extern function GetWindowTextLengthW(hwnd as ptr) from "user32.dll" symbol "GetWindowTextLengthW" returns int
-// Bind the native GetWindowTextW API used by MiniIDE.
+/// Bind the native GetWindowTextW API used by MiniIDE.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param buffer Buffer that receives or supplies the operation data.
+/// @param maxCount Number of max to process.
+/// @returns Native int result produced by the call.
 extern function GetWindowTextW(hwnd as ptr, buffer as buffer, maxCount as int) from "user32.dll" symbol "GetWindowTextW" returns int
-// Bind the native GetCursorPos API used by MiniIDE.
+/// Bind the native GetCursorPos API used by MiniIDE.
+/// @param point point value consumed by this operation.
+/// @returns Native bool result produced by the call.
 extern function GetCursorPos(point as bytes) from "user32.dll" symbol "GetCursorPos" returns bool
-// Bind the native LoadCursorW API used by MiniIDE.
+/// Bind the native LoadCursorW API used by MiniIDE.
+/// @param instance instance value consumed by this operation.
+/// @param cursorId Identifier of cursor.
+/// @returns Native ptr result produced by the call.
 extern function LoadCursorWId(instance as ptr, cursorId as int) from "user32.dll" symbol "LoadCursorW" returns ptr
-// Bind the native SetCursor API used by MiniIDE.
+/// Bind the native SetCursor API used by MiniIDE.
+/// @param cursor cursor value consumed by this operation.
+/// @returns Native ptr result produced by the call.
 extern function SetCursor(cursor as ptr) from "user32.dll" symbol "SetCursor" returns ptr
-// Bind the native GetForegroundWindow API used by MiniIDE.
+/// Bind the native GetForegroundWindow API used by MiniIDE.
+/// @returns Native ptr result produced by the call.
 extern function GetForegroundWindow() from "user32.dll" symbol "GetForegroundWindow" returns ptr
-// Bind the native SetForegroundWindow API used by MiniIDE.
+/// Bind the native SetForegroundWindow API used by MiniIDE.
+/// @param hwnd hwnd value consumed by this operation.
+/// @returns Native bool result produced by the call.
 extern function SetForegroundWindow(hwnd as ptr) from "user32.dll" symbol "SetForegroundWindow" returns bool
-// Bind the native IsChild API used by MiniIDE.
+/// Bind the native IsChild API used by MiniIDE.
+/// @param parent parent value consumed by this operation.
+/// @param child child value consumed by this operation.
+/// @returns Native bool result produced by the call.
 extern function IsChild(parent as ptr, child as ptr) from "user32.dll" symbol "IsChild" returns bool
-// Bind the native ScreenToClient API used by MiniIDE.
+/// Bind the native ScreenToClient API used by MiniIDE.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param point point value consumed by this operation.
+/// @returns Native bool result produced by the call.
 extern function ScreenToClient(hwnd as ptr, point as bytes) from "user32.dll" symbol "ScreenToClient" returns bool
-// Bind the native ClientToScreen API used by MiniIDE.
+/// Bind the native ClientToScreen API used by MiniIDE.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param point point value consumed by this operation.
+/// @returns Native bool result produced by the call.
 extern function ClientToScreen(hwnd as ptr, point as bytes) from "user32.dll" symbol "ClientToScreen" returns bool
-// Bind the native SetFocus API used by MiniIDE.
+/// Bind the native SetFocus API used by MiniIDE.
+/// @param hwnd hwnd value consumed by this operation.
+/// @returns Native ptr result produced by the call.
 extern function SetFocus(hwnd as ptr) from "user32.dll" symbol "SetFocus" returns ptr
-// Bind the native IsWindow API used by MiniIDE.
+/// Bind the native IsWindow API used by MiniIDE.
+/// @param hwnd hwnd value consumed by this operation.
+/// @returns Native bool result produced by the call.
 extern function IsWindow(hwnd as ptr) from "user32.dll" symbol "IsWindow" returns bool
-// Bind the native IsZoomed API used by MiniIDE.
+/// Bind the native IsZoomed API used by MiniIDE.
+/// @param hwnd hwnd value consumed by this operation.
+/// @returns Native bool result produced by the call.
 extern function IsZoomed(hwnd as ptr) from "user32.dll" symbol "IsZoomed" returns bool
-// Bind the native MoveWindow API used by MiniIDE.
+/// Bind the native MoveWindow API used by MiniIDE.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param x Horizontal coordinate used by the operation.
+/// @param y Vertical coordinate used by the operation.
+/// @param width Width in the coordinate or storage units used by the caller.
+/// @param height Height in the coordinate or storage units used by the caller.
+/// @param repaint repaint value consumed by this operation.
+/// @returns Native bool result produced by the call.
 extern function MoveWindow(hwnd as ptr, x as int, y as int, width as int, height as int, repaint as bool) from "user32.dll" symbol "MoveWindow" returns bool
-// Bind the native BringWindowToTop API used by MiniIDE.
+/// Bind the native BringWindowToTop API used by MiniIDE.
+/// @param hwnd hwnd value consumed by this operation.
+/// @returns Native bool result produced by the call.
 extern function BringWindowToTop(hwnd as ptr) from "user32.dll" symbol "BringWindowToTop" returns bool
-// Bind the native SetWindowPos API used by MiniIDE.
+/// Bind the native SetWindowPos API used by MiniIDE.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param insertAfter insertAfter value consumed by this operation.
+/// @param x Horizontal coordinate used by the operation.
+/// @param y Vertical coordinate used by the operation.
+/// @param width Width in the coordinate or storage units used by the caller.
+/// @param height Height in the coordinate or storage units used by the caller.
+/// @param flags Bit flags controlling the operation.
+/// @returns Native bool result produced by the call.
 extern function SetWindowPos(hwnd as ptr, insertAfter as int, x as int, y as int, width as int, height as int, flags as u32) from "user32.dll" symbol "SetWindowPos" returns bool
-// Bind the native SendMessageW API used by MiniIDE.
+/// Sends an integer message payload through the native SendMessageW API.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param msg msg value consumed by this operation.
+/// @param wParam wParam value consumed by this operation.
+/// @param lParam lParam value consumed by this operation.
+/// @returns Native int result produced by the call.
 extern function SendMessageW(hwnd as ptr, msg as u32, wParam as int, lParam as int) from "user32.dll" symbol "SendMessageW" returns int
-// Bind the native SendMessageW API used by MiniIDE.
+/// Sends a UTF-16 string payload through the native SendMessageW API.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param msg msg value consumed by this operation.
+/// @param wParam wParam value consumed by this operation.
+/// @param lParam lParam value consumed by this operation.
+/// @returns Native int result produced by the call.
 extern function SendMessageWStr(hwnd as ptr, msg as u32, wParam as int, lParam as wstr) from "user32.dll" symbol "SendMessageW" returns int
-// Bind the native SendMessageW API used by MiniIDE.
+/// Sends a pointer payload through the native SendMessageW API.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param msg msg value consumed by this operation.
+/// @param wParam wParam value consumed by this operation.
+/// @param lParam lParam value consumed by this operation.
+/// @returns Native int result produced by the call.
 extern function SendMessageWPtr(hwnd as ptr, msg as u32, wParam as int, lParam as ptr) from "user32.dll" symbol "SendMessageW" returns int
-// Bind the native SendMessageW API used by MiniIDE.
+/// Sends a byte-buffer payload through the native SendMessageW API.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param msg msg value consumed by this operation.
+/// @param wParam wParam value consumed by this operation.
+/// @param lParam lParam value consumed by this operation.
+/// @returns Native int result produced by the call.
 extern function SendMessageWBytes(hwnd as ptr, msg as u32, wParam as int, lParam as bytes) from "user32.dll" symbol "SendMessageW" returns int
-// Bind the native SendMessageW API used by MiniIDE.
+/// Sends byte-buffer values in both message parameter slots.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param msg msg value consumed by this operation.
+/// @param wParam wParam value consumed by this operation.
+/// @param lParam lParam value consumed by this operation.
+/// @returns Native int result produced by the call.
 extern function SendMessageW2Bytes(hwnd as ptr, msg as u32, wParam as bytes, lParam as bytes) from "user32.dll" symbol "SendMessageW" returns int
-// Bind the native InvalidateRect API used by MiniIDE.
+/// Bind the native InvalidateRect API used by MiniIDE.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param rect rect value consumed by this operation.
+/// @param erase erase value consumed by this operation.
+/// @returns Native bool result produced by the call.
 extern function InvalidateRect(hwnd as ptr, rect as ptr, erase as bool) from "user32.dll" symbol "InvalidateRect" returns bool
-// Bind the native LoadLibraryW API used by MiniIDE.
+/// Bind the native LoadLibraryW API used by MiniIDE.
+/// @param path Path of the file or directory used by the operation.
+/// @returns Native ptr result produced by the call.
 extern function LoadLibraryW(path as wstr) from "kernel32.dll" symbol "LoadLibraryW" returns ptr
-// Bind the native GlobalAlloc API used by MiniIDE.
+/// Bind the native GlobalAlloc API used by MiniIDE.
+/// @param flags Bit flags controlling the operation.
+/// @param size Size in the units required by the operation.
+/// @returns Native ptr result produced by the call.
 extern function GlobalAlloc(flags as u32, size as u32) from "kernel32.dll" symbol "GlobalAlloc" returns ptr
-// Bind the native GlobalFree API used by MiniIDE.
+/// Bind the native GlobalFree API used by MiniIDE.
+/// @param mem mem value consumed by this operation.
+/// @returns Native ptr result produced by the call.
 extern function GlobalFree(mem as ptr) from "kernel32.dll" symbol "GlobalFree" returns ptr
-// Bind the native MultiByteToWideChar API used by MiniIDE.
+/// Bind the native MultiByteToWideChar API used by MiniIDE.
+/// @param codePage codePage value consumed by this operation.
+/// @param flags Bit flags controlling the operation.
+/// @param src src value consumed by this operation.
+/// @param srcLen srcLen value consumed by this operation.
+/// @param dst dst value consumed by this operation.
+/// @param dstChars dstChars value consumed by this operation.
+/// @returns Native int result produced by the call.
 extern function MultiByteToWideCharPtr(codePage as u32, flags as u32, src as bytes, srcLen as int, dst as ptr, dstChars as int) from "kernel32.dll" symbol "MultiByteToWideChar" returns int
-// Bind the native MultiByteToWideChar API used by MiniIDE.
+/// Bind the native MultiByteToWideChar API used by MiniIDE.
+/// @param codePage codePage value consumed by this operation.
+/// @param flags Bit flags controlling the operation.
+/// @param src src value consumed by this operation.
+/// @param srcLen srcLen value consumed by this operation.
+/// @param dst dst value consumed by this operation.
+/// @param dstChars dstChars value consumed by this operation.
+/// @returns Native int result produced by the call.
 extern function MultiByteToWideCharLen(codePage as u32, flags as u32, src as bytes, srcLen as int, dst as ptr, dstChars as int) from "kernel32.dll" symbol "MultiByteToWideChar" returns int
-// Bind the native RtlMoveMemory API used by MiniIDE.
+/// Bind the native RtlMoveMemory API used by MiniIDE.
+/// @param dst dst value consumed by this operation.
+/// @param src src value consumed by this operation.
+/// @param len len value consumed by this operation.
 extern function RtlMoveMemoryFromPtr(dst as bytes, src as ptr, len as u32) from "kernel32.dll" symbol "RtlMoveMemory" returns void
-// Bind the native InitCommonControlsEx API used by MiniIDE.
+/// Bind the native InitCommonControlsEx API used by MiniIDE.
+/// @param data Input data consumed by the operation.
+/// @returns Native bool result produced by the call.
 extern function InitCommonControlsEx(data as bytes) from "comctl32.dll" symbol "InitCommonControlsEx" returns bool
-// Bind the native GetTickCount API used by MiniIDE.
+/// Bind the native GetTickCount API used by MiniIDE.
+/// @returns Native u32 result produced by the call.
 extern function GetTickCount() from "kernel32.dll" symbol "GetTickCount" returns u32
-// Bind the native CreateMenu API used by MiniIDE.
+/// Bind the native CreateMenu API used by MiniIDE.
+/// @returns Native ptr result produced by the call.
 extern function CreateMenu() from "user32.dll" symbol "CreateMenu" returns ptr
-// Bind the native CreatePopupMenu API used by MiniIDE.
+/// Bind the native CreatePopupMenu API used by MiniIDE.
+/// @returns Native ptr result produced by the call.
 extern function CreatePopupMenu() from "user32.dll" symbol "CreatePopupMenu" returns ptr
-// Bind the native DestroyMenu API used by MiniIDE.
+/// Bind the native DestroyMenu API used by MiniIDE.
+/// @param menu menu value consumed by this operation.
+/// @returns Native bool result produced by the call.
 extern function DestroyMenu(menu as ptr) from "user32.dll" symbol "DestroyMenu" returns bool
-// Bind the native AppendMenuW API used by MiniIDE.
+/// Bind the native AppendMenuW API used by MiniIDE.
+/// @param menu menu value consumed by this operation.
+/// @param flags Bit flags controlling the operation.
+/// @param id Stable identifier of the affected item.
+/// @param text Text consumed by the operation.
+/// @returns Native bool result produced by the call.
 extern function AppendMenuWId(menu as ptr, flags as u32, id as int, text as wstr) from "user32.dll" symbol "AppendMenuW" returns bool
-// Bind the native AppendMenuW API used by MiniIDE.
+/// Bind the native AppendMenuW API used by MiniIDE.
+/// @param menu menu value consumed by this operation.
+/// @param flags Bit flags controlling the operation.
+/// @param popup popup value consumed by this operation.
+/// @param text Text consumed by the operation.
+/// @returns Native bool result produced by the call.
 extern function AppendMenuWPopup(menu as ptr, flags as u32, popup as ptr, text as wstr) from "user32.dll" symbol "AppendMenuW" returns bool
-// Bind the native SetMenu API used by MiniIDE.
+/// Bind the native SetMenu API used by MiniIDE.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param menu menu value consumed by this operation.
+/// @returns Native bool result produced by the call.
 extern function SetMenu(hwnd as ptr, menu as ptr) from "user32.dll" symbol "SetMenu" returns bool
-// Bind the native DrawMenuBar API used by MiniIDE.
+/// Bind the native DrawMenuBar API used by MiniIDE.
+/// @param hwnd hwnd value consumed by this operation.
+/// @returns Native bool result produced by the call.
 extern function DrawMenuBar(hwnd as ptr) from "user32.dll" symbol "DrawMenuBar" returns bool
-// Bind the native MessageBoxW API used by MiniIDE.
+/// Bind the native MessageBoxW API used by MiniIDE.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param text Text consumed by the operation.
+/// @param caption caption value consumed by this operation.
+/// @param flags Bit flags controlling the operation.
+/// @returns Native int result produced by the call.
 extern function MessageBoxW(hwnd as ptr, text as wstr, caption as wstr, flags as u32) from "user32.dll" symbol "MessageBoxW" returns int
-// Bind the native TrackPopupMenu API used by MiniIDE.
+/// Bind the native TrackPopupMenu API used by MiniIDE.
+/// @param menu menu value consumed by this operation.
+/// @param flags Bit flags controlling the operation.
+/// @param x Horizontal coordinate used by the operation.
+/// @param y Vertical coordinate used by the operation.
+/// @param reserved reserved value consumed by this operation.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param rect rect value consumed by this operation.
+/// @returns Native int result produced by the call.
 extern function TrackPopupMenu(menu as ptr, flags as u32, x as int, y as int, reserved as int, hwnd as ptr, rect as ptr) from "user32.dll" symbol "TrackPopupMenu" returns int
-// Bind the native GetOpenFileNameW API used by MiniIDE.
+/// Bind the native GetOpenFileNameW API used by MiniIDE.
+/// @param ofn ofn value consumed by this operation.
+/// @returns Native bool result produced by the call.
 extern function GetOpenFileNameW(ofn as bytes) from "comdlg32.dll" symbol "GetOpenFileNameW" returns bool
-// Bind the native CreateDirectoryW API used by MiniIDE.
+/// Creates directories required by the Win32 platform layer.
+/// @param path Path of the file or directory used by the operation.
+/// @param securityAttributes securityAttributes value consumed by this operation.
+/// @returns Native bool result produced by the call.
 extern function CreateDirectoryW(path as wstr, securityAttributes as ptr) from "kernel32.dll" symbol "CreateDirectoryW" returns bool
-// Bind the native RemoveDirectoryW API used by MiniIDE.
+/// Bind the native RemoveDirectoryW API used by MiniIDE.
+/// @param path Path of the file or directory used by the operation.
+/// @returns Native bool result produced by the call.
 extern function RemoveDirectoryW(path as wstr) from "kernel32.dll" symbol "RemoveDirectoryW" returns bool
-// Bind the native ImageList_Create API used by MiniIDE.
+/// Bind the native ImageList_Create API used by MiniIDE.
+/// @param cx cx value consumed by this operation.
+/// @param cy cy value consumed by this operation.
+/// @param flags Bit flags controlling the operation.
+/// @param initial initial value consumed by this operation.
+/// @param grow grow value consumed by this operation.
+/// @returns Native ptr result produced by the call.
 extern function ImageList_Create(cx as int, cy as int, flags as u32, initial as int, grow as int) from "comctl32.dll" symbol "ImageList_Create" returns ptr
-// Bind the native ImageList_AddIcon API used by MiniIDE.
+/// Bind the native ImageList_AddIcon API used by MiniIDE.
+/// @param imageList imageList value consumed by this operation.
+/// @param icon icon value consumed by this operation.
+/// @returns Native int result produced by the call.
 extern function ImageList_AddIcon(imageList as ptr, icon as ptr) from "comctl32.dll" symbol "ImageList_AddIcon" returns int
-// Bind the native SHGetFileInfoW API used by MiniIDE.
+/// Bind the native SHGetFileInfoW API used by MiniIDE.
+/// @param path Path of the file or directory used by the operation.
+/// @param fileAttributes fileAttributes value consumed by this operation.
+/// @param fileInfo fileInfo value consumed by this operation.
+/// @param fileInfoSize fileInfoSize value consumed by this operation.
+/// @param flags Bit flags controlling the operation.
+/// @returns Native ptr result produced by the call.
 extern function SHGetFileInfoW(path as wstr, fileAttributes as u32, fileInfo as bytes, fileInfoSize as u32, flags as u32) from "shell32.dll" symbol "SHGetFileInfoW" returns ptr
-// Bind the native DestroyIcon API used by MiniIDE.
+/// Bind the native DestroyIcon API used by MiniIDE.
+/// @param icon icon value consumed by this operation.
+/// @returns Native bool result produced by the call.
 extern function DestroyIcon(icon as ptr) from "user32.dll" symbol "DestroyIcon" returns bool
-// Bind the native SetWindowTheme API used by MiniIDE.
+/// Bind the native SetWindowTheme API used by MiniIDE.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param subAppName subAppName value consumed by this operation.
+/// @param subIdList subIdList value consumed by this operation.
+/// @returns Native int result produced by the call.
 extern function SetWindowTheme(hwnd as ptr, subAppName as wstr, subIdList as wstr) from "uxtheme.dll" symbol "SetWindowTheme" returns int
-// Bind the native DwmSetWindowAttribute API used by MiniIDE.
+/// Bind the native DwmSetWindowAttribute API used by MiniIDE.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param attribute attribute value consumed by this operation.
+/// @param value Value consumed or transformed by the operation.
+/// @param size Size in the units required by the operation.
+/// @returns Native int result produced by the call.
 extern function DwmSetWindowAttribute(hwnd as ptr, attribute as u32, value as bytes, size as u32) from "dwmapi.dll" symbol "DwmSetWindowAttribute" returns int
 
-// Bind the native CreateSolidBrush API used by MiniIDE.
+/// Bind the native CreateSolidBrush API used by MiniIDE.
+/// @param color color value consumed by this operation.
+/// @returns Native ptr result produced by the call.
 extern function CreateSolidBrush(color as u32) from "gdi32.dll" symbol "CreateSolidBrush" returns ptr
-// Bind the native DeleteObject API used by MiniIDE.
+/// Bind the native DeleteObject API used by MiniIDE.
+/// @param obj obj value consumed by this operation.
+/// @returns Native bool result produced by the call.
 extern function DeleteObject(obj as ptr) from "gdi32.dll" symbol "DeleteObject" returns bool
-// Bind the native FillRect API used by MiniIDE.
+/// Bind the native FillRect API used by MiniIDE.
+/// @param hdc hdc value consumed by this operation.
+/// @param rect rect value consumed by this operation.
+/// @param brush brush value consumed by this operation.
+/// @returns Native int result produced by the call.
 extern function FillRect(hdc as ptr, rect as bytes, brush as ptr) from "user32.dll" symbol "FillRect" returns int
-// Bind the native SetTextColor API used by MiniIDE.
+/// Bind the native SetTextColor API used by MiniIDE.
+/// @param hdc hdc value consumed by this operation.
+/// @param color color value consumed by this operation.
+/// @returns Native u32 result produced by the call.
 extern function SetTextColor(hdc as ptr, color as u32) from "gdi32.dll" symbol "SetTextColor" returns u32
-// Bind the native SetBkMode API used by MiniIDE.
+/// Bind the native SetBkMode API used by MiniIDE.
+/// @param hdc hdc value consumed by this operation.
+/// @param mode Mode selecting the requested behavior.
+/// @returns Native int result produced by the call.
 extern function SetBkMode(hdc as ptr, mode as int) from "gdi32.dll" symbol "SetBkMode" returns int
-// Bind the native TextOutW API used by MiniIDE.
+/// Bind the native TextOutW API used by MiniIDE.
+/// @param hdc hdc value consumed by this operation.
+/// @param x Horizontal coordinate used by the operation.
+/// @param y Vertical coordinate used by the operation.
+/// @param text Text consumed by the operation.
+/// @param count Number of items or units to process.
+/// @returns Native bool result produced by the call.
 extern function TextOutW(hdc as ptr, x as int, y as int, text as wstr, count as int) from "gdi32.dll" symbol "TextOutW" returns bool
-// Bind the native CreatePen API used by MiniIDE.
+/// Bind the native CreatePen API used by MiniIDE.
+/// @param style style value consumed by this operation.
+/// @param width Width in the coordinate or storage units used by the caller.
+/// @param color color value consumed by this operation.
+/// @returns Native ptr result produced by the call.
 extern function CreatePen(style as int, width as int, color as u32) from "gdi32.dll" symbol "CreatePen" returns ptr
-// Bind the native MoveToEx API used by MiniIDE.
+/// Bind the native MoveToEx API used by MiniIDE.
+/// @param hdc hdc value consumed by this operation.
+/// @param x Horizontal coordinate used by the operation.
+/// @param y Vertical coordinate used by the operation.
+/// @param point point value consumed by this operation.
+/// @returns Native bool result produced by the call.
 extern function MoveToEx(hdc as ptr, x as int, y as int, point as ptr) from "gdi32.dll" symbol "MoveToEx" returns bool
-// Bind the native LineTo API used by MiniIDE.
+/// Bind the native LineTo API used by MiniIDE.
+/// @param hdc hdc value consumed by this operation.
+/// @param x Horizontal coordinate used by the operation.
+/// @param y Vertical coordinate used by the operation.
+/// @returns Native bool result produced by the call.
 extern function LineTo(hdc as ptr, x as int, y as int) from "gdi32.dll" symbol "LineTo" returns bool
-// Bind the native SelectObject API used by MiniIDE.
+/// Bind the native SelectObject API used by MiniIDE.
+/// @param hdc hdc value consumed by this operation.
+/// @param obj obj value consumed by this operation.
+/// @returns Native ptr result produced by the call.
 extern function SelectObject(hdc as ptr, obj as ptr) from "gdi32.dll" symbol "SelectObject" returns ptr
-// Bind the native CreateFontW API used by MiniIDE.
+/// Bind the native CreateFontW API used by MiniIDE.
+/// @param height Height in the coordinate or storage units used by the caller.
+/// @param width Width in the coordinate or storage units used by the caller.
+/// @param escapement escapement value consumed by this operation.
+/// @param orientation orientation value consumed by this operation.
+/// @param weight weight value consumed by this operation.
+/// @param italic italic value consumed by this operation.
+/// @param underline underline value consumed by this operation.
+/// @param strikeout strikeout value consumed by this operation.
+/// @param charset charset value consumed by this operation.
+/// @param outPrecision outPrecision value consumed by this operation.
+/// @param clipPrecision clipPrecision value consumed by this operation.
+/// @param quality quality value consumed by this operation.
+/// @param pitchAndFamily pitchAndFamily value consumed by this operation.
+/// @param face face value consumed by this operation.
+/// @returns Native ptr result produced by the call.
 extern function CreateFontW(height as int, width as int, escapement as int, orientation as int, weight as int, italic as u32, underline as u32, strikeout as u32, charset as u32, outPrecision as u32, clipPrecision as u32, quality as u32, pitchAndFamily as u32, face as wstr) from "gdi32.dll" symbol "CreateFontW" returns ptr
 
-// Bind the native Sleep API used by MiniIDE.
+/// Bind the native Sleep API used by MiniIDE.
+/// @param ms ms value consumed by this operation.
 extern function Sleep(ms as int) from "kernel32.dll" symbol "Sleep" returns void
 
-// Pack red, green, and blue components into a Win32 COLORREF value.
+/// Pack red, green, and blue components into a Win32 COLORREF value.
+/// @param r r value consumed by this operation.
+/// @param g g value consumed by this operation.
+/// @param b b value consumed by this operation.
 function rgb(r, g, b)
   return (r & 255) | ((g & 255) << 8) | ((b & 255) << 16)
 end function
 
-// Write an unsigned 32-bit value into a byte buffer at an offset.
+/// Writes an unsigned 32-bit value into a Win32 interop buffer.
+/// @param buf buf value consumed by this operation.
+/// @param off off value consumed by this operation.
+/// @param value Value consumed or transformed by the operation.
 function _write_u32(buf, off, value)
   v = value & 0xFFFFFFFF
   buf[off] = v & 255
@@ -430,7 +949,10 @@ function _write_u32(buf, off, value)
   buf[off + 3] = (v >> 24) & 255
 end function
 
-// Write a pointer-sized value into a byte buffer at an offset.
+/// Write a pointer-sized value into a byte buffer at an offset.
+/// @param buf buf value consumed by this operation.
+/// @param off off value consumed by this operation.
+/// @param value Value consumed or transformed by the operation.
 function _write_ptr(buf, off, value)
   low = value & 0xFFFFFFFF
   high = 0
@@ -443,12 +965,16 @@ function _write_ptr(buf, off, value)
   _write_u32(buf, off + 4, high)
 end function
 
-// Read an unsigned 32-bit value from a byte buffer at an offset.
+/// Read an unsigned 32-bit value from a byte buffer at an offset.
+/// @param buf buf value consumed by this operation.
+/// @param off off value consumed by this operation.
 function _read_u32(buf, off)
   return buf[off] | (buf[off + 1] << 8) | (buf[off + 2] << 16) | (buf[off + 3] << 24)
 end function
 
-// Read a signed 32-bit value from a byte buffer at an offset.
+/// Read a signed 32-bit value from a byte buffer at an offset.
+/// @param buf buf value consumed by this operation.
+/// @param off off value consumed by this operation.
 function _read_s32(buf, off)
   v = _read_u32(buf, off)
   if v >= 2147483648 then
@@ -457,14 +983,20 @@ function _read_s32(buf, off)
   return v
 end function
 
-// Read a pointer-sized value from a byte buffer at an offset.
+/// Read a pointer-sized value from a byte buffer at an offset.
+/// @param buf buf value consumed by this operation.
+/// @param off off value consumed by this operation.
 function _read_ptr(buf, off)
   low = _read_u32(buf, off)
   high = _read_u32(buf, off + 4)
   return low + high * 4294967296
 end function
 
-// Build a Win32 RECT byte buffer from position and size values.
+/// Build a Win32 RECT byte buffer from position and size values.
+/// @param x Horizontal coordinate used by the operation.
+/// @param y Vertical coordinate used by the operation.
+/// @param w w value consumed by this operation.
+/// @param h h value consumed by this operation.
 function rect_bytes(x, y, w, h)
   r = bytes(16, 0)
   _write_u32(r, 0, x)
@@ -474,17 +1006,20 @@ function rect_bytes(x, y, w, h)
   return r
 end function
 
-// Read the x coordinate from a Win32 POINT byte buffer.
+/// Read the x coordinate from a Win32 POINT byte buffer.
+/// @param point point value consumed by this operation.
 function point_x(point)
   return _read_s32(point, 0)
 end function
 
-// Read the y coordinate from a Win32 POINT byte buffer.
+/// Read the y coordinate from a Win32 POINT byte buffer.
+/// @param point point value consumed by this operation.
 function point_y(point)
   return _read_s32(point, 4)
 end function
 
-// Return the client width and height for a window.
+/// Return the client width and height for a window.
+/// @param hwnd hwnd value consumed by this operation.
 function client_size(hwnd)
   r = bytes(16, 0)
   ok = GetClientRect(hwnd, r)
@@ -492,7 +1027,8 @@ function client_size(hwnd)
   return [_read_s32(r, 8) - _read_s32(r, 0), _read_s32(r, 12) - _read_s32(r, 4)]
 end function
 
-// Return the current mouse position in client coordinates.
+/// Return the current mouse position in client coordinates.
+/// @param hwnd hwnd value consumed by this operation.
 function mouse_client(hwnd)
   p = bytes(8, 0)
   ok = GetCursorPos(p)
@@ -501,29 +1037,33 @@ function mouse_client(hwnd)
   return [point_x(p), point_y(p)]
 end function
 
-// Set system cursor.
+/// Set system cursor.
+/// @param cursor_id Identifier of cursor.
 function set_system_cursor(cursor_id)
   cursor = LoadCursorWId(void, cursor_id)
   if cursor is void then return end if
   SetCursor(cursor)
 end function
 
-// Set cursor arrow.
+/// Set cursor arrow.
 function set_cursor_arrow()
   set_system_cursor(IDC_ARROW)
 end function
 
-// Set cursor ibeam.
+/// Set cursor ibeam.
 function set_cursor_ibeam()
   set_system_cursor(IDC_IBEAM)
 end function
 
-// Set cursor hand.
+/// Set cursor hand.
 function set_cursor_hand()
   set_system_cursor(IDC_HAND)
 end function
 
-// Convert a client coordinate to a screen coordinate.
+/// Convert a client coordinate to a screen coordinate.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param x Horizontal coordinate used by the operation.
+/// @param y Vertical coordinate used by the operation.
 function client_to_screen_point(hwnd, x, y)
   p = bytes(8, 0)
   _write_u32(p, 0, x)
@@ -532,14 +1072,20 @@ function client_to_screen_point(hwnd, x, y)
   return [point_x(p), point_y(p)]
 end function
 
-// Show a popup menu at a client-coordinate position.
+/// Show a popup menu at a client-coordinate position.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param menu menu value consumed by this operation.
+/// @param x Horizontal coordinate used by the operation.
+/// @param y Vertical coordinate used by the operation.
 function track_popup(hwnd, menu, x, y)
   p = client_to_screen_point(hwnd, x, y)
   SetForegroundWindow(hwnd)
   return TrackPopupMenu(menu, TPM_LEFTALIGN | TPM_TOPALIGN | TPM_RETURNCMD | TPM_NONOTIFY, p[0], p[1], 0, hwnd, void)
 end function
 
-// Set window dark mode.
+/// Set window dark mode.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param enabled enabled value consumed by this operation.
 function set_window_dark_mode(hwnd, enabled)
   if hwnd is void then return end if
   data = bytes(4, 0)
@@ -550,7 +1096,9 @@ function set_window_dark_mode(hwnd, enabled)
   DwmSetWindowAttribute(hwnd, 19, data, 4)
 end function
 
-// Set control dark theme.
+/// Set control dark theme.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param enabled enabled value consumed by this operation.
 function set_control_dark_theme(hwnd, enabled)
   if hwnd is void then return end if
   if enabled then
@@ -560,25 +1108,30 @@ function set_control_dark_theme(hwnd, enabled)
   end if
 end function
 
-// Destroy menu.
+/// Destroy menu.
+/// @param menu menu value consumed by this operation.
 function destroy_menu(menu)
   if menu is void then return end if
   DestroyMenu(menu)
 end function
 
-// Create directory.
+/// Create directory.
+/// @param path Path of the file or directory used by the operation.
 function create_directory(path)
   if typeof(path) != "string" or path == "" then return false end if
   return CreateDirectoryW(path, void)
 end function
 
-// Remove directory.
+/// Remove directory.
+/// @param path Path of the file or directory used by the operation.
 function remove_directory(path)
   if typeof(path) != "string" or path == "" then return false end if
   return RemoveDirectoryW(path)
 end function
 
-// Return the shell small icon.
+/// Return the shell small icon.
+/// @param path Path of the file or directory used by the operation.
+/// @param attrs attrs value consumed by this operation.
 function _shell_small_icon(path, attrs)
   if typeof(path) != "string" or path == "" then path = "file" end if
   info = bytes(720, 0)
@@ -589,7 +1142,10 @@ function _shell_small_icon(path, attrs)
   return icon
 end function
 
-// Return the image list add shell icon.
+/// Return the image list add shell icon.
+/// @param image_list image_list value consumed by this operation.
+/// @param path Path of the file or directory used by the operation.
+/// @param attrs attrs value consumed by this operation.
 function _image_list_add_shell_icon(image_list, path, attrs)
   if image_list is void then return -1 end if
   icon = _shell_small_icon(path, attrs)
@@ -599,7 +1155,7 @@ function _image_list_add_shell_icon(image_list, path, attrs)
   return idx
 end function
 
-// Create tree image list.
+/// Create tree image list.
 function create_tree_image_list()
   image_list = ImageList_Create(16, 16, ILC_COLOR32 | ILC_MASK, 4, 4)
   if image_list is void then return image_list end if
@@ -610,13 +1166,16 @@ function create_tree_image_list()
   return image_list
 end function
 
-// Send the set image list operation to a tree-view control.
+/// Send the set image list operation to a tree-view control.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param image_list image_list value consumed by this operation.
 function tree_set_image_list(hwnd, image_list)
   if hwnd is void or image_list is void then return end if
   SendMessageWPtr(hwnd, TVM_SETIMAGELIST, TVSIL_NORMAL, image_list)
 end function
 
-// Return the icon glyph used for a toolbar command.
+/// Return the icon glyph used for a toolbar command.
+/// @param kind kind value consumed by this operation.
 function toolbar_icon(kind)
   if kind == "folder" then return _shell_small_icon("folder", FILE_ATTRIBUTE_DIRECTORY) end if
   if kind == "exe" then return _shell_small_icon("program.exe", FILE_ATTRIBUTE_NORMAL) end if
@@ -625,7 +1184,9 @@ function toolbar_icon(kind)
   return _shell_small_icon("file.txt", FILE_ATTRIBUTE_NORMAL)
 end function
 
-// Create icon static.
+/// Create icon static.
+/// @param parent parent value consumed by this operation.
+/// @param icon icon value consumed by this operation.
 function create_icon_static(parent, icon)
   hwnd = create_child(parent, "STATIC", "", 0, SS_ICON, 0, 0, 22, 22)
   if hwnd is void then return hwnd end if
@@ -633,7 +1194,13 @@ function create_icon_static(parent, icon)
   return hwnd
 end function
 
-// Fill rect.
+/// Fill rect.
+/// @param hdc hdc value consumed by this operation.
+/// @param x Horizontal coordinate used by the operation.
+/// @param y Vertical coordinate used by the operation.
+/// @param w w value consumed by this operation.
+/// @param h h value consumed by this operation.
+/// @param color color value consumed by this operation.
 function fill_rect(hdc, x, y, w, h, color)
   if w <= 0 or h <= 0 then return end if
   br = CreateSolidBrush(color)
@@ -643,7 +1210,12 @@ function fill_rect(hdc, x, y, w, h, color)
   DeleteObject(br)
 end function
 
-// Draw text.
+/// Draw text.
+/// @param hdc hdc value consumed by this operation.
+/// @param x Horizontal coordinate used by the operation.
+/// @param y Vertical coordinate used by the operation.
+/// @param text Text consumed by the operation.
+/// @param color color value consumed by this operation.
 function draw_text(hdc, x, y, text, color)
   if typeof(text) != "string" then return end if
   SetBkMode(hdc, TRANSPARENT)
@@ -651,7 +1223,13 @@ function draw_text(hdc, x, y, text, color)
   TextOutW(hdc, x, y, text, len(text))
 end function
 
-// Draw line.
+/// Draw line.
+/// @param hdc hdc value consumed by this operation.
+/// @param x1 x1 value consumed by this operation.
+/// @param y1 y1 value consumed by this operation.
+/// @param x2 x2 value consumed by this operation.
+/// @param y2 y2 value consumed by this operation.
+/// @param color color value consumed by this operation.
 function draw_line(hdc, x1, y1, x2, y2, color)
   pen = CreatePen(PS_SOLID, 1, color)
   if pen is void then return end if
@@ -662,14 +1240,17 @@ function draw_line(hdc, x1, y1, x2, y2, color)
   DeleteObject(pen)
 end function
 
-// Create a Win32 font handle for a face, size, and weight.
+/// Create a Win32 font handle for a face, size, and weight.
+/// @param height Height in the coordinate or storage units used by the caller.
+/// @param face face value consumed by this operation.
+/// @param bold bold value consumed by this operation.
 function make_font(height, face, bold)
   weight = FW_NORMAL
   if bold then weight = FW_BOLD end if
   return CreateFontW(height, 0, 0, 0, weight, 0, 0, 0, 0, 0, 0, 0, 0, face)
 end function
 
-// Initialize common control classes used by MiniIDE.
+/// Initialize common control classes used by MiniIDE.
 function init_common_controls()
   LoadLibraryW("Comctl32.dll")
   data = bytes(8, 0)
@@ -678,7 +1259,8 @@ function init_common_controls()
   InitCommonControlsEx(data)
 end function
 
-// Return the wide alloc.
+/// Return the wide alloc.
+/// @param text Text consumed by the operation.
 function _wide_alloc(text)
   if typeof(text) != "string" then text = "" end if
   raw = bytes(text)
@@ -696,23 +1278,27 @@ function _wide_alloc(text)
   return mem
 end function
 
-// Return the wide free.
+/// Return the wide free.
+/// @param mem mem value consumed by this operation.
 function _wide_free(mem)
   if mem is void then return end if
   GlobalFree(mem)
 end function
 
-// Return true when a virtual key is currently down.
+/// Return true when a virtual key is currently down.
+/// @param vk vk value consumed by this operation.
 function key_down(vk)
   return (GetAsyncKeyState(vk) & 32768) != 0
 end function
 
-// Return true when a message represents a key press event.
+/// Return true when a message represents a key press event.
+/// @param vk vk value consumed by this operation.
 function key_pressed_event(vk)
   return (GetAsyncKeyState(vk) & 1) != 0
 end function
 
-// Return true when foreground.
+/// Return true when foreground.
+/// @param hwnd hwnd value consumed by this operation.
 function is_foreground(hwnd)
   if hwnd is void then return false end if
   fg = GetForegroundWindow()
@@ -720,64 +1306,76 @@ function is_foreground(hwnd)
   return IsChild(hwnd, fg)
 end function
 
-// Extract message from a Win32 message.
+/// Extract message from a Win32 message.
+/// @param msg msg value consumed by this operation.
 function msg_message(msg)
   return _read_u32(msg, 8)
 end function
 
-// Extract window handle from a Win32 message.
+/// Extract window handle from a Win32 message.
+/// @param msg msg value consumed by this operation.
 function msg_hwnd(msg)
   return _read_ptr(msg, 0)
 end function
 
-// Extract wParam unsigned 32-bit value from a Win32 message.
+/// Extract wParam unsigned 32-bit value from a Win32 message.
+/// @param msg msg value consumed by this operation.
 function msg_wparam_u32(msg)
   return _read_u32(msg, 16)
 end function
 
-// Extract lParam pointer from a Win32 message.
+/// Extract lParam pointer from a Win32 message.
+/// @param msg msg value consumed by this operation.
 function msg_lparam_ptr(msg)
   return _read_ptr(msg, 24)
 end function
 
-// Return the signed16.
+/// Return the signed16.
+/// @param value Value consumed or transformed by the operation.
 function _signed16(value)
   v = value & 0xFFFF
   if v >= 32768 then return v - 65536 end if
   return v
 end function
 
-// Extract lParam x from a Win32 message.
+/// Extract lParam x from a Win32 message.
+/// @param msg msg value consumed by this operation.
 function msg_lparam_x(msg)
   return _signed16(_read_u32(msg, 24))
 end function
 
-// Extract lParam y from a Win32 message.
+/// Extract lParam y from a Win32 message.
+/// @param msg msg value consumed by this operation.
 function msg_lparam_y(msg)
   return _signed16(_read_u32(msg, 24) >> 16)
 end function
 
-// Extract command identifier from a Win32 message.
+/// Extract command identifier from a Win32 message.
+/// @param msg msg value consumed by this operation.
 function msg_command_id(msg)
   return msg_wparam_u32(msg) & 0xFFFF
 end function
 
-// Extract command notify from a Win32 message.
+/// Extract command notify from a Win32 message.
+/// @param msg msg value consumed by this operation.
 function msg_command_notify(msg)
   return (msg_wparam_u32(msg) >> 16) & 0xFFFF
 end function
 
-// Extract identifier from a notification message.
+/// Extract identifier from a notification message.
+/// @param msg msg value consumed by this operation.
 function notify_id(msg)
   return notify_id_from_ptr(msg_lparam_ptr(msg))
 end function
 
-// Extract code from a notification message.
+/// Extract code from a notification message.
+/// @param msg msg value consumed by this operation.
 function notify_code(msg)
   return notify_code_from_ptr(msg_lparam_ptr(msg))
 end function
 
-// Extract identifier from pointer from a notification message.
+/// Extract identifier from pointer from a notification message.
+/// @param ptr ptr value consumed by this operation.
 function notify_id_from_ptr(ptr)
   data = bytes(24, 0)
   if ptr == 0 then return 0 end if
@@ -785,7 +1383,8 @@ function notify_id_from_ptr(ptr)
   return _read_ptr(data, 8)
 end function
 
-// Extract code from pointer from a notification message.
+/// Extract code from pointer from a notification message.
+/// @param ptr ptr value consumed by this operation.
 function notify_code_from_ptr(ptr)
   data = bytes(24, 0)
   if ptr == 0 then return 0 end if
@@ -793,21 +1392,24 @@ function notify_code_from_ptr(ptr)
   return _read_s32(data, 16)
 end function
 
-// Extract mouse x from a Win32 message.
+/// Extract mouse x from a Win32 message.
+/// @param msg msg value consumed by this operation.
 function msg_mouse_x(msg)
   v = _read_u32(msg, 24) & 0xFFFF
   if v >= 32768 then v = v - 65536 end if
   return v
 end function
 
-// Extract mouse y from a Win32 message.
+/// Extract mouse y from a Win32 message.
+/// @param msg msg value consumed by this operation.
 function msg_mouse_y(msg)
   v = (_read_u32(msg, 24) >> 16) & 0xFFFF
   if v >= 32768 then v = v - 65536 end if
   return v
 end function
 
-// Return the char from code.
+/// Return the char from code.
+/// @param code code value consumed by this operation.
 function char_from_code(code)
   if typeof(code) != "int" then return "" end if
   if code <= 0 then return "" end if
@@ -821,7 +1423,10 @@ function char_from_code(code)
   return s
 end function
 
-// Create main window.
+/// Create main window.
+/// @param title Human-readable title presented to the user.
+/// @param width Width in the coordinate or storage units used by the caller.
+/// @param height Height in the coordinate or storage units used by the caller.
 function create_main_window(title, width, height)
   style = WS_OVERLAPPEDWINDOW | WS_VISIBLE | WS_CLIPCHILDREN
   rect = rect_bytes(0, 0, width, height)
@@ -836,42 +1441,71 @@ function create_main_window(title, width, height)
   return hwnd
 end function
 
-// Set menu bar.
+/// Set menu bar.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param menu menu value consumed by this operation.
 function set_menu_bar(hwnd, menu)
   if hwnd is void then return end if
   SetMenu(hwnd, menu)
   DrawMenuBar(hwnd)
 end function
 
-// Create child.
+/// Create child.
+/// @param parent parent value consumed by this operation.
+/// @param class_name class_name value consumed by this operation.
+/// @param title Human-readable title presented to the user.
+/// @param ex_style ex_style value consumed by this operation.
+/// @param style style value consumed by this operation.
+/// @param x Horizontal coordinate used by the operation.
+/// @param y Vertical coordinate used by the operation.
+/// @param w w value consumed by this operation.
+/// @param h h value consumed by this operation.
 function create_child(parent, class_name, title, ex_style, style, x, y, w, h)
   return CreateWindowExW(ex_style, class_name, title, style | WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS, x, y, w, h, parent, void, void, void)
 end function
 
-// Create child identifier.
+/// Create child identifier.
+/// @param parent parent value consumed by this operation.
+/// @param class_name class_name value consumed by this operation.
+/// @param title Human-readable title presented to the user.
+/// @param ex_style ex_style value consumed by this operation.
+/// @param style style value consumed by this operation.
+/// @param x Horizontal coordinate used by the operation.
+/// @param y Vertical coordinate used by the operation.
+/// @param w w value consumed by this operation.
+/// @param h h value consumed by this operation.
+/// @param control_id Identifier of control.
 function create_child_id(parent, class_name, title, ex_style, style, x, y, w, h, control_id)
   return CreateWindowExWId(ex_style, class_name, title, style | WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS, x, y, w, h, parent, control_id, void, void)
 end function
 
-// Create tree.
+/// Create tree.
+/// @param parent parent value consumed by this operation.
+/// @param control_id Identifier of control.
 function create_tree(parent, control_id)
   style = WS_TABSTOP | WS_VSCROLL | TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_SHOWSELALWAYS | TVS_FULLROWSELECT
   return create_child_id(parent, "SysTreeView32", "", 0, style, 0, 0, 100, 100, control_id)
 end function
 
-// Create tab.
+/// Create tab.
+/// @param parent parent value consumed by this operation.
+/// @param control_id Identifier of control.
 function create_tab(parent, control_id)
   style = WS_TABSTOP | TCS_FOCUSNEVER
   return create_child_id(parent, "SysTabControl32", "", 0, style, 0, 0, 100, 30, control_id)
 end function
 
-// Set control font.
+/// Set control font.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param font font value consumed by this operation.
 function set_control_font(hwnd, font)
   if hwnd is void or font is void then return end if
   SendMessageWPtr(hwnd, WM_SETFONT, font, 1)
 end function
 
-// Set window text.
+/// Set window text.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param text Text consumed by the operation.
 function set_window_text(hwnd, text)
   if hwnd is void then return false end if
   if typeof(text) != "string" then text = "" end if
@@ -882,13 +1516,15 @@ function set_window_text(hwnd, text)
   return rc != 0
 end function
 
-// Move a child control to the bottom of the z-order.
+/// Move a child control to the bottom of the z-order.
+/// @param hwnd hwnd value consumed by this operation.
 function send_to_bottom(hwnd)
   if hwnd is void then return end if
   SetWindowPos(hwnd, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE)
 end function
 
-// Return window text.
+/// Return window text.
+/// @param hwnd hwnd value consumed by this operation.
 function get_window_text(hwnd)
   if hwnd is void then return "" end if
   n = SendMessageW(hwnd, WM_GETTEXTLENGTH, 0, 0)
@@ -907,7 +1543,8 @@ function get_window_text(hwnd)
   return text
 end function
 
-// Return plain window text.
+/// Return plain window text.
+/// @param hwnd hwnd value consumed by this operation.
 function get_plain_window_text(hwnd)
   if hwnd is void then return "" end if
   n = GetWindowTextLengthW(hwnd)
@@ -920,7 +1557,8 @@ function get_plain_window_text(hwnd)
   return text
 end function
 
-// Return control text.
+/// Return control text.
+/// @param hwnd hwnd value consumed by this operation.
 function get_control_text(hwnd)
   if hwnd is void then return "" end if
   n = SendMessageW(hwnd, WM_GETTEXTLENGTH, 0, 0)
@@ -932,57 +1570,75 @@ function get_control_text(hwnd)
   return text
 end function
 
-// Send the reset operation to a list box.
+/// Send the reset operation to a list box.
+/// @param hwnd hwnd value consumed by this operation.
 function listbox_reset(hwnd)
   if hwnd is void then return end if
   SendMessageW(hwnd, LB_RESETCONTENT, 0, 0)
 end function
 
-// Send the add operation to a list box.
+/// Send the add operation to a list box.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param text Text consumed by the operation.
 function listbox_add(hwnd, text)
   if hwnd is void then return -1 end if
   if typeof(text) != "string" then text = "" end if
   return SendMessageWStr(hwnd, LB_ADDSTRING, 0, text)
 end function
 
-// Return selection from a list box.
+/// Return selection from a list box.
+/// @param hwnd hwnd value consumed by this operation.
 function listbox_getsel(hwnd)
   if hwnd is void then return -1 end if
   return SendMessageW(hwnd, LB_GETCURSEL, 0, 0)
 end function
 
-// Send the selection operation to a list box.
+/// Send the selection operation to a list box.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param idx idx value consumed by this operation.
 function listbox_setsel(hwnd, idx)
   if hwnd is void then return end if
   SendMessageW(hwnd, LB_SETCURSEL, idx, 0)
 end function
 
-// Send the add operation to a combo box.
+/// Send the add operation to a combo box.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param text Text consumed by the operation.
 function combo_add(hwnd, text)
   if hwnd is void then return -1 end if
   if typeof(text) != "string" then text = "" end if
   return SendMessageWStr(hwnd, CB_ADDSTRING, 0, text)
 end function
 
-// Return selection from a combo box.
+/// Return selection from a combo box.
+/// @param hwnd hwnd value consumed by this operation.
 function combo_getsel(hwnd)
   if hwnd is void then return -1 end if
   return SendMessageW(hwnd, CB_GETCURSEL, 0, 0)
 end function
 
-// Send the selection operation to a combo box.
+/// Send the selection operation to a combo box.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param idx idx value consumed by this operation.
 function combo_setsel(hwnd, idx)
   if hwnd is void then return end if
   SendMessageW(hwnd, CB_SETCURSEL, idx, 0)
 end function
 
-// Send the clear operation to a tree-view control.
+/// Send the clear operation to a tree-view control.
+/// @param hwnd hwnd value consumed by this operation.
 function tree_clear(hwnd)
   if hwnd is void then return end if
   SendMessageW(hwnd, TVM_DELETEITEM, 0, TVI_ROOT)
 end function
 
-// Send the insert operation to a tree-view control.
+/// Send the insert operation to a tree-view control.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param parent parent value consumed by this operation.
+/// @param text Text consumed by the operation.
+/// @param param param value consumed by this operation.
+/// @param has_children has_children value consumed by this operation.
+/// @param image image value consumed by this operation.
 function tree_insert(hwnd, parent, text, param, has_children, image)
   if hwnd is void then return 0 end if
   text_ptr = _wide_alloc(text)
@@ -1008,25 +1664,34 @@ function tree_insert(hwnd, parent, text, param, has_children, image)
   return handle
 end function
 
-// Send the expand operation to a tree-view control.
+/// Send the expand operation to a tree-view control.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param item item value consumed by this operation.
 function tree_expand(hwnd, item)
   if hwnd is void then return end if
   SendMessageW(hwnd, TVM_EXPAND, TVE_EXPAND, item)
 end function
 
-// Return selection from a tree-view control.
+/// Return selection from a tree-view control.
+/// @param hwnd hwnd value consumed by this operation.
 function tree_get_selection(hwnd)
   if hwnd is void then return 0 end if
   return SendMessageW(hwnd, TVM_GETNEXTITEM, TVGN_CARET, 0)
 end function
 
-// Send the select operation to a tree-view control.
+/// Send the select operation to a tree-view control.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param item item value consumed by this operation.
 function tree_select(hwnd, item)
   if hwnd is void or item == 0 then return end if
   SendMessageW(hwnd, TVM_SELECTITEM, TVGN_CARET, item)
 end function
 
-// Send the set colors operation to a tree-view control.
+/// Send the set colors operation to a tree-view control.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param bg bg value consumed by this operation.
+/// @param text Text consumed by the operation.
+/// @param line line value consumed by this operation.
 function tree_set_colors(hwnd, bg, text, line)
   if hwnd is void then return end if
   SendMessageW(hwnd, TVM_SETBKCOLOR, 0, bg)
@@ -1035,7 +1700,10 @@ function tree_set_colors(hwnd, bg, text, line)
   InvalidateRect(hwnd, void, true)
 end function
 
-// Send the hit test operation to a tree-view control.
+/// Send the hit test operation to a tree-view control.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param x Horizontal coordinate used by the operation.
+/// @param y Vertical coordinate used by the operation.
 function tree_hit_test(hwnd, x, y)
   if hwnd is void then return 0 end if
   info = bytes(32, 0)
@@ -1046,13 +1714,18 @@ function tree_hit_test(hwnd, x, y)
   return _read_ptr(info, 16)
 end function
 
-// Send the clear operation to a tab control.
+/// Send the clear operation to a tab control.
+/// @param hwnd hwnd value consumed by this operation.
 function tab_clear(hwnd)
   if hwnd is void then return end if
   SendMessageW(hwnd, TCM_DELETEALLITEMS, 0, 0)
 end function
 
-// Send the insert operation to a tab control.
+/// Send the insert operation to a tab control.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param index Zero-based index of the affected item.
+/// @param text Text consumed by the operation.
+/// @param param param value consumed by this operation.
 function tab_insert(hwnd, index, text, param)
   if hwnd is void then return -1 end if
   text_ptr = _wide_alloc(text)
@@ -1067,26 +1740,35 @@ function tab_insert(hwnd, index, text, param)
   return rc
 end function
 
-// Return cur selection from a tab control.
+/// Return cur selection from a tab control.
+/// @param hwnd hwnd value consumed by this operation.
 function tab_get_cur_sel(hwnd)
   if hwnd is void then return -1 end if
   return SendMessageW(hwnd, TCM_GETCURSEL, 0, 0)
 end function
 
-// Send the set cur selection operation to a tab control.
+/// Send the set cur selection operation to a tab control.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param index Zero-based index of the affected item.
 function tab_set_cur_sel(hwnd, index)
   if hwnd is void then return end if
   SendMessageW(hwnd, TCM_SETCURSEL, index, 0)
 end function
 
-// Send the set item size operation to a tab control.
+/// Send the set item size operation to a tab control.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param width Width in the coordinate or storage units used by the caller.
+/// @param height Height in the coordinate or storage units used by the caller.
 function tab_set_item_size(hwnd, width, height)
   if hwnd is void then return end if
   lp = (height << 16) | (width & 0xFFFF)
   SendMessageW(hwnd, TCM_SETITEMSIZE, 0, lp)
 end function
 
-// Send the hit test operation to a tab control.
+/// Send the hit test operation to a tab control.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param x Horizontal coordinate used by the operation.
+/// @param y Vertical coordinate used by the operation.
 function tab_hit_test(hwnd, x, y)
   if hwnd is void then return -1 end if
   info = bytes(12, 0)
@@ -1095,37 +1777,48 @@ function tab_hit_test(hwnd, x, y)
   return SendMessageWBytes(hwnd, TCM_HITTEST, 0, info)
 end function
 
-// Send the allow large text operation to a edit control.
+/// Send the allow large text operation to a edit control.
+/// @param hwnd hwnd value consumed by this operation.
 function edit_allow_large_text(hwnd)
   if hwnd is void then return end if
   SendMessageW(hwnd, EM_SETLIMITTEXT, 0x7FFFFFFF, 0)
 end function
 
-// Send the selection operation to a edit control.
+/// Send the selection operation to a edit control.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param start_pos start_pos value consumed by this operation.
+/// @param end_pos end_pos value consumed by this operation.
 function edit_setsel(hwnd, start_pos, end_pos)
   if hwnd is void then return end if
   SendMessageW(hwnd, EM_SETSEL, start_pos, end_pos)
 end function
 
-// Send the scroll caret operation to a edit control.
+/// Send the scroll caret operation to a edit control.
+/// @param hwnd hwnd value consumed by this operation.
 function edit_scroll_caret(hwnd)
   if hwnd is void then return end if
   SendMessageW(hwnd, EM_SCROLLCARET, 0, 0)
 end function
 
-// Send the scroll lines operation to a edit control.
+/// Send the scroll lines operation to a edit control.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param dx dx value consumed by this operation.
+/// @param dy dy value consumed by this operation.
 function edit_scroll_lines(hwnd, dx, dy)
   if hwnd is void then return end if
   SendMessageW(hwnd, EM_LINESCROLL, dx, dy)
 end function
 
-// Return true when the edit control modified.
+/// Return true when the edit control modified.
+/// @param hwnd hwnd value consumed by this operation.
 function edit_is_modified(hwnd)
   if hwnd is void then return false end if
   return SendMessageW(hwnd, EM_GETMODIFY, 0, 0) != 0
 end function
 
-// Send the set modified operation to a edit control.
+/// Send the set modified operation to a edit control.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param modified modified value consumed by this operation.
 function edit_set_modified(hwnd, modified)
   if hwnd is void then return end if
   flag = 0
@@ -1133,7 +1826,9 @@ function edit_set_modified(hwnd, modified)
   SendMessageW(hwnd, EM_SETMODIFY, flag, 0)
 end function
 
-// Send the set readonly operation to a edit control.
+/// Send the set readonly operation to a edit control.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param readonly readonly value consumed by this operation.
 function edit_set_readonly(hwnd, readonly)
   if hwnd is void then return end if
   flag = 0
@@ -1141,7 +1836,8 @@ function edit_set_readonly(hwnd, readonly)
   SendMessageW(hwnd, EM_SETREADONLY, flag, 0)
 end function
 
-// Return selection from a edit control.
+/// Return selection from a edit control.
+/// @param hwnd hwnd value consumed by this operation.
 function edit_getsel(hwnd)
   if hwnd is void then return [0, 0] end if
   start_buf = bytes(4, 0)
@@ -1150,25 +1846,33 @@ function edit_getsel(hwnd)
   return [_read_u32(start_buf, 0), _read_u32(end_buf, 0)]
 end function
 
-// Return line count from a edit control.
+/// Return line count from a edit control.
+/// @param hwnd hwnd value consumed by this operation.
 function edit_line_count(hwnd)
   if hwnd is void then return 0 end if
   return SendMessageW(hwnd, EM_GETLINECOUNT, 0, 0)
 end function
 
-// Return line index from a edit control.
+/// Return line index from a edit control.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param line_no line_no value consumed by this operation.
 function edit_line_index(hwnd, line_no)
   if hwnd is void then return -1 end if
   return SendMessageW(hwnd, EM_LINEINDEX, line_no, 0)
 end function
 
-// Return line length from a edit control.
+/// Return line length from a edit control.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param char_pos char_pos value consumed by this operation.
 function edit_line_length(hwnd, char_pos)
   if hwnd is void then return 0 end if
   return SendMessageW(hwnd, EM_LINELENGTH, char_pos, 0)
 end function
 
-// Return char from position from a edit control.
+/// Return char from position from a edit control.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param x Horizontal coordinate used by the operation.
+/// @param y Vertical coordinate used by the operation.
 function edit_char_from_pos(hwnd, x, y)
   if hwnd is void then return -1 end if
   pt = bytes(8, 0)
@@ -1179,19 +1883,23 @@ function edit_char_from_pos(hwnd, x, y)
   return char_pos
 end function
 
-// Return line from char from a edit control.
+/// Return line from char from a edit control.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param char_pos char_pos value consumed by this operation.
 function edit_line_from_char(hwnd, char_pos)
   if hwnd is void then return 0 end if
   return SendMessageW(hwnd, EM_LINEFROMCHAR, char_pos, 0)
 end function
 
-// Return first visible line from a edit control.
+/// Return first visible line from a edit control.
+/// @param hwnd hwnd value consumed by this operation.
 function edit_first_visible_line(hwnd)
   if hwnd is void then return 0 end if
   return SendMessageW(hwnd, EM_GETFIRSTVISIBLELINE, 0, 0)
 end function
 
-// Return scroll position from a edit control.
+/// Return scroll position from a edit control.
+/// @param hwnd hwnd value consumed by this operation.
 function edit_get_scroll_pos(hwnd)
   if hwnd is void then return [0, 0] end if
   pt = bytes(8, 0)
@@ -1199,7 +1907,10 @@ function edit_get_scroll_pos(hwnd)
   return [point_x(pt), point_y(pt)]
 end function
 
-// Send the set scroll position operation to a edit control.
+/// Send the set scroll position operation to a edit control.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param x Horizontal coordinate used by the operation.
+/// @param y Vertical coordinate used by the operation.
 function edit_set_scroll_pos(hwnd, x, y)
   if hwnd is void then return end if
   pt = bytes(8, 0)
@@ -1208,7 +1919,10 @@ function edit_set_scroll_pos(hwnd, x, y)
   SendMessageWBytes(hwnd, EM_SETSCROLLPOS, 0, pt)
 end function
 
-// Send the line from position operation to a edit control.
+/// Send the line from position operation to a edit control.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param x Horizontal coordinate used by the operation.
+/// @param y Vertical coordinate used by the operation.
 function edit_line_from_pos(hwnd, x, y)
   if hwnd is void then return 0 end if
   char_pos = edit_char_from_pos(hwnd, x, y)
@@ -1216,50 +1930,60 @@ function edit_line_from_pos(hwnd, x, y)
   return edit_line_from_char(hwnd, char_pos)
 end function
 
-// Return text from a edit control.
+/// Return text from a edit control.
+/// @param hwnd hwnd value consumed by this operation.
 function edit_get_text(hwnd)
   return get_window_text(hwnd)
 end function
 
-// Send the cut operation to a edit control.
+/// Send the cut operation to a edit control.
+/// @param hwnd hwnd value consumed by this operation.
 function edit_cut(hwnd)
   if hwnd is void then return end if
   SendMessageW(hwnd, WM_CUT, 0, 0)
 end function
 
-// Send the copy operation to a edit control.
+/// Send the copy operation to a edit control.
+/// @param hwnd hwnd value consumed by this operation.
 function edit_copy(hwnd)
   if hwnd is void then return end if
   SendMessageW(hwnd, WM_COPY, 0, 0)
 end function
 
-// Send the paste operation to a edit control.
+/// Send the paste operation to a edit control.
+/// @param hwnd hwnd value consumed by this operation.
 function edit_paste(hwnd)
   if hwnd is void then return end if
   SendMessageW(hwnd, WM_PASTE, 0, 0)
 end function
 
-// Send the select all operation to a edit control.
+/// Send the select all operation to a edit control.
+/// @param hwnd hwnd value consumed by this operation.
 function edit_select_all(hwnd)
   if hwnd is void then return end if
   SendMessageW(hwnd, EM_SETSEL, 0, 0x7FFFFFFF)
 end function
 
-// Send the replace selection operation to a edit control.
+/// Send the replace selection operation to a edit control.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param text Text consumed by the operation.
 function edit_replace_sel(hwnd, text)
   if hwnd is void then return end if
   if typeof(text) != "string" then text = "" end if
   SendMessageWStr(hwnd, EM_REPLACESEL, 1, text)
 end function
 
-// Send the set background operation to a edit control.
+/// Send the set background operation to a edit control.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param color color value consumed by this operation.
 function edit_set_background(hwnd, color)
   if hwnd is void then return end if
   SendMessageW(hwnd, EM_SETBKGNDCOLOR, 0, color)
   InvalidateRect(hwnd, void, true)
 end function
 
-// Open project dialog.
+/// Open project dialog.
+/// @param hwnd hwnd value consumed by this operation.
 function open_project_dialog(hwnd)
   filter = _wide_alloc("MiniLang projects (*.mlproj)\0*.mlproj\0All files (*.*)\0*.*\0\0")
   title = _wide_alloc("Open Project")
@@ -1292,7 +2016,8 @@ function open_project_dialog(hwnd)
   return result
 end function
 
-// Open compiler dialog.
+/// Open compiler dialog.
+/// @param hwnd hwnd value consumed by this operation.
 function open_compiler_dialog(hwnd)
   filter = _wide_alloc("Executable (*.exe)\0*.exe\0All files (*.*)\0*.*\0\0")
   title = _wide_alloc("Select Compiler")
@@ -1325,7 +2050,8 @@ function open_compiler_dialog(hwnd)
   return result
 end function
 
-// Open MiniLang file dialog.
+/// Open MiniLang file dialog.
+/// @param hwnd hwnd value consumed by this operation.
 function open_minilang_file_dialog(hwnd)
   filter = _wide_alloc("MiniLang files (*.ml)\0*.ml\0All files (*.*)\0*.*\0\0")
   title = _wide_alloc("Select Main File")
@@ -1358,7 +2084,9 @@ function open_minilang_file_dialog(hwnd)
   return result
 end function
 
-// Send the set redraw operation to a edit control.
+/// Send the set redraw operation to a edit control.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param enabled enabled value consumed by this operation.
 function edit_set_redraw(hwnd, enabled)
   if hwnd is void then return end if
   flag = 0
@@ -1370,7 +2098,11 @@ function edit_set_redraw(hwnd, enabled)
   end if
 end function
 
-// Send the set color operation to a RichEdit control.
+/// Send the set color operation to a RichEdit control.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param start_pos start_pos value consumed by this operation.
+/// @param end_pos end_pos value consumed by this operation.
+/// @param color color value consumed by this operation.
 function rich_set_color(hwnd, start_pos, end_pos, color)
   if hwnd is void then return end if
   if start_pos < 0 then start_pos = 0 end if
@@ -1384,7 +2116,15 @@ function rich_set_color(hwnd, start_pos, end_pos, color)
   SendMessageWBytes(hwnd, EM_SETCHARFORMAT, SCF_SELECTION, fmt)
 end function
 
-// Send the set format operation to a RichEdit control.
+/// Send the set format operation to a RichEdit control.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param start_pos start_pos value consumed by this operation.
+/// @param end_pos end_pos value consumed by this operation.
+/// @param color color value consumed by this operation.
+/// @param height_twips height_twips value consumed by this operation.
+/// @param bold bold value consumed by this operation.
+/// @param italic italic value consumed by this operation.
+/// @param underline underline value consumed by this operation.
 function rich_set_format(hwnd, start_pos, end_pos, color, height_twips, bold, italic, underline)
   if hwnd is void then return end if
   if start_pos < 0 then start_pos = 0 end if
@@ -1409,7 +2149,9 @@ function rich_set_format(hwnd, start_pos, end_pos, color, height_twips, bold, it
   SendMessageWBytes(hwnd, EM_SETCHARFORMAT, SCF_SELECTION, fmt)
 end function
 
-// Send the set all color operation to a RichEdit control.
+/// Send the set all color operation to a RichEdit control.
+/// @param hwnd hwnd value consumed by this operation.
+/// @param color color value consumed by this operation.
 function rich_set_all_color(hwnd, color)
   if hwnd is void then return end if
   fmt = bytes(116, 0)

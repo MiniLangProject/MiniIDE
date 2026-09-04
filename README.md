@@ -8,6 +8,22 @@ It is intentionally lightweight: no Electron shell, no web runtime, and no
 large framework. The application uses Win32 controls directly and focuses on
 the core edit/build/run loop for MiniLang projects.
 
+## API documentation
+
+The committed [MiniDoc API reference](docs/api/markdown/README.md) documents
+the application shell, editor, project model, build service, language service,
+Win32 integration, Markdown renderer, and assistant provider. A searchable
+offline copy is available at `docs/api/html/index.html`.
+
+```powershell
+pwsh .\tools\generate_minidoc.ps1
+pwsh .\tools\generate_minidoc.ps1 -Check
+```
+
+MiniIDE uses `//!` file comments and `///` declaration comments with structured
+contracts. Its strict [`minidoc.toml`](minidoc.toml) configuration fails on
+missing or malformed documentation.
+
 The MiniLang compiler is **not** part of this repository. MiniIDE expects a
 local copy of `mlc_win64.exe` when building, running projects, or executing the
 test suite.

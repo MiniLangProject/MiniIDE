@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Provides project config facilities for this project.
+
 package project.config
 
 // .miniide.cfg path resolution and typed value parsing.
@@ -20,14 +22,18 @@ import std.fs as fs
 import std.string as s
 import "project/project.ml" as project_model
 
-// Return the project-local configuration file path.
+/// Return the project-local configuration file path.
+/// @param p p value consumed by this operation.
 function path(p)
   root = "."
   if typeof(p) == "struct" then root = p.root end if
   return project_model.path_join(root, ".miniide.cfg")
 end function
 
-// Load one raw key from .miniide.cfg while ignoring comments and blank lines.
+/// Load one raw key from .miniide.cfg while ignoring comments and blank lines.
+/// @param p p value consumed by this operation.
+/// @param wanted_key wanted_key value consumed by this operation.
+/// @param default_value default_value value consumed by this operation.
 function load_value(p, wanted_key, default_value)
   cfg = path(p)
   if fs.exists(cfg) == false then return default_value end if
@@ -47,7 +53,9 @@ function load_value(p, wanted_key, default_value)
   return default_value
 end function
 
-// Parse common boolean spellings used in project configuration files.
+/// Parse common boolean spellings used in project configuration files.
+/// @param value Value consumed or transformed by the operation.
+/// @param default_value default_value value consumed by this operation.
 function bool_from_text(value, default_value)
   value = s.toLowerAscii(value)
   if value == "true" or value == "1" or value == "yes" or value == "on" then return true end if
@@ -55,19 +63,27 @@ function bool_from_text(value, default_value)
   return default_value
 end function
 
-// Parse an integer and fall back when the config value is empty or invalid.
+/// Parse an integer and fall back when the config value is empty or invalid.
+/// @param value Value consumed or transformed by the operation.
+/// @param default_value default_value value consumed by this operation.
 function int_from_text(value, default_value)
   n = toNumber(value)
   if typeof(n) == "int" then return n end if
   return default_value
 end function
 
-// Load a boolean key from .miniide.cfg.
+/// Load a boolean key from .miniide.cfg.
+/// @param p p value consumed by this operation.
+/// @param key key value consumed by this operation.
+/// @param default_value default_value value consumed by this operation.
 function load_bool(p, key, default_value)
   return bool_from_text(load_value(p, key, ""), default_value)
 end function
 
-// Load an integer key from .miniide.cfg.
+/// Load an integer key from .miniide.cfg.
+/// @param p p value consumed by this operation.
+/// @param key key value consumed by this operation.
+/// @param default_value default_value value consumed by this operation.
 function load_int(p, key, default_value)
   return int_from_text(load_value(p, key, ""), default_value)
 end function
