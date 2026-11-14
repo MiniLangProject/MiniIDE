@@ -3,7 +3,7 @@ name = "MiniIDE"
 description = "API and implementation reference for the native MiniLang IDE, including editing, project management, builds, language services, diagnostics, Markdown help, theming, and assistant integration."
 entry = "src/main.ml"
 source_roots = ["src"]
-include = ["src"]
+include = ["src", "../MiniLangCompilerML"]
 exclude = ["build", "docs/api", "examples", "projects", "tests"]
 target = "windows-x64"
 
